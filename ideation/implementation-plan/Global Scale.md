@@ -111,6 +111,30 @@ reviewed foundation wiring exceptions, evidence paths, props and remaining gaps.
 The user authorized this local merge. Concurrent backend/evaluation work was
 excluded. No remote push, live workflow or actual human review is claimed.
 
+## Q01 execution update — September 14, 2026
+
+Q01's frozen evaluation fixtures and stateful fakes are implemented at
+`bcced55d61b90b2ce69e077ecc0475b814e27335` under conventions **1.2** and F02
+schema **2**. The user authorized main integration and remote publication of
+main and `feat/evaluation-fixtures`. The isolated candidate preserves local U01
+and remote I01 history and excludes concurrent uncommitted B01 work.
+
+The frozen census contains **92 planned targets**: 18 baselines, 24 repetitions,
+46 variants and 4 repair legs. This includes all 42 required baseline/repetition
+slots, but **zero executed workflow attempts**. Logical manifests preserve
+source oracles, separate future object IDs from exact approved content, include
+partial/no-affected scopes, and keep resolved exports separately hashed. Fakes
+expose independent stored state, pagination, actor history, model/provider faults,
+and operator-only scoped setup/repair.
+
+Fresh isolated validation passed **18/18 focused Q01 tests**, **129/129 existing
+monitor/checker regressions**, typecheck and both builds. The independent agent
+merge review accepted paths, pinned hashes, prerequisite ancestry, and provenance.
+See the [Q01 completion receipt](commits/Q01.md#completion-receipt) for exact
+commands, suite identity, handoff and gaps. Live model/provider evidence, actual
+human review, Q02 trusted collection, and R01/Q04 execution remain pending. This
+update does not mark any canonical scenario family as executed or live.
+
 ## 1. Historical repository baseline
 
 - Git HEAD: `90a3793d1c1f9dea927372cbd055a0cd27c6ca2f` (`Add PromiseGuard ideation`).
