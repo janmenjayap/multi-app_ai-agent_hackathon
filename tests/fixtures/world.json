@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 2,
+  "fixtureId": "promiseguard-demo-v1",
+  "conventionsVersion": "1.2",
+  "provenance": "synthetic_fixture",
+  "clockAt": "2026-09-13T17:35:00Z",
+  "policy": { "impactHorizonHours": 72, "approvalTtlMs": 600000, "sourceFreshnessMs": 30000 },
+  "accounts": { "github": "github_test", "hubspot": "hubspot_test", "gmail": "gmail_test", "slack": "slack_test" },
+  "github": {
+    "technicalEvidence": {
+      "incident": { "schemaVersion": 2, "repositoryId": "repository_pg_test", "issueId": "inc_pg_001", "issueNumber": 42, "canonicalUrl": "https://github.com/promiseguard-fixture/payments/issues/42", "service": "billing-api", "environment": "production" },
+      "title": "Billing API incident under investigation",
+      "body": "```json\n{\"incidentId\":\"inc_pg_001\",\"service\":\"billing-api\",\"environment\":\"production\",\"state\":\"open\",\"startedAt\":\"2026-09-13T17:30:00Z\",\"customerImpact\":true,\"candidateDeployment\":\"demo_sha\"}\n```\nA billing API incident is under investigation. A recent deployment is a candidate change; causation, recovery time, and migration impact are unconfirmed. demo_sha is fictional fixture evidence.",
+      "comments": [],
+      "changes": []
+    },
+    "incidentFields": { "state": "open", "startedAt": "2026-09-13T17:30:00Z", "customerImpact": true, "candidateDeployment": "demo_sha" }
+  },
+  "hubspot": {
+    "commitments": [
+      { "id": "promise_101", "companyIds": ["company_acme"], "contactIds": ["contact_101"], "ownerId": "owner_101", "service": "billing-api", "status": "active", "dueAt": "2026-09-16T17:30:00Z", "promise": "billing migration", "version": "source-v1" },
+      { "id": "promise_102", "companyIds": ["company_beta"], "contactIds": ["contact_beta"], "ownerId": "owner_beta", "service": "analytics-api", "status": "active", "dueAt": "2026-09-16T17:30:00Z", "promise": "analytics migration", "version": "source-v1" }
+    ],
+    "companies": [
+      { "id": "company_acme", "name": "Acme Corp", "contactIds": ["contact_101", "contact_102"] },
+      { "id": "company_beta", "name": "Beta Corp", "contactIds": ["contact_beta"] }
+    ],
+    "contacts": [
+      { "id": "contact_101", "email": "avery@acme.example.test", "designated": true },
+      { "id": "contact_102", "email": "blair@acme.example.test", "designated": false },
+      { "id": "contact_beta", "email": "casey@beta.example.test", "designated": true }
+    ],
+    "owners": [ { "id": "owner_101", "active": true }, { "id": "owner_202", "active": true }, { "id": "owner_beta", "active": true } ]
+  },
+  "slack": { "workspaceId": "workspace_test", "channelId": "incident-customer-impact", "approverId": "demo_approver", "messages": [] },
+  "gmail": { "mailbox": "disposable-test-user", "drafts": [] },
+  "ticketMappings": [ { "commitmentId": "promise_101", "ticketId": "ticket_101" }, { "commitmentId": "promise_102", "ticketId": "ticket_102" } ],
+  "protectedRecords": [ { "app": "hubspot", "logicalId": "company_beta" }, { "app": "hubspot", "logicalId": "promise_102" }, { "app": "hubspot", "logicalId": "ticket_102" } ]
+}
