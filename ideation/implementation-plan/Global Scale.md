@@ -1,12 +1,84 @@
 # Global Scale: implementation and completion verification
 
-**Current verdict — September 14, 2026 (IST): R01's guarded workflow is
-implemented and verified with simulated providers.** Three recorded roles, Slack
-approval, ordered four-app effects, independent inline readback, restart and
-zero-write replay execute through the durable driver. Live S1/S2, actual human
-quality review, and the Q01/B03 frozen-oracle binding remain unverified. The
-measured-release gate remains open. Historical receipts below retain their
-original scope.
+**Current verdict — September 14, 2026 (IST): R02 packages a reproducible
+simulated workflow and the failed Q04/Q05 evaluation, with all G1–G6 open.**
+Three recorded roles, simulated approval, ordered effects, readback, restart and
+zero-write replay run through the durable driver. The saved 92-slot evaluation
+contains 75 attempts: **0 passed, 71 failed and 4 unverified**, with 17 unrun and
+zero actual human labels. Live S1/S2, authentic approval, the frozen-oracle
+binding and final delivery remain unverified. Historical sections below retain
+their original source and evidence scope.
+
+## R02 release package — September 14, 2026
+
+Source freeze: `fa148667016be9f3c778bc76ad9c8ee232f9151d`, fetched `origin/main`.
+Gemini migration `25ba4727f0425849a8d10f1fd3b04dd6abcf8c7f` landed during
+the final fetch; R02 updated the freeze and repeated the same narrow checks.
+Earlier successful R02 checks at `8722598eb1c83fc81c6a6c36930899f5da811772`
+are retained as preliminary evidence in the manifest, not final-source proof.
+Branch: `chore/demo-release`; conventions **1.2**. A separate clean worktree
+preserves the original checkout's unrelated uncommitted work. R02 changes only
+the six documentation paths allowed by its brief; application behavior is
+unchanged. Implementation-ID register: **R02** is
+`5533d2419a7080067bc6fb103fc41c6f7c391041`. This maps the documentation implementation;
+it does not close the behavioral release gates.
+
+Required implementations are ancestors of this source:
+
+- R01: `bacb8ea4e2c340f547fe2a081c6836b911fe24d3`.
+- U02: `93a6cdfe16eb9692dc683879fcba88520e18f9c9`.
+- Q04: `fbc04a5750ec0aa1f87fb24c29ca7937c1dc942e`.
+- Q05: `5b250645eef9ccf15feaf69d97ce1470776b4dc0`.
+
+Deliverables: [release manifest](../../docs/release-manifest.json),
+[demo runbook](../../docs/demo-runbook.md),
+[system and reliability brief](../../docs/reliability-brief.md), and
+[evaluation summary](../../docs/evaluation-summary.md), linked from README.
+The manifest pins source/tree/dirty-code hashes, lockfile/runtime, roles and
+prompts, schemas, policies, fixtures, census, attempts, report versions/cutoff,
+restricted receipt hashes, and disabled optional capabilities. The inherited
+Q04 execution and Q05 reporting sources remain distinct from the R02 source.
+
+Fresh verification used **Node 24.21.0 / npm 11.19.0, Linux x64**:
+
+- `npm ci --offline --cache /tmp/promiseguard-npm-cache --no-audit --no-fund`:
+  passed, 238 packages installed from the lockfile into the new worktree.
+- `npm run typecheck` and `npm run build`: passed, server and web.
+- `npm exec -- tsc -p tools/demo/tsconfig.json` and
+  `node .local/demo-build/tools/demo/run.js`: passed. Synthetic run
+  `cc7c3705-4bfe-4bb0-a446-44a52fda6a76` waited for simulated approval,
+  completed with three mock calls/five verified fake effects, and reopened the
+  same run with zero excess writes. Complete S0/S1 reads still carry
+  `frozen_oracle_content_binding_unverified`; semantic quality is unverified.
+- Read-only saved-report comparison verifies the canonical payload digest,
+  summary/detail equality, 75 distinct attempt IDs, 24 unique claims, the
+  21-claim union and raw metric totals. This is not a new scenario execution.
+- No new tests or broad suite reruns were added, following the user's explicit
+  hackathon/minimal-testing instruction. Prior R01/U02/Q05 receipts remain
+  historical; authenticated browser/three-viewport, live smokes, human review,
+  recording/access and submission checks remain unrun.
+
+The saved cohort preserves M1 **0/18**, M7 **0/54 per role**, **21 premature**
+claims and a **21-claim false-completion union**. All 24 independent claim
+outcomes remain unverified. M3 has **0/1121** corroborated predicates and
+**0/71** corroborated acknowledgements. M4 lacks confirmed recovery facts;
+M5 is N/A; all 75 M6 samples are censored. Full M1–M7 units, failures and all
+38 gaps are in the evaluation summary. The fresh CLI smoke adds no attempt to
+this frozen cohort and does not overwrite its adverse results.
+
+**Gate disposition:** G1 stays open despite install/build success because full
+C02 authenticated application/browser setup has not been verified. G2 retains
+unresolved safety/trace findings; G3 lacks live S1/S2; G4 lacks semantic and
+claim-time proof and has critical failures; G5 lacks passing full-suite/live
+coverage and successful recovery; G6 lacks authenticated rehearsal, verified
+recording/access and delivery confirmation. B08/U03 remain deferred; merged Q06
+is disabled for this package; MCP and hosted deployment are unclaimed.
+
+P1 integrator: Codex. Independent Codex reviewers `r02_evaluation`,
+`r02_reliability`, and `r02_runbook` supplied disjoint evidence/command reviews;
+these are agent reviews, not human semantic labels. The user authorized merge
+and push. This documentation handoff packages demonstrated scope and explicitly
+open gates; it does not certify the promised live product or submit the project.
 
 ## R01 execution update — September 14, 2026
 

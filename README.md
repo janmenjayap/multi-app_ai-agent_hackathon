@@ -30,6 +30,11 @@ Give PromiseGuard a GitHub incident URL. For an affected customer commitment, th
 
 These components are implemented on `main`. The [current status](#current-status-and-limitations) distinguishes demonstrated behavior from live integration and evaluation work still outstanding.
 
+**R02 release package:** [frozen manifest](docs/release-manifest.json),
+[demo runbook](docs/demo-runbook.md), [system and reliability brief](docs/reliability-brief.md),
+and [measured evaluation](docs/evaluation-summary.md). This packages the reproducible
+simulated build and its known failures; all live-product delivery gates remain open.
+
 ### Architecture
 
 ```mermaid
@@ -180,7 +185,26 @@ Reproduce those focused integration tests after installing dependencies:
 npm run test:app -- tests/scenarios/walking-skeleton.test.ts
 ```
 
-The integration counts above come from the recorded implementation receipt; the README update separately reran the CLI demo. They do not establish live-provider reliability or independent human evaluation of AI quality.
+The integration counts above come from the recorded implementation receipt. R02
+separately passed a clean locked offline install, typecheck, server/web builds,
+demo compilation and one CLI demo on source
+`fa148667016be9f3c778bc76ad9c8ee232f9151d`, using Node 24.21.0 and npm 11.19.0.
+The demo preserved the same run on replay and reported three total mock model
+calls, five verified fake-provider effects and zero excess writes. Independent
+S0/S1 collection was complete, but its frozen-oracle content binding and original
+output quality remained unverified. The [manifest](docs/release-manifest.json)
+records command receipts and hashes. Broad application, checker/monitor,
+component and browser suites were not rerun for this documentation change.
+
+**Saved Q04/Q05 evaluation:** 92 planned slots, 75 registered/attempted/assessed,
+**0 passed, 71 failed, 4 unverified**, and 17 unrun. Actual human labels: **0**.
+M1 is **0/18** eligible execution attempts; M7 is **0/54 per role**, with missing
+labels remaining unverified. The 24 success claims include 21 premature claims
+and 21 in the deduplicated false-completion union; all 24 outcome verdicts are
+unverified. These are synthetic/mock/fake results, not live reliability rates.
+See the [evaluation summary](docs/evaluation-summary.md) for all M1–M7 raw counts,
+source versions, missing evidence, and restricted report references. R02's fresh
+demo is separate from this frozen cohort and does not replace any failed attempt.
 
 ### How reliability is enforced
 
@@ -231,7 +255,7 @@ These examples demonstrate the tooling with synthetic evidence. Passing them is 
 - **Live validation:** the initial live workflow and its replay with Gemini and all four real apps have not been run. A synthetic demo does not establish live-provider success.
 - **Outcome evaluation:** the frozen expected-outcome manifest and generated plan still differ in effect/content bindings. Independent collection exists, but the demo reports that comparison as unverified.
 - **AI quality:** original-output quality remains unverified without independent human review labels. An auditor pass or Slack approval does not establish quality on its own.
-- **Evaluation coverage:** the full 18-family scenario suite and final measured reliability scorecard are not complete; no production reliability percentage is claimed.
+- **Evaluation coverage:** the harness and saved scorecard now cover the full 92-slot census, including failed and unrun entries. The observed cohort has no passing assessments; 17 scenarios, successful-recovery proof and live scenarios remain incomplete. Reporting coverage does not close the evaluation gate.
 - **Connected setup:** account-specific workflow bootstrap and operator authentication still need to be supplied as described above.
 
 ## 05 Demo video
@@ -239,3 +263,7 @@ These examples demonstrate the tooling with synthetic evidence. Passing them is 
 **Video link:** [Watch the demo](https://drive.google.com/drive/folders/14ESRy4QuwqIl9Wugk_fxa5Ri6aTs7faz?usp=sharing)
 
 **Maximum duration:** 2 minutes.
+
+The supplied link is preserved. R02 has not verified judge access, selected a
+recording in that folder, checked its playback/duration, or submitted the project.
+Use the [delivery checklist](docs/demo-runbook.md) to record those separately.
