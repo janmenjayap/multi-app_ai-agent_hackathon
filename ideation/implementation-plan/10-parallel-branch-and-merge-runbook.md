@@ -30,9 +30,10 @@ must not silently select a paid model, another model, or mock mode.
 and the Node 24 build/baseline/app/web suites are implemented and passing in the
 current working tree, including all R01/Q04 scenarios. Latest main's Playwright
 web-server command still lacks its required `PG_WORKFLOW_MODULE`, so that existing
-E2E gate is not passed. No migration SHA has been assigned and live compatibility
-remains unrun, so live R01 evidence must still wait for a rotated key and a saved
-private A01 compatibility receipt.
+E2E gate is not passed. The migration implementation is
+`25ba4727f0425849a8d10f1fd3b04dd6abcf8c7f`; live compatibility remains unrun,
+so live R01 evidence must still wait for a rotated key and a saved private A01
+compatibility receipt.
 
 ## 1. Current starting point
 

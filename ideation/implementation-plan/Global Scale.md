@@ -75,7 +75,9 @@ server/web builds, 133 baseline tests, 344 application tests (including 8 R01/Q0
 scenarios), and 36 web tests pass. Latest main's Playwright stage remains blocked
 before test launch because its web-server command does not provide the now-required
 `PG_WORKFLOW_MODULE`; do not count that gate as passed. This is deterministic/
-injected evidence only; no migration SHA or successful live Gemini receipt exists yet.
+injected evidence at Gemini migration SHA
+`25ba4727f0425849a8d10f1fd3b04dd6abcf8c7f`; no successful live Gemini receipt
+exists yet.
 
 ## F01 execution update — September 14, 2026
 
