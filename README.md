@@ -4,8 +4,6 @@
 
 [01 Overview](#01-project-overview) · [02 External apps](#02-external-apps-used) · [03 Setup](#03-setup-instructions) · [04 Reliability testing](#04-reliability-testing) · [05 Demo video](#05-demo-video)
 
-**Demo video:** [Watch the demo — placeholder](https://example.com/promiseguard-demo). Recording pending; the final video must be **no longer than two minutes**.
-
 ## 01 Project overview
 
 When an engineering incident puts a customer promise at risk, teams have to connect technical evidence, CRM records, internal approvals, and customer communication. PromiseGuard brings that work into one controlled workflow: identify affected commitments, prepare a recovery plan, get approval, create the follow-up artifacts, and verify the results.
@@ -31,6 +29,30 @@ Give PromiseGuard a GitHub incident URL. For an affected customer commitment, th
 - **A runnable simulated demo:** the real workflow and model runtime with mock model responses and stateful fake providers. It exercises approval wait, restart, completion, and replay without credentials.
 
 These components are implemented on `main`. The [current status](#current-status-and-limitations) distinguishes demonstrated behavior from live integration and evaluation work still outstanding.
+
+### Architecture
+
+```mermaid
+flowchart TD
+    UI[React operator console] --> API[Fastify API and operator sessions]
+    API --> Workflow[Durable LangGraph workflow]
+    Workflow --> Sources[Read GitHub evidence and HubSpot commitments]
+    Sources --> Analyst[Evidence Analyst]
+    Analyst --> Drafter[Customer Update Drafter]
+    Drafter --> Checks[Deterministic validation]
+    Checks --> Auditor[Blind Semantic Auditor]
+    Auditor --> Plan[Freeze exact plan and request Slack approval]
+    Plan --> Execute[Guarded writes: HubSpot task and note, Gmail draft, GitHub comment]
+    Execute --> Verify[Fresh readback and verified Slack summary]
+    Workflow <--> Store[(SQLite ledger and checkpoints)]
+    Store -. events .-> Monitor[Reliability monitor]
+    Evidence[Independent provider snapshots and review labels] -. evidence .-> Monitor
+    Monitor -. assessments .-> API
+```
+
+The three AI roles run as bounded calls within the backend process. They receive scoped evidence and return structured outputs; application code owns tool dispatch and credentials. The auditor receives a separate review context. Approval, retry decisions, persistence, and completion checks are enforced by code.
+
+**Stack:** TypeScript, React + Vite, Fastify, LangGraph/LangChain, OpenAI, SQLite, and Zod. Tests use Node's test runner, Vitest, and Playwright.
 
 ## 02 External apps used
 
@@ -102,6 +124,18 @@ npm start
 ```
 
 Open **http://127.0.0.1:3000**. Fastify serves the browser and authenticated `/api/runs` routes from the same origin. Missing `PG_WORKFLOW_MODULE` stops startup with a configuration error. See the [app integration guide](ideation/implementation-plan/08-mcp-api-and-external-app-integration.md) for account access and adapter details.
+
+### Repository and further reading
+
+- [`src/web/`](src/web/) — operator console, components, and API client.
+- [`src/server/`](src/server/) — workflow, agents, policies, adapters, persistence, verification, and monitoring.
+- [`src/shared/`](src/shared/) — shared schemas and contracts.
+- [`tests/`](tests/) — component, integration, scenario, and browser tests, plus fake providers and fixtures.
+- [`tools/`](tools/) — demo, provider/model smoke tools, evidence collection, and reliability utilities.
+- [Project proposal](ideation/final-project-promiseguard.md), [detailed architecture](ideation/promiseguard-architecture.md), and [implementation plan](ideation/implementation-plan/README.md).
+- [Integration verification receipt](ideation/implementation-plan/commits/R01.md) and [completion register](ideation/implementation-plan/Global%20Scale.md) — recorded implementation checks and outstanding gates. Earlier planning documents may describe older baselines or future work.
+
+**Local data:** credentials stay server-side in ignored `.env` files. The business database, checkpoints, and restricted evidence use separate paths under ignored `.local/`. Keep real customer records and raw provider evidence private; use reviewed, redacted summaries when sharing results.
 
 ## 04 Reliability testing
 
@@ -177,52 +211,6 @@ These examples demonstrate the tooling with synthetic evidence. Passing them is 
 
 ## 05 Demo video
 
-**Video link:** [Demo video — placeholder](https://example.com/promiseguard-demo)
+**Video link:** `<VIDEO_LINK_PLACEHOLDER>`
 
-**Status:** placeholder only; the recording still needs to be added. The submission video must be **no longer than 2:00**.
-
-Suggested recording outline (**1:55 total**):
-
-- **0:00–0:15:** explain the customer-promise problem and introduce PromiseGuard.
-- **0:15–0:35:** show the incident input and explain each of the four apps' roles.
-- **0:35–1:00:** show the proposed plan and approval step.
-- **1:00–1:30:** show the task, note, email draft, GitHub comment, and Slack summary, with their verification results.
-- **1:30–1:55:** show replay adding zero effects and briefly state the remaining validation gaps.
-
-Label simulated footage clearly. The console preview and CLI demo are separate demonstrations; neither is a recording of a live four-app run.
-
-## Architecture
-
-```mermaid
-flowchart TD
-    UI[React operator console] --> API[Fastify API and operator sessions]
-    API --> Workflow[Durable LangGraph workflow]
-    Workflow --> Sources[Read GitHub evidence and HubSpot commitments]
-    Sources --> Analyst[Evidence Analyst]
-    Analyst --> Drafter[Customer Update Drafter]
-    Drafter --> Checks[Deterministic validation]
-    Checks --> Auditor[Blind Semantic Auditor]
-    Auditor --> Plan[Freeze exact plan and request Slack approval]
-    Plan --> Execute[Guarded writes: HubSpot task and note, Gmail draft, GitHub comment]
-    Execute --> Verify[Fresh readback and verified Slack summary]
-    Workflow <--> Store[(SQLite ledger and checkpoints)]
-    Store -. events .-> Monitor[Reliability monitor]
-    Evidence[Independent provider snapshots and review labels] -. evidence .-> Monitor
-    Monitor -. assessments .-> API
-```
-
-The three AI roles run as bounded calls within the backend process. They receive scoped evidence and return structured outputs; application code owns tool dispatch and credentials. The auditor receives a separate review context. Approval, retry decisions, persistence, and completion checks are enforced by code.
-
-**Stack:** TypeScript, React + Vite, Fastify, LangGraph/LangChain, OpenAI, SQLite, and Zod. Tests use Node's test runner, Vitest, and Playwright.
-
-## Repository and further reading
-
-- [`src/web/`](src/web/) — operator console, components, and API client.
-- [`src/server/`](src/server/) — workflow, agents, policies, adapters, persistence, verification, and monitoring.
-- [`src/shared/`](src/shared/) — shared schemas and contracts.
-- [`tests/`](tests/) — component, integration, scenario, and browser tests, plus fake providers and fixtures.
-- [`tools/`](tools/) — demo, provider/model smoke tools, evidence collection, and reliability utilities.
-- [Project proposal](ideation/final-project-promiseguard.md), [detailed architecture](ideation/promiseguard-architecture.md), and [implementation plan](ideation/implementation-plan/README.md).
-- [Integration verification receipt](ideation/implementation-plan/commits/R01.md) and [completion register](ideation/implementation-plan/Global%20Scale.md) — recorded implementation checks and outstanding gates. Earlier planning documents may describe older baselines or future work.
-
-**Local data:** credentials stay server-side in ignored `.env` files. The business database, checkpoints, and restricted evidence use separate paths under ignored `.local/`. Keep real customer records and raw provider evidence private; use reviewed, redacted summaries when sharing results.
+**Maximum duration:** 2 minutes. Recording to be added.
