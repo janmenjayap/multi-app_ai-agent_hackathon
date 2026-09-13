@@ -1,170 +1,188 @@
 # PromiseGuard
 
-PromiseGuard is a proposed incident-to-customer-follow-up agent across GitHub,
-HubSpot, Slack, and Gmail. It is intended to create approved, assigned recovery
-work and a verified customer email draft.
+**Turn a GitHub incident into approved, assigned customer follow-up across four apps.**
 
-**Current status — September 14, 2026 (IST):** R01 assembles the durable workflow,
-three model roles, four app adapters, Slack approval, and independent readback.
-The executable demo uses stateful fake providers and mock model responses through
-the real runtime. Live S1/S2 are **unrun**; simulated approval is not human review.
-The original offline checker and standalone reliability monitor remain available.
+When an engineering incident puts a customer promise at risk, teams have to connect technical evidence, CRM records, internal approvals, and customer communication. PromiseGuard brings that work into one controlled workflow: identify affected commitments, prepare a recovery plan, get approval, create the follow-up artifacts, and verify the results.
 
-For the hackathon, **agent reliability is a P0 deliverable with three parts**:
-grounded original AI outputs judged against source facts and independent labels;
-actual execution traces plus enforced approval/retry/reconciliation controls; and
-independently collected provider state compared with expectations frozen before
-execution. A passing trace, final response, or synthetic monitor report cannot
-stand in for those combined results.
+**Demo video:** [Watch the demo](https://example.com/promiseguard-demo) — **dummy link; recording to be added.**
 
-Generated text is bound through `ApprovedContentRef` to exact immutable plan bytes
-before dispatch; provider observations never define the expected text. Independent
-source facts and semantic criteria stay fixed, and approval does not establish
-quality. A valid no-affected outcome instead uses `no_affected` claim scope with
-no plan reference, supported by complete selection and absence-of-effect evidence.
+[Apps used](#apps-used) · [What we built](#what-we-built) · [Install and try it](#install-and-try-it) · [Architecture](#architecture) · [Reliability](#how-reliability-is-handled) · [Current status](#current-status-and-limitations)
 
-The [detailed reliability implementation plan](ideation/implementation-plan/06-agent-reliability-implementation.md)
-maps the remaining evidence work to the existing commits and branches: reconcile
-independent S0/S1 collection with the frozen oracle, execute and label the scenario
-suite, and publish a versioned scorecard with failed, unverified, and not-run cases.
+## What it does
 
-## Agent and app integration
+Give PromiseGuard a GitHub incident URL. For an affected customer commitment, the workflow:
 
-“Spawn agents” means invoke three bounded backend roles in the same process.
-B04's `src/server/workflow/driver.ts` schedules R01's
-`src/server/workflow/graph.ts`: A02 Evidence Analyst → A03 Customer Update Drafter
-→ deterministic validation → A04 Blind Semantic Auditor. Each role calls A01's
-`src/server/agents/runtime.ts`, whose `model.ts` uses the
-`@langchain/openai` `ChatOpenAI` integration with OpenAI Responses. F01 pins and
-smoke-tests compatible dependencies/configuration; F02 owns the shared contracts.
-The roles receive scoped source data and return structured artifacts; they do
-not receive app tools or credentials. This adds no operating-system process,
-autonomous agent loop, or model-controlled API dispatch.
+1. Reads the incident evidence and relevant HubSpot commitments, contacts, and owners.
+2. Uses three AI roles to analyze the evidence, draft the customer update, and audit its claims.
+3. Freezes the proposed actions and exact content, then requests approval in Slack.
+4. Creates an assigned HubSpot task and note, a Gmail draft, and a GitHub impact comment.
+5. Reads the created artifacts back, checks them against the approved plan, and posts a verified Slack summary.
 
-R01's `src/server/composition.ts` injects typed app capabilities: its workflow
-source-read nodes call GitHub/HubSpot adapters, then B02 validates and selects
-from the complete snapshots; B05 posts and verifies Slack review/approval; B06 executes approved
-HubSpot task → note → Gmail draft → GitHub comment effects in order; B07 obtains
-fresh readbacks and finalizes the Slack summary. Q02 independently collects
-evaluation snapshots using read capabilities. I01–I05 own these adapters and
-their transport. REST is the required MVP path; MCP is an optional adapter
-transport only after an explicitly approved, tested operation map. Installed
-assistant plugins do not provide backend credentials or live-product evidence.
+**The customer email remains a draft for human review.** The Gmail adapter exposes no send operation. If complete source checks find no affected commitments, the workflow can finish without creating follow-up artifacts.
 
-The [agent/LLM integration guide](ideation/implementation-plan/07-agent-spawning-and-llm-integration.md)
-and [MCP/API/external-app integration guide](ideation/implementation-plan/08-mcp-api-and-external-app-integration.md)
-define call sites, wiring, access, tests, and commit ownership. R01/R02 preserve separate fake-model,
-model-live, and provider-live receipts before describing an integrated live run.
+## Apps used
 
-## Run the simulated workflow
+- **GitHub — engineering context:** reads incident and change evidence; adds the approved impact comment to the incident.
+- **HubSpot — customer context and ownership:** reads customer commitments, companies, contacts, and owners; creates an assigned recovery task and associated note.
+- **Slack — human approval and coordination:** presents the plan, checks the authorized approver's reply, and publishes the final summary.
+- **Gmail — customer communication:** creates and verifies the approved draft, including its recipient and content.
 
-Use Node **24.21.0** from `.node-version` (Node 18 cannot run this package).
+The backend includes typed REST adapters for all four apps. OpenAI powers the model roles through LangChain; LangGraph coordinates the workflow. MCP is an optional future transport, not required for the current implementation.
+
+## What we built
+
+- **A composed workflow:** source selection, three bounded model roles, deterministic validation, plan freezing, Slack approval, guarded execution, and readback verification.
+- **An operator console and API:** React screens and Fastify endpoints for incident intake, run status, plans, timelines, created artifacts, and separate reliability assessments.
+- **Durable execution:** SQLite storage for the business ledger, checkpoints, events, and measurement jobs, with approval waiting, restart/resume, and replay handling.
+- **Reliability tooling:** an independent evidence collector, a local monitor, an offline evidence checker, and optional sanitized trace export.
+- **A runnable simulated demo:** the real workflow and model runtime with mock model responses and stateful fake providers. It exercises approval wait, restart, completion, and replay without credentials.
+
+These components are implemented on `main`. The [current status](#current-status-and-limitations) distinguishes demonstrated behavior from live integration and evaluation work still outstanding.
+
+## Install and try it
+
+### 1. Install dependencies
+
+Use **Node.js 24.21.0**, matching [.node-version](.node-version), and npm. The package supports Node `>=24.15.0 <25`; Node 18 cannot run the application.
 
 ```bash
+git clone https://github.com/janmenjayap/multi-app_ai-agent_hackathon.git
+cd multi-app_ai-agent_hackathon
+node --version
 npm ci
+```
+
+### 2. Run the workflow demo — no credentials needed
+
+Run these commands from the repository root:
+
+```bash
 npm exec -- tsc -p tools/demo/tsconfig.json
 node .local/demo-build/tools/demo/run.js
 ```
 
-Run from the repository root. The demo copies the required migrations, creates
-temporary databases, waits for a simulated Slack decision, restarts, executes
-the approved plan, and replays the same run. Its JSON reports model calls,
-verified effects, and excess replay writes; temporary databases are removed on exit.
-`--review` enables an optional interactive review of original outputs.
+The demo creates temporary databases, pauses for a simulated Slack decision, restarts, executes the approved plan, and replays the same incident. It prints a JSON report and removes its temporary databases on exit.
 
-This is `synthetic_fixture` evidence. The frozen Q01 oracle and generated B03
-plan still differ in effect/content bindings, so collected outcome evidence stays
-unverified. Original-output quality also stays unverified without independent
-human labels. The demo does not establish live S1/S2 or full scenario-suite results.
+**What to look for:** `evidenceMode: "synthetic_fixture"`, `waiting: "awaiting_approval"`, `completed: "completed"`, `modelCalls: 3`, five entries in `verifiedEffects`, and `replay.excessWrites: 0`. The five effects are the HubSpot task and note, Gmail draft, GitHub comment, and Slack summary thread. They exist in fake provider state for this demo.
 
-## Start the HTTP application
+Add `--review` to the final command for an optional interactive review of the original outputs. Simulated approval alone is not a human quality evaluation.
 
-Copy `.env.example` to `.env`, then configure `PG_WORKFLOW_MODULE` with a trusted
-local module path, such as `.local/workflow-bootstrap.mjs`. That module exports
-`createCompositionOptions(config)` returning [CompositionOptions](src/server/composition.ts):
-`buildWorkflow(services)` supplies the graph, frozen preflight/manifest registration,
-and server-owned selection/approval policies; `auth.resolveSession` supplies trusted
-operator sessions. Account-specific bootstrap and authentication are not bundled.
+### 3. Explore the console preview
+
+```bash
+npm run dev:web -- --port 5173
+```
+
+Open **http://127.0.0.1:5173/?preview** and use the scenario selector to explore the console. This is an explicitly labeled synthetic preview with illustrative records and assessments. It does not require a backend or app credentials and does not display the temporary CLI demo run.
+
+### 4. Configure the connected HTTP application
+
+The connected application needs account configuration and a trusted local workflow/authentication module. **That account-specific module is not bundled**, so copying the environment file alone is not enough to run `npm start`.
+
+```bash
+cp .env.example .env
+```
+
+Configure the following in `.env`:
+
+- **Workflow and sessions:** set `PG_WORKFLOW_MODULE` to a trusted local `.mjs` file exporting `createCompositionOptions(config)`. It must supply `buildWorkflow(services)` and `auth.resolveSession`, including the graph, frozen evaluation setup, selection/approval policies, and trusted operator sessions. See [CompositionOptions](src/server/composition.ts) and the [integration receipt](ideation/implementation-plan/commits/R01.md).
+- **Model mode:** `PG_MODEL_MODE=live` requires `OPENAI_API_KEY` and `OPENAI_MODEL`. Optional role-specific model names and bounded call settings are listed in [.env.example](.env.example).
+- **Provider mode:** `PG_ADAPTER_MODE=rest` requires the GitHub repository/token, HubSpot portal/token, Slack workspace/channel/tokens/approver IDs, and Gmail OAuth/mailbox settings in `.env.example`. HubSpot also needs portal-specific `PG_HUBSPOT_MAPPING_JSON`, or a mapping supplied by the trusted module, matching [HubSpotMappingSchema](src/server/adapters/hubspot.ts).
+- **Simulation:** model and provider modes are independent. Any `mock`/`fake` combination requires `PG_FIXTURE_ID` and the corresponding injected mock model or fake provider clients.
+
+After configuring the module and environment:
 
 ```bash
 npm run build
 npm start
 ```
 
-The composed Fastify app serves the browser and authenticated `/api/runs` routes
-at `http://127.0.0.1:3000`. Missing `PG_WORKFLOW_MODULE` stops CLI startup with an
-explicit configuration error. The legacy `createApp()` bootstrap seam remains
-available for foundation tests.
+Open **http://127.0.0.1:3000**. Fastify serves the browser and authenticated `/api/runs` routes from the same origin. Missing `PG_WORKFLOW_MODULE` stops startup with a configuration error. See the [app integration guide](ideation/implementation-plan/08-mcp-api-and-external-app-integration.md) for account access and adapter details.
 
-`PG_MODEL_MODE=mock|live` and `PG_ADAPTER_MODE=fake|rest` remain independent;
-mock/fake modes require `PG_FIXTURE_ID` and injected fixture clients. REST mode
-requires the four account configurations in `.env.example` plus
-`PG_HUBSPOT_MAPPING_JSON` (or `hubspotMapping` from the trusted module), matching
-[HubSpotMappingSchema](src/server/adapters/hubspot.ts). Property names and
-association IDs must match the configured portal. Credentials stay server-side;
-the business ledger, checkpoints, and evidence use separate ignored `.local/` paths.
+## Architecture
 
-## Run the local monitor
+```mermaid
+flowchart TD
+    UI[React operator console] --> API[Fastify API and operator sessions]
+    API --> Workflow[Durable LangGraph workflow]
+    Workflow --> Sources[Read GitHub evidence and HubSpot commitments]
+    Sources --> Analyst[Evidence Analyst]
+    Analyst --> Drafter[Customer Update Drafter]
+    Drafter --> Checks[Deterministic validation]
+    Checks --> Auditor[Blind Semantic Auditor]
+    Auditor --> Plan[Freeze exact plan and request Slack approval]
+    Plan --> Execute[Guarded writes: HubSpot task and note, Gmail draft, GitHub comment]
+    Execute --> Verify[Fresh readback and verified Slack summary]
+    Workflow <--> Store[(SQLite ledger and checkpoints)]
+    Store -. events .-> Monitor[Reliability monitor]
+    Evidence[Independent provider snapshots and review labels] -. evidence .-> Monitor
+    Monitor -. assessments .-> API
+```
 
-Use Node 24; this implementation was tested with **v24.21.0**. No provider or
-model credentials are needed for the synthetic demonstration.
+The three AI roles run as bounded calls within the backend process. They receive scoped evidence and return structured outputs; application code owns tool dispatch and credentials. The auditor receives a separate review context. Approval, retry decisions, persistence, and completion checks are enforced by code.
+
+**Stack:** TypeScript, React + Vite, Fastify, LangGraph/LangChain, OpenAI, SQLite, and Zod. Tests use Node's test runner, Vitest, and Playwright.
+
+## How reliability is handled
+
+Reliability is assessed across **output quality, execution behavior, and actual app state**. A workflow reaching its final step does not, by itself, establish all three.
+
+1. **Ground answers in source evidence.** Source selection checks completeness and ambiguity. Structured role contracts, deterministic checks, and the semantic auditor inspect the proposal. Original outputs are retained so retries cannot erase an earlier bad answer.
+2. **Approve the exact proposed work.** The plan freezes content and target records. Slack approval is tied to that plan and an authorized user; approval validity and source freshness are rechecked before protected writes. Changed or expired authorization blocks dispatch.
+3. **Control retries and duplicates.** Calls have time and attempt budgets. Durable effect identities, execution claims, and checkpoints track what was attempted. When a write's result is uncertain, reconciliation checks provider state before any further action; uncertainty is not permission to create again.
+4. **Verify the destination.** Fresh reads check recipients, content, ownership, associations, and expected artifacts against the approved plan. The final Slack summary is also read back before whole-run completion. Partial results remain visible when later work fails.
+5. **Measure independently.** The collector and monitor compare recorded events and app observations with expectations frozen before execution. Trace, outcome, first-proposal quality, and selected-plan quality remain separate. Missing evidence or review labels stays **unverified**.
+
+The measurement design tracks contract success, tool-call success, verification coverage, recovery, duplicate effects, latency, and first-proposal quality. See the [reliability implementation guide](ideation/implementation-plan/06-agent-reliability-implementation.md) and [scenario plan](ideation/demo-scenarios-and-reliability.md) for definitions and acceptance criteria.
+
+## Current status and limitations
+
+**As of September 14, 2026:** the simulated workflow is runnable, and the four REST adapters and connected application components are implemented. The following evidence gaps remain:
+
+- **Live validation:** the initial live workflow and its replay with OpenAI and all four real apps have not been run. A synthetic demo does not establish live-provider success.
+- **Outcome evaluation:** the frozen expected-outcome manifest and generated plan still differ in effect/content bindings. Independent collection exists, but the demo reports that comparison as unverified.
+- **AI quality:** original-output quality remains unverified without independent human review labels. An auditor pass or Slack approval does not establish quality on its own.
+- **Evaluation coverage:** the full 18-family scenario suite and final measured reliability scorecard are not complete; no production reliability percentage is claimed.
+- **Connected setup:** account-specific workflow bootstrap and operator authentication still need to be supplied as described above.
+
+## Tests and reliability tools
+
+After installing dependencies, use the existing checks:
 
 ```bash
-npm ci
+npm run typecheck
 npm run build
-npm test
+npm run test:checker
+npm run test:monitor
+npm run test:app
+npm run test:web
+```
+
+`npm test` also includes the Playwright browser suite. Install Chromium with `npx playwright install chromium` first. The current [browser harness](playwright.config.ts) still assumes the earlier bootstrap server; it needs alignment with the required workflow module before the aggregate command can serve as an end-to-end setup check.
+
+To inspect a standalone synthetic monitor report after building:
+
+```bash
 npm run monitor -- demo
 npm run monitor -- report
 ```
 
-The default database is `.local/reliability.sqlite`, which is ignored by Git.
-The demo synthesizes every event, snapshot, proposal reference, and human-label
-fixture. Its results are **monitor checks, not live workflow or human-evaluation
-results**. The [monitor guide](tools/monitoring/README.md) covers frozen manifests,
-register/append/measure/report/trace commands, persistence, metrics, and limits.
-
-The standalone monitor uses Node's built-in `node:sqlite` and Zod. F01 tests
-Fastify/React startup plus local LangGraph/checkpointer and `better-sqlite3`
-compatibility. The standalone monitor's job durability is separate from the
-application's guarded business-effect ledger.
-
-## Run the original checker
-
-The preserved checker is dependency-free and was previously verified on Node
-18.19.1. It also remains part of the Node 24 test suite.
+The [monitor guide](tools/monitoring/README.md) documents CLI inputs and metrics. The [original checker](tools/reliability/README.md) is also available:
 
 ```bash
-npm run test:checker
 node tools/reliability/check-evidence.mjs tools/reliability/examples/happy-path.synthetic.json
 ```
 
-The example contains **synthetic evidence**. The command checks supplied records
-and operation history. Test passes measure the checker, not product reliability. See the
-[checker guide](tools/reliability/README.md) for its input contract, exit codes,
-and limitations. Keep real exported evidence private; only synthetic examples
-belong in this repository.
+These examples demonstrate the tooling with synthetic evidence. Passing them is not a live product reliability result.
 
-## Project documents
+## Repository and further reading
 
-- [Implementation plan: robustness, agent workflow, parallel branches, and commit tasks](ideation/implementation-plan/README.md)
-- [Agent reliability: detailed implementation, evidence contracts, and release gates](ideation/implementation-plan/06-agent-reliability-implementation.md)
-- [Agent spawning and LLM calls: runtime boundaries, configuration, and commit ownership](ideation/implementation-plan/07-agent-spawning-and-llm-integration.md)
-- [MCP, APIs, and external apps: adapter operations, access, and integration gates](ideation/implementation-plan/08-mcp-api-and-external-app-integration.md)
-- [Reliability definition and implementation audit](ideation/reliability-implementation-audit.md)
-- [One plan per branch](ideation/implementation-plan/branches/README.md) and [one file per commit](ideation/implementation-plan/commits/README.md)
-- [Global Scale: expected versus implemented behavior and completion verification](ideation/implementation-plan/Global%20Scale.md)
-- [Requirements and timeline](ideation/requirements-and-timeline.md)
-- [Final PromiseGuard proposal](ideation/final-project-promiseguard.md)
-- [Fine-grained LangGraph/LangChain architecture and trace-monitoring pipeline](ideation/promiseguard-architecture.md)
-- [Demo scenarios, measurement plan, and implementation status](ideation/demo-scenarios-and-reliability.md)
+- [`src/web/`](src/web/) — operator console, components, and API client.
+- [`src/server/`](src/server/) — workflow, agents, policies, adapters, persistence, verification, and monitoring.
+- [`src/shared/`](src/shared/) — shared schemas and contracts.
+- [`tests/`](tests/) — component, integration, scenario, and browser tests, plus fake providers and fixtures.
+- [`tools/`](tools/) — demo, provider/model smoke tools, evidence collection, and reliability utilities.
+- [Project proposal](ideation/final-project-promiseguard.md), [detailed architecture](ideation/promiseguard-architecture.md), and [implementation plan](ideation/implementation-plan/README.md).
+- [Integration verification receipt](ideation/implementation-plan/commits/R01.md) and [completion register](ideation/implementation-plan/Global%20Scale.md) — recorded implementation checks and outstanding gates. Earlier planning documents may describe older baselines or future work.
 
-The demo plan distinguishes proposed live workflows from the runnable checker
-and monitor and is the canonical reliability acceptance contract. It defines
-18 scenario families, first-proposal grounding checks, approval and concurrency
-tests, partial-failure handling, and the evidence required for each demo claim.
-The proposed evaluation counts are targets; the monitor has not executed the
-18-family product suite or a live/model-driven workflow. Earlier alternative
-ideas remain under [ideation/exploration](ideation/exploration/).
-
-See the [global completion register](ideation/implementation-plan/Global%20Scale.md)
-for the partial monitor implementation, validation receipts, and open product gates.
+**Local data:** credentials stay server-side in ignored `.env` files. The business database, checkpoints, and restricted evidence use separate paths under ignored `.local/`. Keep real customer records and raw provider evidence private; use reviewed, redacted summaries when sharing results.
