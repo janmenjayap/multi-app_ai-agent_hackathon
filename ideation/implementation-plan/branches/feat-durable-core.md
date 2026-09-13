@@ -1,6 +1,6 @@
 # Branch plan: feat/durable-core
 
-**Owner:** P1. **Status:** proposed branch work; this file creates no branch or commit.
+**Owner:** P1. **Status:** B01 implemented, reviewed and merged; see the receipt below.
 **Canonical source:** [commit backlog](../04-commit-plan.md).
 **Base:** integration `main`, after the prerequisite commits below land.
 
@@ -61,8 +61,14 @@ Give B04/B05/B06/B07/Q03 the transaction API, migration path, preserved monitor 
 
 ## Branch completion receipt
 
-- [ ] Dependency SHAs and actual base SHA: `UNRECORDED`.
-- [ ] Every linked commit receipt completed; actual commit SHAs: `UNRECORDED`.
-- [ ] Combined verification commands/evidence and remaining gaps: `UNRECORDED`.
-- [ ] Reviewer and consumer handoff acceptance: `UNRECORDED`.
-- [ ] Actual merged branch/PR reference: `UNRECORDED`.
+- [x] Dependency: F02 `87d3c7d7bad17d54300e452e932c7f226fc74299`;
+  base: `7ee74a7c651a9aee9efd7928c784cf7525efbb3b`.
+- [x] B01: `472da5f33acca1e416af95c8fde6bad79a413c59`.
+- [x] Typecheck/build, eight storage tests, 133 monitor/checker regressions,
+  and synthetic SIGKILL/reopen checks passed. See the
+  [full B01 receipt](../commits/B01.md#completion-receipt).
+- [x] Delegated storage/monitor/event reviewers accepted; P1 accepts the seam
+  for downstream integration under conventions 1.2.
+- [x] Merge commit: `8bbf132c9b2b62fa83a5a21c347d451379cd2350`.
+
+No provider/model or integrated workflow capability is claimed by this merge.

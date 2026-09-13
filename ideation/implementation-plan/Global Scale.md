@@ -111,6 +111,19 @@ reviewed foundation wiring exceptions, evidence paths, props and remaining gaps.
 The user authorized this local merge. Concurrent backend/evaluation work was
 excluded. No remote push, live workflow or actual human review is claimed.
 
+## B01 execution update — September 14, 2026
+
+B01 is implemented at `472da5f33acca1e416af95c8fde6bad79a413c59`, merged by
+`8bbf132c9b2b62fa83a5a21c347d451379cd2350`, under conventions **1.2**.
+Application state, immutable evidence, canonical v2 events and measurement jobs
+now share one SQLite transaction. Restricted artifacts, role/effect claims,
+reopen history, v1 compatibility, v2 leases/exhaustion and scoped claims have
+synthetic storage coverage. Typecheck/build, eight storage tests and 133 baseline
+regressions pass; SIGKILL before/after commit preserves all-or-none state on reopen.
+See [B01's receipt](commits/B01.md#completion-receipt) for exact versions,
+hashes, reviewers, commands and limitations. Driver/agent/provider integration,
+actual approval, semantic verification and live collection remain downstream work.
+
 ## 1. Historical repository baseline
 
 - Git HEAD: `90a3793d1c1f9dea927372cbd055a0cd27c6ca2f` (`Add PromiseGuard ideation`).
@@ -304,14 +317,16 @@ product workflows remain unimplemented.
 
 **Expected:** one run per immutable incident, one active executor, stable effect
 keys, and persisted attempts across crash/restart and approval waits.
-**Actual:** **PLANNED** for business execution; no application effect schema,
-ledger, graph checkpoint, or driver. The separate monitor's observation/job
-SQLite store does not implement these controls.
+**Actual:** **PARTIAL — B01 storage implemented and synthetically tested.**
+The application ledger now persists run/effect identities, immutable attempts
+and evidence with canonical events/jobs in one transaction. Graph checkpoints,
+driver scheduling and integrated provider execution remain B04/B06 work.
 **Owner/commits:** backend owner; B01, B04, B06. Proposed paths:
 `src/server/storage/`, `src/server/workflow/`, `src/server/execution/`.
 
-- [ ] Unique constraints and atomic claims prevent two submitted copies from
-  dispatching the same effect; keys survive plan revisions and retries.
+- [x] B01 unique constraints and atomic storage claims preserve incident/effect
+  identity across retries; concurrent role claims and unknown writes fail closed.
+  Full workflow replay scenarios remain B04/B06/Q04 gates.
 - [ ] Application state, canonical event, and measurement job commit together;
   graph checkpoint storage is separate and restart reloads application truth.
 - [ ] Intent persists before dispatch. Missing results remain unresolved; a
