@@ -472,8 +472,15 @@ explicitly unrun; this advances module conformance only.
 
 **Expected:** original facts and the validated assessment produce grounded
 customer text and claim references for code-selected commitments.
-**Actual:** **PLANNED**; no runnable drafting stage.
-**Owner/commits:** agent owner; A01, A03. Proposed path: `src/server/agents/`.
+**Actual:** **PARTIAL — module implemented and synthetically verified.** A03 at
+`afa83ab7053f6baad8ad960ff626304c3aa57492`, main merge
+`6af6d75f81a4482bf817da05e686639a8dfe6c20`, adds the A01-backed fixed-set drafter,
+source/checklist validation, original-output references and replay. **17/17**
+focused tests, typecheck and server/web build pass. Independent Codex agent review
+accepted R01/Q05 handoffs. See the [A03 receipt](commits/A03.md#completion-receipt).
+Complete-source quotation is a conservative prototype constraint; actual model
+quality, human labels and integrated workflow execution remain unverified.
+**Owner/commits:** agent owner; A01, A03. Path: `src/server/agents/drafter/`.
 
 - [ ] Owner, designated recipient, subject marker, dates, and allowed effects
   come from code; model text cannot change them or promise unsupported outcomes.
