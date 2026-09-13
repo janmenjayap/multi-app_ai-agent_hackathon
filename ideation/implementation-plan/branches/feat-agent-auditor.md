@@ -2,10 +2,9 @@
 
 **Owner:** P3. **Purpose:** Check proposed customer text against original sources and flag unsupported, contradictory, or omitted claims before review progression.
 
-This is a proposed branch plan. It creates no branch, commit, provider artifact,
-or model run. The standalone monitor already exists; the product implementation
-owned here remains missing. See the [source backlog](../04-commit-plan.md) and
-[shared handoffs](../05-contracts-and-handoffs.md).
+A04 is implemented and merged with focused synthetic verification. See the
+[completion receipt](../commits/A04.md#completion-receipt) for SHAs, commands,
+review and handoff. R01 integration and actual model quality remain unrun.
 
 ## Base and exact commit order
 
@@ -14,7 +13,7 @@ Preserve the team's reviewed shared baseline; no uncommitted work should be lost
 when a later developer creates a branch/worktree.
 
 1. [A04 — Add the Blind Semantic Auditor](../commits/A04.md)
-   - Suggested subject: `feat(agents): add independent-context semantic auditor [A04]`
+   - Subject: `feat(agents): [A04] add independent-context semantic auditor`
 
 This branch contains that one planned implementation commit. Its linked commit
 file owns detailed steps, tests, exclusions, and completion evidence. If coding
@@ -39,7 +38,7 @@ and the [agent/LLM specification](../07-agent-spawning-and-llm-integration.md).
 `auditor/index.ts` exports `auditSemantics(AuditorInput, ctx, deps)`; R01's
 `audit_semantics` node invokes it through A01 after drafting and deterministic
 checks. A separate original-source/text projection excludes previous-role
-rationale/confidence. `AuditFindings` and raw-output references return to R01 for
+rationale/confidence. `AuditVerdict` and raw-output references return to R01 for
 clear/concern/required-failure routing. A clear result permits plan freeze only;
 Slack approval, app execution and verification remain on the deterministic
 [MCP/API boundary](../08-mcp-api-and-external-app-integration.md).
@@ -76,7 +75,7 @@ review. This branch supplies a bounded module and does not authorize live produc
 writes. R01 must still integrate approval, freshness, effect-ledger execution,
 and independent verification in their canonical order.
 
-- [ ] Prerequisite SHAs and integration base recorded: ______
-- [ ] A04 implemented and reviewed; merge SHA: ______
-- [ ] Evidence and unavailable/failed checks recorded: ______
-- [ ] Consumers and P1 accepted the handoff: ______
+- [x] A01 `3923ed30c232a1b722b75c9343859c6487b3ad9a`; tested base `6ca7dab44fefc300e9786d7043fe2d520e3b8d44`.
+- [x] A04 `784b32bf96b26ab96188eef6ca9596fe3cdeb6c3`; merge `aabb72317546b21a0b1cba4811b70943a7380896`.
+- [x] 10/10 auditor and 25/25 combined auditor/runtime checks, typecheck and builds; live/graph/quality gates unrun.
+- [x] Delegated Codex review accepted R01/Q05 module handoff; P1 integrator recorded the receipt.

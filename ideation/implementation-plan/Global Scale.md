@@ -190,6 +190,23 @@ R01 scheduling and scored workflow scenarios remain downstream. F01 still owns
 the optional npm smoke-script registration. No C05–C07 role-quality or live scenario
 gate is advanced by this synthetic runtime verification.
 
+## A04 execution update — September 14, 2026
+
+A04's blind semantic auditor is implemented at
+`784b32bf96b26ab96188eef6ca9596fe3cdeb6c3`, merged by
+`aabb72317546b21a0b1cba4811b70943a7380896`, under conventions **1.2**.
+It builds fresh original-source/proposed-text/task context, validates exact
+commitment/claim/required-fact coverage, and preserves concerns and required-stage
+failures through A01. It exposes no approval, repair or provider operation.
+
+Node **24.21.0** checks pass **10/10** auditor tests, **25/25** combined auditor
+and runtime tests, full typecheck and both builds, including the merged main.
+Delegated Codex review accepted the module and R01/Q05 handoff. See
+[A04's receipt](commits/A04.md#completion-receipt) for commands, versions,
+initial fixture errors and retained gaps. Evidence is **synthetic/mock** only.
+R01 graph routing, live model/provider use, and independently human-labeled
+missed defects/false blocks remain **unrun**; no scenario or quality gate closes.
+
 ## B02 execution update — September 14, 2026
 
 B02 is implemented at `a7a0fcb4d3b893595d1dc33c8afcf96926bc5cb6`, merged into
@@ -486,8 +503,9 @@ customer text and claim references for code-selected commitments.
 
 **Expected:** original evidence, proposed text, and the task contract yield
 structured findings without seeing upstream reasoning or a desired verdict.
-**Actual:** **PLANNED**; no runnable auditor. Three model roles remain the target.
-**Owner/commits:** agent owner; A01, A04. Proposed path: `src/server/agents/`.
+**Actual:** A04 module implemented and tested through A01 with synthetic fixtures;
+R01 graph enforcement and human-labeled actual-model usefulness remain unverified.
+**Owner/commits:** agent owner; A01, A04. Path: `src/server/agents/auditor/`.
 
 - [ ] Inputs exclude prior reasoning, confidence, shared chat, and desired result;
   explicit concerns block review/execution according to the frozen policy.
