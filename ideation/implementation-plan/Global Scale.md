@@ -945,3 +945,23 @@ recovery, or regional compliance result has been measured. The following are
 When this work is authorized, create a separate production plan with explicit
 targets and independent evidence. A small seeded demo establishes behavior for
 its tested scope; it cannot establish global reliability or readiness.
+
+
+## Q06 execution update — September 14, 2026
+
+Implementation-ID register: **Q06** is `62c69ad7f41a28e6266e43ca67be438c93d66f06` on
+`feat/langsmith-export`, based on reviewed B01/Q03. P1/P4 Codex integration and
+independent delegated reviewer `q06_review` accepted the offline handoff.
+
+Sanitized canonical span projection, an optional REST client and a durable export
+outbox are implemented. Private keyed identity references link attempts and
+claims; export status, bounded retries and crash recovery do not change local
+evidence or denominators. P1 supplied migration 003 because B01 had no trace
+outbox. See the [Q06 receipt](commits/Q06.md#completion-receipt) for exact paths,
+prerequisites and failed/unrun checks.
+
+Evidence: **11/11** exporter tests, **23/23** storage/monitor tests, **133/133**
+baseline regressions, typecheck and server/web builds passed. This is synthetic
+local evidence only. Optional R01 wiring and live LangSmith sandbox/UI-link smoke
+remain pending; no hosted export, provider workflow, human label, or release
+gate is established by Q06.

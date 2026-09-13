@@ -4,8 +4,8 @@
 **Owner:** P4, or P2 after provider work — optional telemetry owner.
 **Priority:** P1 optional; defer explicitly if P0 evidence or recording would be delayed.
 
-This guide proposes future work. No branch, commit, or provider action is created
-by this document. Preserve the existing monitor through [P00](../commits/P00.md)
+The offline implementation is complete; see the [Q06 receipt](../commits/Q06.md#completion-receipt).
+Live sandbox export and R01 composition remain separate gates. Preserve the existing monitor through [P00](../commits/P00.md)
 and follow the [canonical commit plan](../04-commit-plan.md).
 
 ## Exact commit order
@@ -80,3 +80,14 @@ The current offline monitor baseline is reusable implementation, not proof of th
 future app. Claim live behavior only when the commit-specific independent evidence
 exists; otherwise leave its completion gate open.
 
+
+## Offline implementation handoff — September 14, 2026
+
+Q06 is implemented at `62c69ad7f41a28e6266e43ca67be438c93d66f06` under conventions 1.2, with
+11 exporter tests, 23 storage/monitor tests, 133 baseline regressions, typecheck
+and both builds passing. Delegated Codex reviewer `q06_review` accepted the
+P1/P4 offline handoff. P1 supplied the missing outbox migration and corresponding
+storage test adjustments; the [receipt](../commits/Q06.md#completion-receipt)
+records the narrow exception, exact prerequisite SHAs and all failed/unrun checks.
+R01 consumes the injected optional lifecycle; R02 must not claim live LangSmith
+export or working hosted links until their currently unrun sandbox smoke passes.
