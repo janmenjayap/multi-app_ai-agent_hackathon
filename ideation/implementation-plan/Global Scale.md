@@ -148,6 +148,30 @@ commands, suite identity, handoff and gaps. Live model/provider evidence, actual
 human review, Q02 trusted collection, and R01/Q04 execution remain pending. This
 update does not mark any canonical scenario family as executed or live.
 
+## A01 execution update — September 14, 2026
+
+A01's bounded recorded model runtime is implemented at
+`3923ed30c232a1b722b75c9343859c6487b3ad9a`, merged by
+`8c651873bda0dc67c6a9b8655be2ae531c5c1999`, under conventions **1.2**.
+The user authorized main integration and remote publication of main and
+`feat/agent-runtime`. Its four-file implementation preserves immutable original
+outputs, records requests/responses and model attempts through B01, enforces
+combined retry/time budgets, and reuses committed results without model calls.
+The Responses adapter exposes no business-app tools or mutation authority.
+
+Fresh isolated checks pass **15/15 A01 tests**, **133/133 monitor/checker
+regressions**, full typecheck and both builds. The standalone mock smoke also
+passes; injected HTTP tests exercise the actual pinned SDK. Delegated Codex review
+accepted the implementation. See [A01's receipt](commits/A01.md#completion-receipt)
+for exact interfaces, commands, initial environment failures and handoff gaps.
+
+Actual live-model compatibility, provider integration and semantic review remain
+**unrun**. Unfinished invocations stay pending because B01 does not expose durable
+reclaim; this is not a claim of automatic crash recovery. Production role prompts,
+R01 scheduling and scored workflow scenarios remain downstream. F01 still owns
+the optional npm smoke-script registration. No C05–C07 role-quality or live scenario
+gate is advanced by this synthetic runtime verification.
+
 ## 1. Historical repository baseline
 
 - Git HEAD: `90a3793d1c1f9dea927372cbd055a0cd27c6ca2f` (`Add PromiseGuard ideation`).
