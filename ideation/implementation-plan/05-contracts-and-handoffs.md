@@ -1,9 +1,17 @@
 # Contracts and handoffs
 
-**Status:** proposed implementation contract, September 13, 2026. None of the
-`src/` files below exists at this planning baseline. F02 turns these agreements
-into validated types and executable examples before feature branches integrate.
+**Historical baseline: September 13, 2026.** The application contracts below
+were proposed before `src/` existed. **September 14 update (IST):** the Node 24
+[standalone monitor](../../tools/monitoring/README.md) now has executable schemas
+in `src/shared/reliability.ts`, SQLite measurement storage, and offline assessment/
+metric modules. F02 still must deliver the broader application/agent/adapter/API
+contracts below before feature branches integrate. F01/F02 and Q02–Q05 remain
+partial; the current monitor does not implement the product app or provider collection.
 See [commit tasks](04-commit-plan.md) and [completion evidence](Global%20Scale.md).
+The [detailed reliability implementation](06-agent-reliability-implementation.md)
+adds the audit's missing producer, provenance, original-output, census, and
+completion-claim contracts. Everything marked v2 below is proposed; the existing
+monitor-v1 implementation and its verification receipt retain their current meaning.
 
 ## 1. Freeze the seams first
 
@@ -28,6 +36,12 @@ F02 supplies these proposed files:
   and allowed error codes.
 - `src/shared/evaluation.ts`: frozen manifests, evidence modes, assessment
   states, labels, and metric facts.
+
+F02 also owns additive changes to the existing `src/shared/reliability.ts` and
+its compatibility projections. Keep one shared definition for each concept;
+application files must not introduce competing manifest/event/label vocabularies.
+Freeze observation schema v2, evaluator `monitor-v2`, and the old-v1 read path
+before consumers merge. The dependency-free checker-v1 format is unchanged.
 
 F02 provides at least one accepted and rejected JSON example per boundary.
 Q01 owns scenario fixtures under `tests/fixtures/` and fake implementations under
@@ -86,9 +100,80 @@ denominator includes attempts requiring a proposal even when none is usable.
 Use a bounded common wrapper with one retry owner. Citation existence is a
 mechanical check; whether a citation supports a claim also needs semantic review.
 
+The original-output record includes role/invocation/model-attempt identity,
+source snapshot digests, prompt/model/schema versions, received time, raw output
+reference and digest, parse/validation result, and its revision relationship.
+Persist raw output before validation/repair; a timeout has a recorded attempt
+without a fabricated output. Q05's label binds to those exact source/output
+digests and includes a reviewer reference, reason, time, four quality dimensions,
+and per-claim judgments. Adjudication creates a linked superseding label; it never
+overwrites history. Original quality, final-plan quality, and auditor detection
+accuracy have different denominators and must remain separate.
+
 **Handoff proof:** each module accepts the same frozen evidence fixture and rejects
 out-of-contract output. The drafter and auditor can finish unit verification
 without a live analyst. R01 then tests the real three-role chain.
+
+The concrete role invocation and transport boundaries are specified below and in
+[agent spawning and LLM integration](07-agent-spawning-and-llm-integration.md).
+These are F02 contracts to implement, not additional running services.
+
+### Agent invocation contract to freeze in F02
+
+`src/shared/agents.ts` owns `AgentRole` (`analyst | drafter | auditor`),
+`AgentInvocationContext`, role-specific inputs, and `AgentCallResult<T>`.
+The context contains `runId`, `runtimeAttemptId`, `planRevision`, role,
+`roleInvocationKey`, `snapshotBundleRef`, `inputDigest`, prompt/schema versions,
+and `modelConfigRef`. The result carries validated output/artifact references or
+an explicit failure with attempt references; it cannot contain approval or an
+instruction to execute an app operation.
+
+`DraftProposal` contains a bounded set of customer-text entries keyed by the exact
+selected commitment IDs: no omitted, duplicate or additional entry. The seeded
+case has one entry; multiple selected commitments retain one logical drafter
+invocation per revision with complete set coverage. The auditor receives every
+entry and returns commitment/claim-specific findings. Code supplies each entry's
+recipient/owner/effect metadata. Reject input/set sizes outside the frozen budget
+before dispatch; never silently drop selected customers or spawn extra agents.
+
+Freeze the project functions `analyzeIncident`, `draftCustomerUpdate`, and
+`auditSemantics` with `(input, context, dependencies)` signatures. A01's
+`invokeRole` calls an injected model client; only its `model.ts` imports the
+live model integration. These function names describe project interfaces to
+implement, not SDK methods. R01's `composition.ts` supplies the dependencies and
+`workflow/nodes.ts` invokes each role from `workflow/graph.ts`; B04 schedules the
+graph outside HTTP. A role invocation creates a bounded model task in this same
+backend, not another deployment or an unbounded agent-spawning loop.
+
+Define `roleInvocationKey` from run/revision/role and persist its frozen input and
+configuration digests. Reuse a validated durable result only when those digests
+match; a mismatch requires a new authorized workflow revision. Every actually
+dispatched request has a fresh `modelAttemptId`; a resume has a new
+`runtimeAttemptId` without resetting the role budget or evaluation identity.
+Concurrent claims cannot dispatch the same role twice. Recovery may reattempt
+an unresolved model call within its original budget and record possible duplicate
+provider usage; do not promise exactly-once LLM billing. A completed role awaiting
+Slack approval must not run again merely because the browser polls or the worker
+resumes. Before a plan is approved, required-role failure stops the language chain;
+after protected effects exist, preserve them and apply the partial-failure policy.
+
+B01/R01 allocate and persist the candidate `planRevision` before the first role
+invocation. B03 freezes the exact plan candidate under that same revision
+after validation/audit; allocating a revision itself grants no write authority.
+Source changes allocate another revision only through the existing guarded
+replanning path, preserving prior effects and original-output history.
+
+F01 validates `PG_MODEL_MODE=mock|live` separately from
+`PG_ADAPTER_MODE=fake|rest`. Only live model mode requires `OPENAI_API_KEY` and a
+pinned tested model configuration; no missing credential silently selects a mock.
+Freeze time/input/output/attempt budgets and a redacted configuration digest with
+the invocation. Raw response capture must precede parsing and validation, including
+refusals and malformed output; structured JSON conformance does not prove grounding.
+
+**Contract proof:** three independent contexts, order enforced by graph edges,
+zero calls for blocked/valid-empty selection, no repeated call after approved-plan
+resume, input-digest mismatch rejected, every retry preserved, and no app credential
+or tool in a role request. See A01–A04 for role implementation and R01 for assembly.
 
 ## 4. Plan, approval, and effect boundary
 
@@ -113,6 +198,24 @@ without a live analyst. R01 then tests the real three-role chain.
   and action type. Plan revisions and retry attempts do not create new keys.
 - A request binds an effect key to the exact approved payload hash and permitted
   substitutions. Claim and persist dispatch intent before the provider call.
+
+New destination IDs may be represented as typed `EffectIdRef` values in the
+frozen logical manifest and approved templates. A reference names an immutable
+logical effect, not an arbitrary string to be replaced by worker output. B07/Q02
+resolve it only through independently retrieved unique marker/identity bindings.
+Keep the logical manifest hash, binding receipts, and resolved export hash
+separate. ID binding must not change expected owner, recipient, body, status,
+scope, or required artifact count. Missing/multiple/conflicting bindings remain
+unverified or failed; they cannot shrink the manifest to the artifacts found.
+
+Generated text uses a different `ApprovedContentRef`: Q01 freezes source facts,
+required semantic content, forbidden claims, recipient, and invariant predicates
+before any model call; B03 freezes exact output bytes/digest in an immutable
+approved plan before protected dispatch. B07/Q02 resolve expected text only from
+that plan receipt, never from the observed destination. Retain original oracle,
+plan, binding, and resolved export hashes separately. Exact-byte equality proves
+faithful execution, not semantic truth; original-output labels/M7 stay independent.
+Deterministic canned-text fixtures may freeze exact bytes before invocation.
 
 The effect row tracks `planned -> inflight -> applied -> verified`. Keep richer
 attempt outcomes separately, including `unknown`. A timeout is not proof of
@@ -150,10 +253,78 @@ response as its observation. Q02 collects a separate before/after evidence bundl
 for evaluation; shared parsing code is acceptable, worker success flags as the
 oracle are not. Where supported, inject a separate read-only client into collectors.
 
+`ProviderObservation` v2 includes `observationId`, `collectionId`, app/account
+scope, source/provider ID, request/read-attempt identity, capture start/end UTC,
+within-process monotonic duration, provider version where available, observed
+field digest, restricted raw response reference/hash, pagination/completeness,
+and failure reason. Bind a runtime verification to its expected predicate set,
+plan hash, effect key, provider ID, and specific observation; `matches: true`
+alone cannot substantiate integrated outcome or M3 verification credit.
+
+Collector provenance is attached by a controlled ingest route to observations
+made using its configured reader/account. Mode, actor, and credential-reference
+fields from manual JSON are untrusted declarations. Imported evidence can still
+be assessed offline, but cannot gain live collection status by selecting
+`imported_provider_snapshot`. Preserve all three existing modes and report the
+additional provenance/coverage dimension separately.
+
 **Handoff proof:** extra recipient, wrong association, missing draft, premature
 Slack success, and a tool acknowledgement without an actual object all fail the
 appropriate gate. Mark an unavailable read unverified. Fixture reset/cleanup
 utilities are operator-only and run outside the scored evidence window.
+
+### App transport and dependency-injection contracts
+
+The [MCP/API and external-app guide](08-mcp-api-and-external-app-integration.md)
+defines the exact provider operations, configuration, access smoke checks and
+optional MCP mapping. F02 owns these interfaces in `src/shared/adapters.ts`;
+I01 implements transport/error normalization and I02–I05 implement app methods.
+R01 `src/server/composition.ts` constructs the clients and injects capabilities:
+
+- `workflow/nodes.ts` reads GitHub and HubSpot through I02/I03 before passing a
+  complete bundle to B02's pure incident/identity/selection policy. B02 owns no
+  new network collector and receives no model decision about eligible customers.
+- B05 `workflow/review.ts` and `approval-wait.ts` use I04 Slack coordination/read
+  capabilities. Approval comes from freshly retrieved authorized human messages;
+  a tool-call confirmation, MCP approval or model audit is not business approval.
+- B06 `execution/executor.ts` receives only the approved narrow HubSpot task/note,
+  Gmail draft and GitHub comment operations. Dispatch still requires B01 effect
+  claim, B03 exact payload/hash and B05 guard, regardless of REST or MCP transport.
+- B07 `verification/readback.ts` uses fresh reads. Its `finalize.ts` has narrowly
+  scoped Slack summary coordination plus separate summary readback. Q02
+  `evaluations/provider-readers.ts` receives independently invoked read capabilities
+  and its own collection identity; it cannot adopt the write response as evidence.
+
+Freeze `AdapterMode` and a transport-neutral call context containing app/account
+scope, operation, `logicalCallId`, `providerAttemptId`, deadline, trace identity,
+and, for mutations, approved effect key/request digest. Keep credentials and
+clients out of the context, graph state, model prompts and public events. Record
+transport kind separately from evidence mode and trusted collection provenance.
+Model execution mode and provider execution/provenance are independent versioned
+dimensions: mock-model/fake-app, live-model/fake-app, mock-model/live-app and
+live-model/live-app runs have different proof. Freeze their representation in
+F02 evaluation/API contracts without changing legacy evidence-mode values or
+trusting user-supplied provenance. Combined live claims require both live model
+and live provider evidence from the same registered attempt.
+Existing complete/incomplete reads and applied/not-applied/unknown mutation
+semantics apply to both transports. HTTP 200 or an MCP response alone cannot
+establish business success.
+
+The required MVP supports `fake` and `rest`. A future `mcp` selection must fail
+configuration validation until a reviewed I01 transport implementation and each
+selected app's I02–I05 operation map pass the same contract suite and live smoke.
+No automatic switch between transports after a failed/unknown write is allowed.
+An MCP binding pins server identity, negotiated protocol/capabilities, allowlisted
+tool name and schema digest, argument/result mappings, pagination and auth/account
+scope. Tool descriptions/annotations do not grant authority; model inputs never
+receive the server's tool catalog. Missing full readback or exact write capability
+means that transport cannot satisfy the app contract. Codex plugin installation
+and OAuth connections in this editor do not configure the deployed backend.
+
+**Contract proof:** fake/live selection is explicit, wrong account rejected,
+read-only consumers cannot call mutations, partial pages fail completeness,
+MCP tool/schema drift fails closed when that extension is enabled, unknown writes
+require reconciliation, and separate read receipts establish actual results.
 
 ## 6. HTTP and UI boundary
 
@@ -182,6 +353,10 @@ Closing the UI does not cancel a persisted run.
 
 Separate `productStatus`, `traceCoverage`, `outcomeAssessment`, and
 `semanticAssessment`. Show waiting, pending, incomplete, failure and N/A explicitly.
+The v2 read projection additionally includes `firstProposalAssessment`, evaluator
+and manifest versions, evidence watermark/provenance, required-field comparison
+verdicts, completion-claim classifications, missing-evidence reasons, and suite
+census entries. The browser renders server facts; it does not recompute metrics.
 The public success outcomes are `completed` and
 `completed_no_affected_commitments`; `safely_blocked`, `failed`, and
 `failed_partial` describe stopped runs. `awaiting_approval` is resumable waiting.
@@ -199,7 +374,7 @@ changing component contracts. Slack remains the approval surface.
 **Consumer:** Q03 rules, Q04 scenarios, Q05 metrics, U03 scorecard.
 
 - One business incident has one `runId`. Each graph invocation/resume has its own
-  runtime `attemptId`. A predeclared `evaluationAttemptId` spans normal approval
+  `runtimeAttemptId`. A predeclared `evaluationAttemptId` spans normal approval
   waits/resumes/retries; those do not create new success-rate observations.
 - Record schema version, event ID, local sequence, causal parent, run/evaluation/
   runtime attempt IDs, plan revision/hash reference, effect key, request hash,
@@ -215,6 +390,105 @@ changing component contracts. Slack remains the approval surface.
   evidence and legitimate human edits, with separately captured stage baselines.
 - Keep checker assertions, fake/model-driven runs, and live-provider runs in
   distinct cohorts. A caller-supplied evidence label cannot establish provenance.
+
+### Canonical v2 producer events
+
+Use `stage.started`/`stage.finished`, `model.attempt.started`/
+`model.attempt.result`, tool dispatch/result, `retry.scheduled`, source collection,
+approval/revalidation, reconciliation, verification, wait, fault/correction,
+and success-claim events. F02 owns final schemas and canonicalization examples;
+B04 owns stage lifecycle, A01 model calls, I01–I05 provider normalization, and
+B01 persistence. Each event includes `spanId`/`parentSpanId`, role/stage and
+applicable `modelAttemptId`/`providerAttemptId`/`logicalCallId`, as well as the
+evaluation/runtime identities already required. Timing uses UTC anchors plus
+within-process monotonic durations; never subtract clocks from unrelated
+processes as though they shared a monotonic origin.
+
+The compatibility adapter explicitly maps legacy graph `attemptId` to v2
+`runtimeAttemptId`, rejects conflicting aliases, and keeps `modelAttemptId`
+separate from tool `providerAttemptId`. Missing old telemetry remains missing;
+do not fabricate new attempt identities or causality to satisfy v2 fields.
+
+Separate HTTP transport outcome, normalized provider outcome, and verified
+business outcome. Preserve error class, retry reason, owner, delay, and timeout
+budget. A start without a result remains unresolved and belongs in coverage;
+unknown model/provider latency or usage is unavailable, not zero. Public events
+contain restricted artifact references/hashes, not customer text or secrets.
+
+### Completion claims and temporal evidence
+
+`CompletionClaim` v2 includes unique `claimId`, run/evaluation/runtime IDs,
+event sequence, emission time, scope (`artifacts`, `run`, or `no_affected`),
+applicable effect set/plan reference, and supporting observations. An artifact-summary
+claim excludes the summary's own not-yet-verified write; a whole-run claim includes
+the final Slack readback for artifact-producing `completed`. A `no_affected` claim
+for `completed_no_affected_commitments` has no plan/approval reference and requires
+complete source retrieval, deterministic zero-eligible selection, protected/absence
+predicates, and no protected mutation. It does not require a Slack artifact or
+model calls. Reading a saved claim/status again is not a new claim.
+
+Q03 evaluates prematurity separately from outcome-at-emission classification
+(`confirmed`, `contradicted`, `unverified`). The manifest freezes allowed evidence
+age, settling window, and cutoff; causal references, observation windows, provider
+versions/history, and known intervening edits determine admissibility. A final
+snapshot without timing cannot prove what was true when a claim was emitted.
+Known later edits are separate drift; ambiguous history remains unverified.
+
+The proposed monitor-v2 facts retain unique claim-ID sets:
+
+- `prematureSuccessClaims`: violated required verification/order or unresolved work.
+- `outcomeContradictedCompletionClaims`: admissible evidence contradicts claimed state.
+- `falseCompletion`: union of those sets, deduplicated by claim ID.
+- `successClaims`: all emitted claims, the denominator for false-completion rate.
+- Confirmed/contradicted/unverified claim counts and evidence references; gaps
+  remain visible even when the known false-claim count is zero.
+
+Q03 owns `assess.ts`/`claim-verdicts.ts` and these classifications; Q05 aggregates
+without reinterpreting evidence. A claim can be both premature and contradicted
+but enters the union once. Old `monitor-v1` counters remain premature-only and
+are never combined with v2. Preserve checker-v1 and prior receipts; new semantics
+need their own evaluator version and verified receipt. Missing v2 fields cannot
+be manufactured when importing old evidence.
+
+### Census, labels, and assessment revisions
+
+Q01 owns the planned suite census; Q04 registers an attempt before dispatch and
+records each entry's not-run/setup-failed/attempted disposition. Keep setup failure
+before registration distinct from failure of a registered agent attempt. Mandatory
+preflight and S0 happen before registration; store receipts by `suiteEntryId`, then
+bind their hashes at registration immediately before graph dispatch. Failed S0
+stays `setup_failed` coverage with no M1/M7 attempted sample; every failure after
+registration remains attempted. The boundary is frozen before outcomes. Unrun
+entries are visible coverage gaps, not fictitious M1/M7 attempts. Each baseline,
+repetition, variant, and repair leg has a frozen identity; ordinary retries and
+resumes do not add denominators.
+
+Q05 binds reviewer identity/reason and per-claim labels to original source/output
+digests, records uncertainty/corrections/adjudications, and reports actual human
+review separately from generated fixtures or model review. Missing labels cannot
+pass; a later approved draft cannot erase a failed first proposal. Reports retain
+manifest hash, evidence watermark, evaluator/version cohort, provenance and
+sample IDs. Fresh evidence updates the assessment revision, not the attempt count.
+
+Before Q05's full review workflow, R01's planned `tools/demo/run.ts` supplies the
+minimal actual-operator review input using F02 label schemas and B01 storage.
+Show original text/sources, record identity/reason/digests and review origin, and
+enqueue assessment. This is real interaction, not a fixture-human flag. Q05
+extends this receipt contract rather than becoming a circular prerequisite of R01.
+
+### Transaction and dependency handoff
+
+B01 refactors the existing monitor behind one transaction-aware application
+connection: transition, event, and enqueue commit atomically. It owns migrations
+and v1/v2 job/assessment identity; Q03 consumes the API after that change lands.
+A separate post-commit monitor append is not sufficient. Preserve lease fencing,
+exhaustion, stale-worker rejection, and assessment/job-completion atomicity.
+
+Q03 can merge against frozen Q01 evidence fixtures without waiting for the Q02
+implementation; absent collector input stays unverified. R01 must join both
+Q02 collection and Q03 measurement and prove actual observations reach the
+versioned assessor. Q05's final integration follows Q04. No new dependency cycle
+or second monitor/database is introduced.
 
 The existing `checkEvidence()` remains an unchanged subset checker. Q02–Q05 combine it
 with frozen-manifest completeness, MIME/association checks, trusted approval,

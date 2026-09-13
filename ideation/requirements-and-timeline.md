@@ -1,17 +1,29 @@
 # Multi-App AI Agent Hackathon: Requirements and Timeline
 
-Research snapshot: September 13, 2026
+Research snapshot: September 13, 2026. The implementation update below does not
+recheck event announcements or registration status.
 
 **Using this document for PromiseGuard:** the official requirements below are
 the event baseline. The selected project uses **GitHub + HubSpot + Slack + Gmail**;
 its [demo and reliability contract](demo-scenarios-and-reliability.md) supplies
 the canonical scenarios, metrics, evidence requirements, and remaining-time plan.
-The application is not implemented; existing checker tests are synthetic evidence
-checks, not working-app results. The full-day schedule here is a planning template,
-not a fresh 390-minute budget. Older refund/Linear ideas are historical alternatives.
+The application is not implemented. At the September 13 planning baseline only
+the offline checker was runnable. **September 14 update (IST):** a standalone
+Node 24/TypeScript/SQLite [monitor](../tools/monitoring/README.md) now assesses
+supplied traces, snapshots, and labels. Its synthetic demonstrations are not
+working-app results; F01/F02 and Q02–Q05 remain partial. The full-day schedule here
+is a planning template, not a fresh 390-minute budget. Older refund/Linear ideas
+are historical alternatives.
 
-> Important status: the event site still shows **Register Now**, but the linked
-> Google Form currently says it is no longer accepting responses. If the team is
+**Reliability delivery plan:** [the detailed implementation sequence](implementation-plan/06-agent-reliability-implementation.md)
+and updated commit briefs turn the audit gaps into P0 work: real traces and
+runtime controls, independent expected-versus-actual provider state, and original
+AI outputs with human labels. This is a documentation update, not evidence that
+the live workflow or its evaluation has been implemented.
+
+> Registration observation at the September 13 research snapshot: the event site
+> showed **Register Now**, but the linked Google Form was no longer accepting
+> responses. Verify current participant instructions. If the team is
 > not already registered, confirm admission with the organizers immediately.
 > Do not assume that a project submission alone grants entry.
 
@@ -102,6 +114,9 @@ Keep the brief to roughly one page unless the organizers specify otherwise:
    counts by live/simulated/checker mode, first-proposal semantic quality, and
    failed/unrun cases. Approval or a corrected final draft does not establish
    correctness of the model's original output.
+   Include suite coverage for not-run cases, evidence provenance/completeness,
+   and completion claims classified with time-linked observations. Distinguish
+   premature success, contradicted outcomes, uncertain timing, and later edits.
 5. **Known limits:** unsupported requests and what safely happens on ambiguity
 
 ## 4. Judging Rubric
@@ -169,11 +184,56 @@ the opening announces different rules.
 
 - Confirm that every team member can enter the event workspace and call.
 - Verify registration/admission status.
-- Sign in to the three target apps and prepare API/OAuth credentials.
+- Sign in to the target apps and prepare API/OAuth credentials; PromiseGuard
+  requires all four: GitHub, HubSpot, Slack and Gmail.
 - Confirm model access, spending limits, and secret handling.
 - Assign roles and agree on the single demo scenario.
 - Do not prebuild anything the official rules prohibit; the public page does not
   clarify whether pre-existing code or pre-event development is allowed.
+
+### PromiseGuard integration prerequisites and commit gates
+
+The following are project implementation decisions, not additional organizer
+requirements. Use the [LLM/agent guide](implementation-plan/07-agent-spawning-and-llm-integration.md)
+and [MCP/API/app guide](implementation-plan/08-mcp-api-and-external-app-integration.md)
+with the existing [commit order](implementation-plan/04-commit-plan.md). These
+gates consume the actual remaining time; they do not restart the event clock.
+
+1. **F01/F02 — lock access and contracts:** record the selected model and its
+   server-side secret source, role schemas, package versions, bounded budgets,
+   and four disposable provider scopes/IDs. Verify repo access, HubSpot fixture
+   fields/associations, Slack posting and genuine human thread-reply reads, and
+   Gmail OAuth draft access. Keep secrets outside prompts/browser/config examples.
+   Freeze model/provider provenance separately from public evidence-mode labels.
+2. **A01 and I01–I05 — compatibility/access gate:** obtain real structured-output
+   smoke receipts for analyst/drafter/auditor schemas and independent provider
+   read/write/readback receipts. REST is required and MCP is disabled for the MVP;
+   an optional extension qualifies reads first using a selected server, approved
+   exact tool map and equivalent contract tests. Later protected-write mappings
+   require explicit adapter conformance and every existing workflow guard.
+   Installing an assistant connector is not backend authentication. Missing
+   access is an unrun/failed gate, not grounds to relabel a fake as a live app.
+3. **B04, A02–A04 and R01 — executable role gate:** the persisted driver schedules
+   the graph, which invokes analyst → drafter → checks → auditor through A01's
+   shared recorded model wrapper. Use three bounded backend roles; no dynamic
+   process spawning or model-selected app tools. Test fake graph wiring before
+   scoped model-live execution and preserve first results and failures.
+4. **B02/B05/B06/B07 and R01 — integrated app gate:** wire GitHub/HubSpot reads in
+   R01's source-read nodes, B02's pure validation/selection, authentic Slack
+   review/approval, serial HubSpot task → note → Gmail draft →
+   GitHub comment writes, fresh destination readbacks and verified Slack summary.
+   Q02 independently collects provider state. Do not record a four-app product
+   demo until the same-run evidence supports the joined workflow.
+5. **Q04/Q05/R02 — release proof gate:** run frozen scenario/fault coverage and
+   actual original-output human review. Report fake-only, model-live, provider-
+   live and combined-live observations separately, along with versions, failures
+   and not-run cases. Reserve time for evidence, recording and submission before
+   optional MCP transport, remote tracing, hosting or UI polish.
+
+P1 owns foundation/contracts and graph composition; P2 owns integrations and
+provider access; P3 owns model wrapper and roles; P4 owns independent fixtures,
+collection, evaluation and demo evidence. These are the existing plan owners;
+development parallelism does not permit parallel protected writes at runtime.
 
 ### 9:00-9:30 AM: Opening and rule lock
 
@@ -181,7 +241,8 @@ the opening announces different rules.
 - Confirm what counts as an external app and whether sandboxed apps count.
 - Confirm whether the repository must be public and when code may be written.
 - Reduce scope immediately if a requirement conflicts with the planned build.
-- Freeze the user story, three required apps, success assertions, and demo owner.
+- Freeze the user story, required apps, success assertions, and demo owner;
+  PromiseGuard's accepted scope includes four apps and three bounded model roles.
 
 **Exit condition:** a one-sentence pitch, one workflow diagram, and a written
 definition of done.
@@ -189,7 +250,8 @@ definition of done.
 ### 9:30-10:10 AM: Walking skeleton
 
 - Create the smallest end-to-end agent path.
-- Connect all three required apps with one read or write smoke test each.
+- Connect the required apps with scoped read/write/readback smokes; for
+  PromiseGuard run I01–I05 against all four and A01's separate model smoke.
 - Add a run ID and structured event log from the beginning.
 - Seed one deterministic demo scenario.
 
@@ -218,12 +280,21 @@ that is a coordination write and must still be logged.
 
 ### 12:10-1:00 PM: Build the evaluation harness
 
-- Encode 8-12 scenarios: normal, ambiguous, conflicting, duplicate, denied,
-  unavailable dependency, and partial failure.
-- Define expected tool calls, final app states, and forbidden side effects.
-- Run the suite and save a compact scorecard.
+- For PromiseGuard, use the canonical 18-family suite; its full target is 42
+  baseline/repetition attempts plus declared variants/repair legs and at least
+  five live scenarios. A smaller initial checkpoint leaves the remaining census
+  explicitly not run; do not replace the canonical suite with an 8–12-case count.
+- Freeze expected facts, logical effects, tool/process predicates, final app
+  states, forbidden effects, evidence windows, and deadlines before execution.
+- Run the actual graph; capture independent S0/S1 and claim-related provider
+  observations plus original model outputs and human labels. Save M1–M7 and
+  critical counts by mode/version with failed, unverified, and unrun entries.
 
-**Exit condition:** evaluations are repeatable with a visible pass/fail result.
+**Exit condition:** executions are repeatable and their verdicts are supported by
+independent evidence. Checker tests and generated human-label fixtures remain
+separately labeled. Completion claims require corroborated evidence; a zero
+legacy premature-claim counter is insufficient. This schedule remains a planning
+template, not a claim that the full evaluation fits this single time block.
 
 ### 1:00-2:00 PM: Improve the weakest rubric area
 
@@ -344,6 +415,10 @@ they differ from this document.
 - [ ] Duplicate, ambiguous, denied, and partial-failure cases are tested
 - [ ] Model grounding, incomplete reads, approval bypass, and concurrent replay
       are evaluated against fixed expectations
+- [ ] PromiseGuard's three role calls, four app adapters and exact runtime call
+      sites are documented; F01/A01 and I01–I05 compatibility/access gates passed
+- [ ] Same-run model-live plus provider-live proof supports any integrated live
+      claim; MCP, if enabled, has an approved tested tool map and runtime auth
 - [ ] Evaluation results and traces are visible
 - [ ] Actual counts, first-proposal quality, failed/unrun cases, and evidence mode
       are disclosed; synthetic checker passes are not labeled agent success

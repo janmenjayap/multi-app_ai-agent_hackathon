@@ -1,17 +1,49 @@
 # Pipeline robustness review and build gates
 
-**Review baseline: September 13, 2026.** The pipeline can be made substantially
+**Historical review baseline: September 13, 2026.** The pipeline can be made substantially
 more robust by implementing and testing the boundaries already specified. There
 is no running product pipeline to benchmark or optimize yet. Repository inspection
 found planning documents, the offline checker, its synthetic fixture, and checker
-tests; no frontend, backend, adapters, agents, database, or live evidence collector.
-This review changes the implementation plan, not executable behavior.
+tests; no frontend, application backend, adapters, agents, database, or live
+evidence collector existed at that inspection.
+
+**Current update — September 14 (IST):** the Node 24/TypeScript/SQLite
+[standalone monitor](../../tools/monitoring/README.md) now implements local
+observation storage, measurement jobs, supplied-evidence checks, and grouped
+metrics. It does not implement the product pipeline or collect provider state.
+F01/F02 and Q02–Q05 remain partial; [Global Scale](Global%20Scale.md) records the
+implemented subset and remaining gates. The backlog below retains its application scope.
 
 The [proposal](../final-project-promiseguard.md) owns product scope;
 the [architecture](../promiseguard-architecture.md) owns the intended runtime;
 the [demo and reliability plan](../demo-scenarios-and-reliability.md) owns scenarios,
 M1–M7 metrics, and acceptance. The [workflow schematic](02-agent-workflow.md)
 explains the component boundaries this review relies on.
+
+The [agent reliability implementation plan](06-agent-reliability-implementation.md)
+turns the [September 14 audit](../reliability-implementation-audit.md) into concrete
+delivery work within the existing 31 commit IDs and 29 branches. Reliability is a
+P0 gate across **original AI quality, actual execution, and independently verified
+outcomes**. Monitoring is a reusable measurement component; integration and proof
+remain necessary. The refinements below supplement that detailed plan and do not
+mark any implementation gate complete.
+
+## LLM and transport gates made concrete
+
+Use [guide 07](07-agent-spawning-and-llm-integration.md) for the bounded role
+invocation path and [guide 08](08-mcp-api-and-external-app-integration.md) for
+app operations and access. F01 must reject missing live credentials before
+execution; F02 must separate model inputs from app capabilities. A01 records raw
+outputs before parsing and owns all model retry budgets; R01 tests zero model
+calls for blocked/empty selection and no repeat calls on unchanged approval resume.
+I01–I05 must prove pagination, account scope and unknown-write semantics; B06/B07
+must prove exact approved dispatch and fresh readback for the selected transport.
+Optional MCP tool discovery/consent cannot replace Slack approval or verification.
+
+Q04 records model and provider configurations independently, preserving legacy
+evidence modes. Only a run with real models, real app operations and independent
+reads supports combined live claims. Documentation and individual service smokes
+leave the integrated reliability gate open.
 
 ## 1. Keep the strong parts of the design
 
@@ -33,7 +65,7 @@ These are **designed but unimplemented**, not existing runtime protections:
 Adding more agents, apps, queues, or dashboards does not close these gaps. Build
 the required controls and their evidence first.
 
-## 2. What the existing code proves
+## 2. Existing offline verification
 
 [check-evidence.mjs](../../tools/reliability/check-evidence.mjs) checks supplied
 four-app snapshots and an ordered effect ledger. Its
@@ -42,9 +74,16 @@ matching, protected records, duplicates, forbidden operations, read-after-write
 ordering, and the difference between reuse and a changed record. Its
 [README](../../tools/reliability/README.md) documents the exact limits.
 
-The existing code does **not** validate live approval, select eligible customers,
-collect provider state, run an agent, prevent a write, or recover an uncertain
-write. Particular gaps must be covered around it:
+The standalone monitor adds a frozen S1 manifest validator, declared approval/
+payload/order checks, persisted measurement jobs, first-proposal label checks,
+and version-separated metrics. Its inputs remain supplied observations; generated
+human-label fixtures are not actual semantic review.
+
+Neither the checker nor monitor validates live approval, selects eligible customers,
+collects provider state, runs an agent, prevents a write, or recovers an uncertain
+write. The checker-specific limitations below still apply to checker v1; the
+monitor addresses selected declaration/trace gaps, while runtime enforcement
+and independent collection remain required:
 
 1. A `completed` contract requiring only Slack can pass. A frozen S1 manifest must
    independently require the HubSpot task and note, Gmail draft, GitHub comment,
@@ -60,9 +99,9 @@ write. Particular gaps must be covered around it:
 5. Supplied completeness, provenance, actors, and links are trusted. Independently
    collect complete scoped provider reads and validate actual associations/links.
 
-Keep checker v1 stable while implementing the manifest validator, collector,
-runtime rules, and exporter around it. A later schema change needs a distinct
-version and compatibility tests, not silently changed meaning.
+Keep checker v1 stable and reuse the monitor's validator/rules while completing
+provider collection and application enforcement. A later schema change needs a
+distinct version and compatibility tests, not silently changed meaning.
 
 ## 3. Prioritized implementation gates
 
@@ -191,12 +230,30 @@ task owner/associations, note/comment links, and parsed draft bytes using separa
 provider reads. Canonicalize only documented transport transformations; do not
 normalize away a recipient or wording difference.
 
+Keep two read paths explicit. B07 is the inline verifier that gates product
+completion using fresh provider reads. Q02 is the independently invoked evaluation
+collector, capturing scoped pre-run S0 and checkpoint/final S1 from the provider;
+it cannot use B07's verdict, the write response, or the plan's expected values as
+observations. Q01 freezes source facts, semantic invariants, scenario predicates,
+and required artifacts before execution. A typed `ApprovedContentRef` refers to
+generated text that B03 freezes as exact bytes in the immutable approved plan
+before dispatch. B07/Q02 resolve expected bytes only from that plan receipt, never
+provider output; approval does not establish quality or change the semantic oracle.
+Distinct `EffectIdRef` values resolve future IDs through independent unique
+bindings. Neither binding shrinks the artifact set. Q02 records collection identity, scope, pagination, timestamps,
+normalization version, raw-response references/hashes, and gaps. It independently
+checks links, associations, duplicates, protected records, and draft-only behavior.
+
 **Pass gate:** families 4, 11, and 17 catch unsupported certainty, incorrect
 recipient/body/draft status, missing outputs, invalid citations, and unavailable
 required agents. An existing citation alone is not evidence that a claim follows
 from it. Human labels record first-proposal defects and false blocks separately
 from eventual completion. All required artifact checks precede their success
 claims; full completion follows the final Slack read-back.
+For the valid empty-selection path, use `CompletionClaim` scope `no_affected`
+with `planRef` absent: complete sources, deterministic zero-eligible selection,
+and no protected effects are the required evidence. No plan, approval, or Slack
+artifact is required for `completed_no_affected_commitments`.
 
 ### R6 — P0: bounded retries and measurable failures
 
@@ -214,6 +271,16 @@ resources for the monitor so optional telemetry cannot starve execution.
 Commit each application transition, its canonical event, and measurement job in
 one application-database transaction; do not claim atomicity with the separate
 graph checkpoint database or any remote provider.
+
+The producer contract must extend the current supplied-event schema under a new
+version. Emit stage/span/parent identity, each actual model attempt and original
+output reference, each dispatched tool attempt, transport and provider outcomes,
+validation failures, retry owner/delay/budget, causal verification references, and
+completion-claim identity/time/predicate scope. Preserve unanswered dispatches as
+unknown; reconstruct neither successful tool calls nor original model outputs
+from the final narrative. Preserve one evaluation attempt across retries, human
+waits, process resume, and reassessment. Monitor imports remain useful for fixtures,
+but a later separate append is not the required application state/event/job commit.
 
 **Pass gate:** family 8 recovers a transient read within budget; definitive
 permission denial and model exhaustion stop. Resume/job replay does not create a
@@ -236,6 +303,30 @@ not target counts. Preserve original failures and separately labeled repair legs
 complete snapshots, semantic labels, scenario/commit versions, and measured timing
 support each demonstrated claim. The product remains incomplete if it has only
 synthetic checker evidence. Do not combine modes into one reliability percentage.
+
+Q04 must register the complete frozen suite census before execution, including
+family/variant/repetition/repair-leg identities, expected checkpoint, required
+roles, mode, seed, budgets, and versions. Q05 joins that census to attempted runs
+so `not_run`, failed, and unverified cases remain visible. Collect independent
+human labels against original model outputs and source evidence, with reviewer,
+rubric, reasons, and correction history; generated `human` fixtures are test data.
+Empty denominators display N/A, while missing required evidence stays unverified.
+Complete mandatory preflight and initial S0 setup before registering an evaluation
+attempt. Failed setup remains a `setup_failed` census entry outside M1/M7 attempted
+denominators; bind `suiteEntryId` S0 receipts at registration immediately before
+graph dispatch. Every post-registration failure stays in its attempt denominator.
+
+Before a release claims zero false completion, add the versioned claim evaluator.
+The existing v1 `falseCompletion` is a legacy premature-claim counter and can be
+zero when outcome checks reject a claimed completion. The new evaluator assigns
+stable `claimId`, `emittedAt`, and required predicate scope to each success claim;
+classifies its independently supported state **at emission** as `confirmed`,
+`contradicted`, or `unverified`; and reports `prematureSuccessClaims` separately.
+New-version `falseCompletion` is the union of premature and independently
+contradicted claim IDs, counted once per claim, with affected run counts separate.
+Later drift cannot retroactively prove a claim false at emission. Missing temporal
+evidence is unverified and prevents an all-clear release claim. Preserve v1 reports
+and validation receipts; never merge old and new evaluator results into one rate.
 
 ## 4. Parallelism that improves throughput without weakening control
 

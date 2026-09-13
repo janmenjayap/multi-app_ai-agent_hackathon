@@ -3,9 +3,9 @@
 **Historical planning brief, superseded for implementation.** The refund/Stripe
 plans below record early ideation, not the selected product or verified results.
 PromiseGuard now uses **GitHub + HubSpot + Slack + Gmail**; use the
-[final proposal](final-project-promiseguard.md),
-[architecture](promiseguard-architecture.md), and
-[demo and reliability contract](demo-scenarios-and-reliability.md) for current
+[final proposal](../final-project-promiseguard.md),
+[architecture](../promiseguard-architecture.md), and
+[demo and reliability contract](../demo-scenarios-and-reliability.md) for current
 scope. Event, company, and vendor details below are retained as dated research;
 they are not newly verified by this document review. Current implementation and
 measured-checker status are in the demo plan; no live agent reliability result
@@ -103,8 +103,8 @@ prevent effects; post-run checks detect failures and cannot undo harm.
 **Scoreboard:** use controlled ablations with the same model, prompt, tools,
 execution mode, fixtures, and budgets. Distinguish prevention, detection before
 effect, detection after effect, and false blocks. Remove safety layers only in
-resettable simulations. Use the current [metric definitions](demo-scenarios-and-reliability.md#7-small-meaningful-metric-set)
-and [evaluation plan](demo-scenarios-and-reliability.md#9-repeatable-evaluation-set-and-improvement-loop).
+resettable simulations. Use the current [metric definitions](../demo-scenarios-and-reliability.md#7-small-meaningful-metric-set)
+and [evaluation plan](../demo-scenarios-and-reliability.md#9-repeatable-evaluation-set-and-improvement-loop).
 
 ---
 
@@ -272,7 +272,7 @@ Two agents negotiate a calendar slot or a refund amount over Slack/email on beha
 
 ## 8. Historical refund demo outline
 
-Use the current [PromiseGuard video script](demo-scenarios-and-reliability.md#11-two-minute-video-and-extended-evidence)
+Use the current [PromiseGuard video script](../demo-scenarios-and-reliability.md#11-two-minute-video-and-extended-evidence)
 for the submission. This archived refund outline is illustrative, not footage or
 an observed result; keep any unsafe comparison in resettable simulations.
 

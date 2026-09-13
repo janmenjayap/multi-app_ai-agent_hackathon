@@ -8,22 +8,33 @@ reliability, and provide a small runnable verification foundation.
 [requirements-and-timeline.md](requirements-and-timeline.md) first, then the
 [final proposal](final-project-promiseguard.md),
 [architecture](promiseguard-architecture.md),
-[reliability guidance](winning-ideas.md#2-reliability-standard-for-every-idea),
-the older [working brief](hackathon-brief.md), and the repository inventory.
+[reliability guidance](exploration/winning-ideas.md#2-reliability-standard-for-every-idea),
+the older [working brief](exploration/hackathon-brief.md), and the repository inventory.
+
+**Current implementation update — September 14, 2026 (IST):** the preserved
+checker is now joined by a standalone Node 24/TypeScript/SQLite
+[offline monitor](../tools/monitoring/README.md). It stores supplied events,
+snapshots, and labels, queues assessments, and reports separate M1–M7 cohorts.
+Its synthetic demo includes generated human-label fixtures, not actual human
+review. No agents, provider collector, four-app workflow, UI, or live/model-driven
+scenario have been implemented or demonstrated. The original audit and checker
+results below remain historical evidence; they are not current monitor totals.
 
 **Reliability review:** the scenarios are a useful specification, but they do
 not yet demonstrate a reliable agent. This document is the canonical scenario,
 evaluation, and demo acceptance contract; the proposal defines product scope,
 and the architecture defines its intended implementation. Historical idea/brief
-alternatives do not override these. Current evidence proves only the offline
-checker's declared assertions. Runtime and agent-quality evidence remains pending.
+alternatives do not override these. Current executable evidence covers offline
+checker and monitor assertions over supplied data. Actual runtime and model-quality
+evidence remains pending.
 
 **Architecture refinement:** the [fine-grained architecture](promiseguard-architecture.md)
 now selects LangGraph for the same workflow, LangChain for the three structured
 agent calls, and LangSmith for sanitized trace inspection. Its separate local
-monitor joins traces with independent app evidence and this document's M1–M7
-rules. These are proposed components; the scenario pipeline, acceptance gates,
-and observed checker-only evidence below remain unchanged.
+monitor is intended to join traces with independent app evidence and this
+document's M1–M7 rules. Its local observation/assessment subset now exists; real
+collection and application integration remain proposed. Scenario acceptance gates
+and the historical checker results below are unchanged.
 
 ## 1. What exists, and what we can honestly demonstrate
 
@@ -33,24 +44,97 @@ adapter, database migration, model integration, seed/reset executable, or saved
 live run. Credential access was not exercised. This is a planning-stage product,
 not a working four-app agent whose success rate can already be measured.
 
-**Currently implemented:** a dependency-free, offline outcome-evidence
-checker, synthetic example evidence, and executable regression tests. See
-[the checker guide](../tools/reliability/README.md) for its exact schema and scope.
-It validates supplied snapshots and events; it does not run agents or call apps.
+**Currently implemented:** the dependency-free outcome-evidence checker plus the
+standalone monitor's schemas, SQLite measurement store, trace/outcome rules,
+first-proposal label checks, metric aggregation, CLI, and synthetic tests. See
+[the monitor guide](../tools/monitoring/README.md) and
+[the checker guide](../tools/reliability/README.md) for their schemas and limits.
+Both assess supplied observations; neither runs agents or calls apps.
 
 **Proposed and not yet working:** every product workflow below, all three agents,
 Slack approval, connected-app writes, durable recovery, the operator console,
-provider snapshot collection, and runtime tracing. Scenario instructions are
-implementation and recording acceptance criteria, not descriptions of completed
+provider snapshot collection, and instrumentation of a real runtime. Scenario
+instructions are implementation and recording acceptance criteria, not descriptions of completed
 features. A natural-language prompt below expresses the user's intent; there is
 currently no chat or product CLI that accepts it.
 
 Use the final proposal's **GitHub + HubSpot + Slack + Gmail** scope. The older
 brief's Stripe/refund example and the earlier Gmail/Linear workflow are
 superseded. They are not extra PromiseGuard integrations. The architecture plans
-three model roles; the final proposal allows dropping the semantic auditor for
-time. Declare the actual release configuration and test it; never show an agent
-stage that did not run.
+three required model roles in the contracted build. A role reduction requires
+an explicit revised scope and evaluation; required auditor failure cannot be
+silently skipped. Declare the actual release configuration and test it; never
+show an agent stage that did not run.
+
+### Agent and integration proof modes
+
+The [agent/LLM guide](implementation-plan/07-agent-spawning-and-llm-integration.md)
+and [MCP/API/external-app guide](implementation-plan/08-mcp-api-and-external-app-integration.md)
+locate the planned work: B04 schedules R01's graph, A02–A04 call the A01 model
+wrapper, and I01–I05 supply the typed adapters. R01's source-read nodes obtain
+GitHub/HubSpot snapshots for B02's pure validation/selection; B05 owns
+Slack review/approval, B06 performs ordered approved effects, B07 reads them back
+and finalizes Slack, and Q02 independently collects evaluation observations.
+These are planned integration boundaries, not implemented demo stages.
+
+Record model execution and provider transport as separate provenance dimensions
+alongside the existing evidence mode. F02 owns their versioned representation;
+do not relabel legacy monitor-v1 synthetic data to add live credit:
+
+- **Fake model + fake providers:** proves the real graph's deterministic wiring,
+  guards, retry/restart paths and assertions against controlled fixtures. It
+  cannot establish live model quality or provider permissions.
+- **Model-live + fake providers:** proves actual A01/A02–A04 calls with recorded
+  model/prompt/schema versions and original outputs; supports human evaluation
+  of those outputs. It does not prove live app effects.
+- **Fake model + provider-live:** proves adapter authentication, actual scoped
+  operations, approval/readback and provider observations for the fixture
+  proposal. It does not demonstrate three live model roles.
+- **Model-live + provider-live:** is the required integrated product evidence
+  when claiming a real three-agent four-app workflow. Source records, actual
+  model attempts, approval, protected writes and independent observations must
+  join to the same registered run/revision. Standalone smoke calls cannot be
+  combined after the fact to invent such a run.
+
+For provider-live observations also record each adapter's selected REST/MCP
+transport and scoped account/server configuration reference. REST is the MVP;
+MCP is disabled unless its explicit tool map and contracts pass the same checks.
+A plugin connected to a coding assistant is neither a PromiseGuard credential
+nor provider-live proof. Never infer a live mode from a user-supplied label alone.
+
+### Required LLM and adapter smoke/fault evidence
+
+F01/A01 must first verify the configured `ChatOpenAI`/Responses structured-output
+combination for all three role schemas; record token/time/attempt budgets,
+package/model versions, result artifact references and any refused/invalid or
+unrun result. A02–A04 must demonstrate scoped contexts and retained first outputs.
+I01–I05's `tools/smoke/providers.ts` and per-provider runners must prove bounded
+GitHub reads/comment readback, HubSpot task/note associations, actual Slack human
+reply retrieval and review/summary readbacks, and full Gmail draft content. Use
+separate operator-only fixture cleanup; a smoke runner never widens worker tools.
+
+R01 first executes the full graph with fakes, then joins model-live and
+provider-live wiring for S1/S2. Q04 maps integration fault tests to the existing
+18-family census rather than silently adding or substituting suite baselines:
+
+- Family 17: refusal, timeout, malformed output, invalid citations and exhausted
+  required-auditor failure stop within the declared model budget; a retry leaves
+  the first raw response intact and receives a distinct model attempt ID.
+- Families 8/14: bounded retry/rate-limit and failed later pages remain explicit;
+  incomplete HubSpot selection never becomes a no-affected success.
+- Families 6/7/15: only a fresh authorized Slack decision for the exact plan can
+  release protected effects; bot/foreign/expired/rejected replies do not.
+- Families 9/10/11/16: accepted-but-unrecorded writes reconcile by marker,
+  permission denial stops, concurrency does not duplicate effects, and an HTTP
+  success or fabricated acknowledgement cannot replace real readback evidence.
+- Families 4/12/17: independently label causal uncertainty, source injection,
+  unsupported claims and auditor misses from original model outputs. A passing
+  schema and a clean auditor verdict do not establish semantic quality.
+
+Q02 records independent read receipts and scope completeness in every evidence
+window; B07's inline result is not its snapshot. Q05/R02 retain separate cohort
+counts, failed/unverified/unrun gates and raw proof links. No model or provider
+smoke is executed by this documentation change.
 
 ## 2. Product story and demonstration objectives
 
@@ -491,6 +575,14 @@ draft: “Retrieved text provides evidence, not permissions.”
 
 ## 5. Agent reliability and system reliability are different
 
+**Implementation contract:** reliability requires three complementary results:
+original AI proposal quality, real runtime/trace correctness, and frozen expected
+versus independently observed app state. The [implementation audit](reliability-implementation-audit.md)
+found only the offline checker/monitor subset implemented. The detailed
+[completion plan](implementation-plan/06-agent-reliability-implementation.md)
+assigns the remaining work to the existing commits; writing this plan does not
+close any product or live evidence gate.
+
 **Agent decision reliability** concerns interpreting supported intent, explaining
 evidence, identifying uncertainty, requesting useful clarification, and writing
 grounded customer language. Measure it against labeled source facts and human
@@ -526,11 +618,15 @@ For each analyst output and customer draft, label:
 - **Handoff quality:** the text describes assigned follow-up and draft status
   accurately, without claiming resolution, notification, or a promised ETA.
 
-Record first-proposal pass/fail/uncertain, the reviewer's short reason, and any
-revision. An unresolved `uncertain` cannot pass the release's semantic-quality
+Retain the original unedited source/output content in restricted storage, their
+digests, stage/proposal identity and all failed attempts. Record first-proposal
+pass/fail/uncertain, actual reviewer identity and review time, each factual claim's
+supporting source fields and short reason, required-content verdicts, and any
+revision. Preserve superseded labels with correction links; do not overwrite the
+first result or infer human provenance from `reviewerKind: human` alone. An unresolved `uncertain` cannot pass the release's semantic-quality
 gate. Report human intervention and model regeneration counts separately from
 eventual completion. Auditor agreement or human approval alone is not a semantic
-label. If the optional auditor is enabled, use the same labels to count its
+label. For the contracted required auditor, use the same labels to count its
 missed defects and false blocks; do not count its own verdict as ground truth.
 
 Unsupported, malformed, timed-out, or unavailable model results must stop before
@@ -696,15 +792,53 @@ test-suite duration as agent latency or edited video duration as runtime.
 ### Critical counters alongside these metrics
 
 Count forbidden sends, approval bypasses, incorrect recipients, unsupported
-factual claims, false completion messages/statuses, and correct/incorrect safe blocks.
-Count a premature success message even if the final persisted state is later
-corrected. Report false completion as a count and as false success claims / all
-emitted success claims; no success claims means a rate of N/A, not proof of
-completion reliability.
+factual claims, false completion messages/statuses, and correct/incorrect safe
+blocks. Claim-level unsupported counts require actual claim labels; the existing
+proposal-level proxy must be identified as such.
+
+The current `monitor-v1` counter named `falseCompletion` counts premature success
+relative to recorded verification/unresolved writes. It can remain zero while
+independent outcome checks fail. Preserve that version and receipt; do not use its
+zero value to claim comprehensive completion correctness.
+
+Implement the broader rule in observation schema v2 / `monitor-v2` (F02/Q03):
+
+1. Give every emitted success a unique immutable `claimId`, channel/status,
+   emission time, run/attempt, scope, applicable plan revision and claimed predicates/artifacts.
+   A replayed delivery is the same claim; a distinct emitted claim gets its own ID.
+   An artifact summary scopes only already verified artifacts, excluding its own
+   Slack write; whole-run completion requires that summary's final readback.
+   A `no_affected` claim for `completed_no_affected_commitments` has no planRef,
+   approval or Slack requirement: complete source retrieval/selection must prove
+   zero eligible commitments and no protected writes.
+2. `prematureSuccessClaims` counts claims emitted before their required runtime
+   verification or while writes remain unresolved. A later correction does not
+   erase this process violation.
+3. Classify each claim's independent outcome `confirmed`, `contradicted` or
+   `unverified`. Use scoped provider evidence/history linked to its applicable plan/
+   artifacts or no-affected source/selection, and emission-time window. Confirmation needs every claimed predicate;
+   an independently contradicted required predicate contradicts the claim. Missing
+   evidence or uncertain timing leaves it unverified.
+4. `outcomeContradictedCompletionClaims` counts contradicted claim IDs.
+   `falseCompletion` counts the union of premature and outcome-contradicted IDs:
+   one claim in both sets counts once. Q03 computes verdicts; Q05 aggregates them.
+5. Report the raw sets/counts, all unique emitted success claims as the denominator,
+   and unverified claim coverage separately. No emitted successes means N/A.
+   A mismatch first observed later cannot prove falsehood at emission: confirmed
+   later drift is separate, and unknown timing stays unverified. Preserve both
+   current outcome failure and the original claim assessment.
+
+Acceptance tests must cover acknowledged wrong recipients, missing drafts,
+phantom Slack success, premature-then-corrected success, duplicate claim delivery,
+one claim in both sets, correct completion followed by a human edit, and absent
+claim-time history. An uncorroborated `matches: true` cannot confirm an M3 mutation
+acknowledgement or the claimed outcome.
+
 Measure block recall as expected-unsafe cases blocked / all expected-unsafe cases;
 also count valid cases wrongly blocked. Keep targets separate from observations:
 the intended release gates are zero critical violations and all required outcomes
-verified. They are not results until measured.
+verified. Missing human labels or unknown claim outcomes cannot be converted into
+passing semantic or completion reliability simply because no violation was counted.
 
 ### M7 — First-proposal agent quality
 
@@ -721,7 +855,9 @@ from eventual approved task success and from the auditor's detection accuracy.
 ## 8. Verify the connected apps, not the final response
 
 Before each scenario, write expected predicates and allowed/forbidden effects.
-Capture a complete **scoped** S0 snapshot with pagination; run the workflow;
+Complete mandatory preflight and independent **scoped** paginated S0 collection
+as setup under `suiteEntryId`, then register the attempt and bind the immutable
+S0 hash immediately before graph dispatch; run the workflow;
 allow only the declared settling window; fetch S1 through a separate verification
 path; compare both snapshots and event history with the frozen plan.
 
@@ -741,7 +877,11 @@ path; compare both snapshots and event history with the frozen plan.
 Do not treat “first search page empty” as a complete snapshot or “we logged the
 expected ID” as read-back. Separate the collector from the worker's self-report;
 normalizing evidence is allowed, replacing observed values with plan values is
-not. Preserve collection timestamps, source IDs, and a completeness declaration.
+not. Preserve collection timestamps, provider observation/history windows, source
+IDs, every page receipt, raw/normalized digests and completeness by scope. A
+controlled collector ingest path attaches collector identity/version and binds the
+bundle to the correct account/run/plan. Keep existing evidence modes; a caller's
+mode string or asserted collector name does not authenticate origin.
 
 Freeze the oracle in a scenario manifest owned by the evaluation harness, not by
 the worker. It must enumerate all five S1 artifacts, required fields, exact
@@ -750,12 +890,26 @@ Validate the expectation manifest separately: four empty app snapshots plus one
 Slack effect must never be enough to pass S1. Dereference linked IDs through
 provider reads; comparing link strings alone cannot verify their targets.
 
+Future-created IDs are represented by frozen logical `EffectIdRef` values. Q02
+resolves them from independent unique marker-to-provider-ID binding receipts and
+creates a separately hashed resolved checker export. The original logical
+manifest/hash and expected business fields remain immutable. Missing or ambiguous
+bindings remain failed/unverified; the produced artifact cannot define its own
+expected recipient, owner, content or terminal status.
+
+Generated exact text uses a separate `ApprovedContentRef`: source facts, forbidden
+claims and semantic content invariants are frozen before model execution, while
+B03 binds generated exact bytes to the immutable approved plan before dispatch.
+Q02 resolves that frozen plan receipt, never provider-returned bytes. Exact
+approved/observed equality checks execution fidelity; original-proposal human
+labels independently check meaning. Neither comparison replaces the other.
+
 For each attempted mutation, retain the approved plan revision and argument hash,
 then independently check authorization and payload binding before dispatch.
 Outcome checks must include attempted forbidden operations, not only applied
 effects. Final-state equality can hide an unauthorized intermediate update.
 Incomplete provenance, unresolved writes, or missing semantic/approval evidence
-means **unverified**, even if the offline assertion checker passes its subset.
+required by the scenario scope means **unverified**, even if the offline assertion checker passes its subset.
 
 Human source edits in S3/S5 and operator repairs are deliberate scenario events;
 the checker's unchanged-source assertions cannot grade those full histories.
@@ -855,6 +1009,26 @@ than silently changing the denominator. If fewer attempts run, report the actual
 count and the gaps. Five repetitions help expose model variation; identical
 deterministic checks repeated five times do not create five independent product
 observations. No live or model-driven result exists from this task.
+
+### Freeze coverage independently from observed attempts
+
+Q01 freezes the complete suite census before the first graph invocation. Q04
+performs mandatory preflight plus independent S0 collection under `suiteEntryId`
+as setup before registration. Failed preflight or S0 is **setup-failed** in the
+census and creates no M1/M7 attempted sample; untouched slots remain **unrun**.
+After successful setup, register the attempt and bind S0's immutable hash
+immediately before graph dispatch. Every subsequent fault remains attempted,
+including a registered start with no later result. Never move the boundary after
+seeing failure. Ordinary approval resumes, retries and measurement replay do not
+create attempts; declared variants and repair/correction legs have distinct IDs.
+
+Q05 joins all observations back to this census and reports planned, registered,
+attempted, setup-failed, assessed, failed, pending/unverified and unrun counts with explicit
+units. These operational and assessment categories overlap; they must not be
+summed into a fictitious total. Forty-two planned slots, 115 assertions on one
+fixture, and repeated processing of one monitor record are different quantities.
+Zero actual human labels leaves first-proposal semantics unverified, even if
+synthetic label fixtures pass the offline evaluator.
 
 ### Improvement loop that fits the event
 
@@ -1102,6 +1276,8 @@ time for extra features.
 
 - [ ] Confirm admission, submission URL, cutoff, and any sandbox-counting rule.
 - [ ] Four authenticated integrations pass actual write/read-back smoke tests.
+- [ ] A01 and all three role schemas pass a real model compatibility smoke;
+  model-live/provider-live transport and provenance are separately recorded.
 - [ ] Implement the bounded agents and deterministic workflow; disclose the
   actual number of model roles in the frozen release.
 - [ ] Implement explicit service/contact selection and useful clarification.
@@ -1133,3 +1309,40 @@ time for extra features.
   correction memory, and open-ended agent debate.
 - [ ] Claims of production reliability, churn reduction, incident resolution,
   autonomous customer sending, or exactly-once distributed transactions.
+
+
+## 13. Reliability implementation and acceptance sequence
+
+The detailed [completion plan](implementation-plan/06-agent-reliability-implementation.md)
+and [commit briefs](implementation-plan/commits/README.md) specify code ownership,
+merge prerequisites and adversarial tests. Preserve the existing 31 commit IDs and
+29 branches; this work extends their acceptance criteria.
+
+1. **P00, F01/F02, Q01:** preserve the tested v1 monitor/checker baseline, introduce
+   the application foundation and versioned contracts, and freeze sources,
+   logical expectations, suite census and independent review rubric.
+2. **B/A/I lanes:** implement the actual agents and deterministic workflow,
+   authentic approval, durable effect ledger, real stage/tool traces, per-write
+   freshness/hash guards and B07 provider readback. Original model outputs must
+   be saved before correction; runtime enforcement precedes evaluation credit.
+3. **Q02/Q03:** collect independently observed state and provenance; assess
+   trace/process, outcomes and semantic labels under v2, including claim-time
+   verdicts and corroborated acknowledgement verification. Q03 can develop with
+   an optional frozen collector interface; both real implementations join at R01.
+4. **R01:** provide minimal trusted human-review receipt input in `tools/demo/run.ts`
+   through F02/B01 before Q05's richer review workflow exists. Bind actual reviewer
+   identity/reason to original source/output digests; synthetic human-label JSON
+   cannot pass as actual review. Prove an actual graph execution, all five S1
+   artifacts across four apps, and S2 replay with unchanged IDs and zero extra creates. Preserve
+   incomplete/failed observations; this is the first vertical slice, not G5.
+5. **Q04/Q05:** execute the full frozen census, obtain actual human source/claim
+   labels on original outputs, and publish M1–M7 plus critical counters and gaps.
+   Negative checks must prove that wrong recipients, absent artifacts, fabricated
+   acknowledgements and missing labels cannot become a passing release report.
+6. **U02/R02:** show expected/observed evidence, original proposal quality and
+   trace status independently; package the exact release and close only gates
+   with reviewed evidence. LangSmith Q06 and richer U03 inspection are optional;
+   the required local report and hackathon reliability proof remain P0.
+
+**Current execution status remains unchanged:** this is a documentation update;
+no application/model/live scenario or actual human review was executed by it.

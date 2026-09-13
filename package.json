@@ -1,0 +1,24 @@
+{
+  "name": "promiseguard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0 <25"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test:checker": "node --test --test-isolation=none tests/reliability/check-evidence.test.mjs",
+    "test:monitor": "npm run build && node --test --test-isolation=none tests/monitoring/*.test.mjs",
+    "test": "npm run build && node --test --test-isolation=none tests/reliability/*.test.mjs tests/monitoring/*.test.mjs",
+    "monitor": "node dist/server/monitoring/cli.js"
+  },
+  "dependencies": {
+    "zod": "4.6.4"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.4",
+    "typescript": "7.0.2"
+  }
+}

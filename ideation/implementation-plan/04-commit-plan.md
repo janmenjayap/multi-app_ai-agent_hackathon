@@ -1,14 +1,61 @@
 # Commit-by-commit implementation plan
 
 This is an implementation backlog, not a record of completed implementation.
-Only the offline checker in `tools/reliability/` and its tests exist today.
-Every application path, branch, npm command, and commit below is **proposed**.
+At its **September 13, 2026 historical baseline**, only the offline checker and
+its tests were runnable. **September 14 update (IST):** the Node 24/TypeScript/SQLite
+[standalone monitor](../../tools/monitoring/README.md) now provides schemas,
+observation/job persistence, supplied-evidence assessment, metrics, and CLI commands.
+The product application is still missing; F01/F02 and Q02–Q05 remain partial.
+Reuse these existing modules when implementing the backlog. Branches, commit IDs,
+and the full application layout below remain **proposed**; some monitor paths and
+commands now exist, as recorded in [Global Scale](Global%20Scale.md).
 No branches or commits are created by this document. The [canonical demo
 contract](../demo-scenarios-and-reliability.md) controls expected outcomes.
 
 Use the [parallel delivery plan](03-parallel-delivery.md) for staffing and
 the [contracts and handoffs](05-contracts-and-handoffs.md) for shared interfaces.
 GitHub, HubSpot, Slack, and Gmail all remain required. Gmail is draft-only.
+The [detailed reliability implementation](06-agent-reliability-implementation.md)
+expands each existing brief with concrete steps, negative tests, and handoffs for
+the audit findings. Trace/process correctness, independently verified outcomes,
+and original AI quality are separate P0 obligations throughout this backlog.
+
+**Dedicated execution files:** [one plan per branch](branches/README.md) and
+[one plan per commit](commits/README.md). Each entry below links its detailed
+brief. The original 30 implementation IDs remain stable; P00 is an added
+preparation commit that preserves the existing monitor before F01. No other
+hard dependency is changed. F01/F02 share a branch, as do U01/U02; each pair can
+land through incremental PRs without waiting for the later commit's gates.
+
+## Concrete LLM and external-app delivery map
+
+The [LLM integration guide](07-agent-spawning-and-llm-integration.md) and
+[MCP/API integration guide](08-mcp-api-and-external-app-integration.md) refine
+these existing IDs. Every affected individual brief includes its integration
+steps; the guides define shared configuration and call paths.
+
+- **F01/F02:** server-only model/app configuration, tested packages, fixed role
+  signatures, complete reads/unknown writes and capability-separated app contracts.
+- **B01/A01/A02–A04:** durable role claims/output records; the single recorded
+  OpenAI call boundary; analyst, drafter and auditor prompt/input/output functions.
+- **B04/R01:** schedule graph work outside HTTP; construct clients in
+  `src/server/composition.ts`; call role functions from `workflow/nodes.ts` and
+  enforce ordering in `workflow/graph.ts`. B02/B03 remain deterministic policy.
+- **I01–I05:** narrow REST adapters, exact operations/scopes and real account smoke.
+  MCP is an optional I01 transport plus per-app mappings, enabled only after
+  reviewed conformance; it grants models no tools and adds no required MVP commit.
+- **B05/B06/B07:** authentic Slack review/decision; approved sequential HubSpot
+  task/note, Gmail draft and GitHub comment; independent artifact reads followed
+  by Slack summary/readback. B08 reuses the same clients and durable results.
+- **Q01–Q05/R02:** stateful model/app fakes, independent provider collection,
+  actual model/tool attempt checks, separate live model/app configuration evidence,
+  original-output labels and release proof. Q06 adds only optional diagnostics.
+- **U01–U03:** backend commands/status/evidence views. No browser model, app or MCP
+  clients and no UI approval bypass. P00 preserves the supplied-evidence baseline.
+
+No merge gate changes: adapters and roles can develop against F02 fixtures;
+their real dependency injection joins at R01. Account/model access checks can run
+early, but protected workflow writes require the merged approval/execution gates.
 
 ## How to use this backlog
 
@@ -37,11 +84,12 @@ GitHub, HubSpot, Slack, and Gmail all remain required. Gmail is draft-only.
   hand their changes to that branch's owner; they do not edit a second branch's
   shared files. Only P1 changes `package.json`, `package-lock.json`, shared
   contracts, and migrations. Request a foundation follow-up if these must change.
-- F01 establishes `npm run typecheck`, `npm run build`, `npm run test:app --
-  <test-file>`, and `npm run test:checker`. Later commits add scripts through the
-  foundation owner. Until then, these are handoff requirements, not runnable
-  commands. Provider smoke, fixture seeding, and evaluation commands are defined
-  by I01/Q01/Q04 and must label their evidence mode.
+- F01 extends the existing monitor's `npm run typecheck`, `npm run build`, and
+  `npm run test:checker` scripts to cover the application and adds the proposed
+  `npm run test:app -- <test-file>`. Later commits add scripts through the foundation
+  owner. Provider smoke, app fixture seeding, and workflow evaluation commands
+  remain I01/Q01/Q04 handoff requirements; the current monitor's synthetic
+  export/demo commands do not implement them. Every command must label its mode.
 - Every handoff contains its commit ID, touched paths, passing commands, failed
   or unrun checks, fixture/version, and the consuming commit. Real provider
   snapshots and credentials stay in ignored local evidence storage.
@@ -53,6 +101,60 @@ even when B08's automatic recovery demonstration is deferred.
 Priority P1 means optional enhancement here; contributor P1 in an owner field
 means the backend integrator. They are separate labels.
 
+## Reliability work incorporated into the existing commits
+
+This is the acceptance map for the audit update, not another set of commits:
+
+- **P00/F01:** preserve the tested offline baseline and distinguish currently
+  runnable commands from proposed application/evaluation commands.
+- **F02:** freeze observation-schema-v2 and `monitor-v2` contracts, original
+  output/label provenance, logical `EffectIdRef` and `ApprovedContentRef` binding,
+  temporal claims including valid `no_affected` outcomes, suite
+  census, and old-v1 compatibility. Keep checker-v1 unchanged.
+- **B01/B04:** one application transaction for state/event/job, durable stage
+  start/end and completion emission, recovery-safe identities, and v1/v2 storage.
+- **B02/B03/B05/B06:** evidence-backed exact selection, immutable expectations
+  and allowed ID substitutions, authentic per-dispatch approval, guarded writes,
+  and unresolved-write reconciliation or safe stopping.
+- **I01–I05/A01–A04:** actual tool/model attempts with stage/span/parent IDs,
+  transport-versus-provider outcomes, error/retry timing, original output/source
+  digests, and no unrecorded retry or fabricated successful model stage.
+- **B07:** fresh inline provider readback, actual field/association/MIME checks,
+  receipt-backed verification and scoped claims, final Slack readback. Keep its
+  enforcement path separate from Q02's post-run measurement collector.
+- **Q01/Q02:** independently frozen oracle and suite census; paginated S0/S1,
+  claim-related time windows, provider provenance, exact observed identity
+  bindings, and compatible checker exports that never invent missing evidence.
+- **Q03:** scheduled versioned assessments; corroborated M3 verification;
+  `prematureSuccessClaims`, outcome-at-emission verdicts, and unique-claim union
+  `falseCompletion`. Distinguish later drift and missing timing from proven
+  historical contradiction. Preserve monitor-v1's narrower counter meaning.
+- **Q04/Q05:** actual graph execution, full planned/attempted/unrun census,
+  original-output human review with reasons and per-claim support, corrected-plan
+  versus first-proposal quality, and reproducible M1–M7/raw critical counts.
+- **U01/U02/U03:** truthful fixture labels and pending states, expected/observed
+  comparisons, evidence gaps and claim classifications. U02 is the required
+  minimal report path; U03 remains optional richer inspection.
+- **R01/R02:** actual four-app S1/S2 and safety evidence, frozen versions, short
+  brief/demo, and capability gates supported by observed results.
+- **B08/Q06:** optional recovery and export must preserve the same event/evidence
+  identities, guards, counts, and independent truth requirements if included.
+
+Q03 can develop/merge against frozen Q01 collector-receipt fixtures without a
+Q02 implementation dependency; absent evidence is unverified. Q02 and Q03 must
+join in R01 before live outcome claims. Q05 consumes Q03 claim verdicts and does
+not implement a competing classifier. Shared schema changes land through F02,
+storage/migrations through B01, and full report integration after Q04.
+
+Freeze the sampling boundary too: preflight and S0 are setup by `suiteEntryId`
+before registration, with setup failures visible in census; register and bind S0
+hashes immediately before graph dispatch. All post-registration failures remain
+attempts. Q01 freezes semantic facts/invariants before model execution; B03 binds
+exact generated text from the immutable approved plan before protected writes.
+Neither expected IDs nor text is copied from observed destination artifacts.
+R01's planned `tools/demo/run.ts` supplies minimal actual human-review receipts
+through F02/B01 before Q05's richer review workflow, avoiding a dependency cycle.
+
 ## Dependency waves and merge order
 
 This diagram shows merge gates, not additional runtime agents. Detailed entries
@@ -60,6 +162,7 @@ below remain authoritative when a node has several dependencies.
 
 ```mermaid
 flowchart TD
+    P00["P00 reviewed monitor baseline"] --> F01
     F01["F01 scaffold"] --> F02["F02 frozen contracts"]
     F02 --> Core["B01 stores · B02/B03 policy · B04 driver"]
     F02 --> Apps["I01 then I02/I03/I04/I05 in parallel"]
@@ -85,7 +188,7 @@ flowchart TD
     Q05 -. optional .-> U03["U03 richer scorecard"]
 ```
 
-1. **Foundation/access gate:** F01 → F02. In parallel, P2 validates test-account
+1. **Foundation/access gate:** P00 → F01 → F02. In parallel, P2 validates test-account
    access and scopes using provider tools; P4 reviews fixture expectations.
    No team member builds a second API/schema design while waiting.
 2. **Contract-based construction:** B01/B02, I01 then the four provider branches,
@@ -111,11 +214,33 @@ is not a new allowance. If a gate cannot be reached, report the unmet capability
 in the global verification document. Do not quietly remove an app, bypass a
 guard, label a simulation live, or fill a missed measurement with a target.
 
+## Shared baseline preparation
+
+### P00 — Preserve the reviewed monitoring baseline
+
+**Detailed plan:** [P00](commits/P00.md) · [branch `chore/monitor-baseline`](branches/chore-monitor-baseline.md).
+
+- **Branch / owner:** `chore/monitor-baseline` / P1. **Merge dependencies:** none.
+- **Paths:** existing monitor source/configuration/tests/guide and explicitly
+  reviewed associated documentation; preserve user-owned changes and relocations.
+- **Do:** record the exact implemented monitor baseline, check its saved receipt
+  against current inputs, and make its reviewed commit available on `main` before
+  new feature worktrees are created. Its current verified scope is offline only.
+- **Do not:** discard user edits, stage every dirty file, commit private data or
+  generated dependencies, or treat the monitor as a completed application.
+- **Parallel inside this chunk:** P1 reviews source/configuration while P4 reviews
+  tests/report evidence; P2/P3 prepare account and policy prerequisites.
+- **Verify / handoff:** selected baseline files and links exist in the committed
+  checkout; its actual test receipt and real SHA are handed to F01 and recorded
+  in Global Scale. See the dedicated file for exact scope and execution steps.
+
 ## Foundation
 
 ### F01 — Establish the tested application skeleton
 
-- **Branch / owner:** `feat/foundation` / P1. **Merge dependencies:** none.
+**Detailed plan:** [F01](commits/F01.md) · [branch `feat/foundation`](branches/feat-foundation.md).
+
+- **Branch / owner:** `feat/foundation` / P1. **Merge dependencies:** P00.
 - **Paths:** `package.json`, `package-lock.json`, `.node-version`, `tsconfig.json`,
   `vite.config.ts`, `vitest.config.ts`, `index.html`, `.env.example`, `.gitignore`,
   `src/server/index.ts`, `src/web/main.tsx`, `tests/app/bootstrap.test.ts`.
@@ -133,10 +258,14 @@ guard, label a simulation live, or fill a missed measurement with a target.
 
 ### F02 — Freeze shared contracts before concurrent implementation
 
+**Detailed plan:** [F02](commits/F02.md) · [branch `feat/foundation`](branches/feat-foundation.md).
+
 - **Branch / owner:** `feat/foundation` / P1. **Merge dependencies:** F01.
 - **Paths:** `src/shared/domain.ts`, `src/shared/agents.ts`,
   `src/shared/adapters.ts`, `src/shared/api.ts`, `src/shared/events.ts`,
-  `src/shared/evaluation.ts`, `tests/app/contracts.test.ts`.
+  `src/shared/evaluation.ts`, `tests/app/contracts.test.ts`; narrowly reviewed
+  compatibility changes in `src/shared/reliability.ts` and
+  `tests/monitoring/contracts.test.mjs` belong to this foundation owner.
 - **Do:** define Zod contracts for identities, complete/incomplete reads, immutable
   plan payloads, effect/attempt states including unknown outcomes, API projections,
   three role inputs/outputs, events, and evidence/metric modes. Freeze method
@@ -153,11 +282,15 @@ guard, label a simulation live, or fill a missed measurement with a target.
 
 ### B01 — Persist authoritative application state and evidence atomically
 
+**Detailed plan:** [B01](commits/B01.md) · [branch `feat/durable-core`](branches/feat-durable-core.md).
+
 - **Branch / owner:** `feat/durable-core` / P1. **Merge dependencies:** F02.
 - **Paths:** `src/server/storage/database.ts`,
   `src/server/storage/migrations/001-initial.sql`,
   `src/server/storage/repositories.ts`, `src/server/observability/events.ts`,
-  `src/server/observability/redaction.ts`, `tests/app/storage.test.ts`.
+  `src/server/observability/redaction.ts`, `tests/app/storage.test.ts`;
+  the reviewed transaction-aware refactor of existing
+  `src/server/storage/monitor-store.ts` and its storage compatibility tests.
 - **Do:** create the architecture's run/snapshot/plan/approval/effect/attempt,
   verification/evaluation, event/job/assessment/metric/label records; enforce
   unique identities, foreign keys, short transactions, and restricted payload
@@ -170,6 +303,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
   recover records; failures to persist audit/ledger data prevent dispatch.
 
 ### B02 — Select incidents and commitments with deterministic policy
+
+**Detailed plan:** [B02](commits/B02.md) · [branch `feat/selection-policy`](branches/feat-selection-policy.md).
 
 - **Branch / owner:** `feat/selection-policy` / P3. **Merge dependencies:** F02, Q01.
 - **Paths:** `src/server/policy/incident.ts`, `src/server/policy/selection.ts`,
@@ -185,6 +320,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
   unchanged issue identity never opens a second run after a service edit.
 
 ### B03 — Freeze immutable plans, claims, and effect identities
+
+**Detailed plan:** [B03](commits/B03.md) · [branch `feat/plan-policy`](branches/feat-plan-policy.md).
 
 - **Branch / owner:** `feat/plan-policy` / P3. **Merge dependencies:** B02.
 - **Paths:** `src/server/policy/claims.ts`, `src/server/policy/plan.ts`,
@@ -203,6 +340,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
   keys; multiple To addresses and any Cc/Bcc fail before review publication.
 
 ### B04 — Drive one durable graph invocation per incident
+
+**Detailed plan:** [B04](commits/B04.md) · [branch `feat/workflow-driver`](branches/feat-workflow-driver.md).
 
 - **Branch / owner:** `feat/workflow-driver` / P1. **Merge dependencies:** B01.
 - **Paths:** `src/server/workflow/state.ts`, `src/server/workflow/driver.ts`,
@@ -224,6 +363,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
 
 ### B05 — Bind Slack approval to the current plan and source state
 
+**Detailed plan:** [B05](commits/B05.md) · [branch `feat/slack-approval`](branches/feat-slack-approval.md).
+
 - **Branch / owner:** `feat/slack-approval` / P1. **Merge dependencies:** B01, B03,
   B04, I04.
 - **Paths:** `src/server/policy/approval.ts`, `src/server/policy/freshness.ts`,
@@ -242,6 +383,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
   correction triggers fresh review on the existing run.
 
 ### B06 — Guard and reconcile every protected effect before dispatch
+
+**Detailed plan:** [B06](commits/B06.md) · [branch `feat/guarded-execution`](branches/feat-guarded-execution.md).
 
 - **Branch / owner:** `feat/guarded-execution` / P1. **Merge dependencies:** B01,
   B03, B05, I02, I03, I05.
@@ -264,6 +407,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
 
 ### B07 — Verify remote artifacts independently and finalize cautiously
 
+**Detailed plan:** [B07](commits/B07.md) · [branch `feat/readback-verifier`](branches/feat-readback-verifier.md).
+
 - **Branch / owner:** `feat/readback-verifier` / P3. **Merge dependencies:** B01,
   I02, I03, I04, I05.
 - **Paths:** `src/server/verification/readback.ts`,
@@ -283,6 +428,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
   records its observation time and independent source evidence.
 
 ### B08 — Demonstrate bounded automatic recovery after restart [P1]
+
+**Detailed plan:** [B08](commits/B08.md) · [branch `feat/durable-recovery`](branches/feat-durable-recovery.md).
 
 - **Branch / owner:** `feat/durable-recovery` / P1. **Merge dependencies:** R01, Q04.
 - **Paths:** `src/server/execution/recovery.ts`,
@@ -306,6 +453,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
 
 ### I01 — Share bounded transport, normalization, and smoke-test plumbing
 
+**Detailed plan:** [I01](commits/I01.md) · [branch `feat/adapter-core`](branches/feat-adapter-core.md).
+
 - **Branch / owner:** `feat/adapter-core` / P2. **Merge dependencies:** F02.
 - **Paths:** `src/server/adapters/common/transport.ts`,
   `src/server/adapters/common/pagination.ts`,
@@ -325,6 +474,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
 
 ### I02 — Implement GitHub incident evidence and one marked impact comment
 
+**Detailed plan:** [I02](commits/I02.md) · [branch `feat/github-adapter`](branches/feat-github-adapter.md).
+
 - **Branch / owner:** `feat/github-adapter` / P2. **Merge dependencies:** I01.
 - **Paths:** `src/server/adapters/github.ts`,
   `tests/adapters/github.test.ts`, `tools/smoke/github.ts`.
@@ -340,6 +491,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
   snapshots and actual immutable IDs privately to B02/B06/B07/Q02.
 
 ### I03 — Implement HubSpot commitments, task, and note
+
+**Detailed plan:** [I03](commits/I03.md) · [branch `feat/hubspot-adapter`](branches/feat-hubspot-adapter.md).
 
 - **Branch / owner:** `feat/hubspot-adapter` / P2. **Merge dependencies:** I01.
 - **Paths:** `src/server/adapters/hubspot.ts`,
@@ -357,6 +510,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
 
 ### I04 — Implement Slack review, thread reads, and summary updates
 
+**Detailed plan:** [I04](commits/I04.md) · [branch `feat/slack-adapter`](branches/feat-slack-adapter.md).
+
 - **Branch / owner:** `feat/slack-adapter` / P2. **Merge dependencies:** I01.
 - **Paths:** `src/server/adapters/slack.ts`,
   `tests/adapters/slack.test.ts`, `tools/smoke/slack.ts`.
@@ -372,6 +527,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
   limits, and duplicate marker matches survive normalization accurately.
 
 ### I05 — Implement Gmail drafts and complete MIME readback
+
+**Detailed plan:** [I05](commits/I05.md) · [branch `feat/gmail-adapter`](branches/feat-gmail-adapter.md).
 
 - **Branch / owner:** `feat/gmail-adapter` / P2. **Merge dependencies:** I01.
 - **Paths:** `src/server/adapters/gmail.ts`,
@@ -394,9 +551,13 @@ guard, label a simulation live, or fill a missed measurement with a target.
 
 ### A01 — Share a bounded, recorded structured-call wrapper
 
+**Detailed plan:** [A01](commits/A01.md) · [branch `feat/agent-runtime`](branches/feat-agent-runtime.md).
+
 - **Branch / owner:** `feat/agent-runtime` / P3. **Merge dependencies:** F02, B01.
 - **Paths:** `src/server/agents/runtime.ts`, `src/server/agents/model.ts`,
-  `tests/app/agent-runtime.test.ts`.
+  `tests/app/agent-runtime.test.ts`, `tools/smoke/model.ts`.
+  The model smoke entrypoint is an explicit A01 scope refinement; F01 owns its
+  proposed `smoke:model` package-script registration and TypeScript execution setup.
 - **Do:** wire the pinned LangChain/OpenAI transport with tested structured
   outputs, explicit timeout/token/schema retry budgets, role-specific prompt/model
   versions, immutable first outputs, per-attempt events, and validated references.
@@ -410,6 +571,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
   and distinguish refusal/invalid output/transport failure.
 
 ### A02 — Add the Incident Evidence Analyst
+
+**Detailed plan:** [A02](commits/A02.md) · [branch `feat/agent-analyst`](branches/feat-agent-analyst.md).
 
 - **Branch / owner:** `feat/agent-analyst` / P3. **Merge dependencies:** A01.
 - **Paths:** `src/server/agents/analyst/index.ts`,
@@ -428,6 +591,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
 
 ### A03 — Add the Customer Update Drafter
 
+**Detailed plan:** [A03](commits/A03.md) · [branch `feat/agent-drafter`](branches/feat-agent-drafter.md).
+
 - **Branch / owner:** `feat/agent-drafter` / P3. **Merge dependencies:** A01.
 - **Paths:** `src/server/agents/drafter/index.ts`,
   `src/server/agents/drafter/prompt.ts`,
@@ -444,6 +609,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
   Hand preserved first drafts and correction records to Q05 and R01.
 
 ### A04 — Add the Blind Semantic Auditor
+
+**Detailed plan:** [A04](commits/A04.md) · [branch `feat/agent-auditor`](branches/feat-agent-auditor.md).
 
 - **Branch / owner:** `feat/agent-auditor` / P3. **Merge dependencies:** A01.
 - **Paths:** `src/server/agents/auditor/index.ts`,
@@ -465,6 +632,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
 
 ### U01 — Build one fixture-backed operator screen
 
+**Detailed plan:** [U01](commits/U01.md) · [branch `feat/operator-console`](branches/feat-operator-console.md).
+
 - **Branch / owner:** `feat/operator-console` / P4. **Merge dependencies:** F02.
 - **Paths:** `src/web/App.tsx`, `src/web/styles.css`,
   `src/web/components/IncidentInput.tsx`, `src/web/components/EvidencePanel.tsx`,
@@ -482,6 +651,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
   than green. Check the operator screen at the intended recording resolution.
 
 ### U02 — Connect durable status, Slack review, and partial-run controls
+
+**Detailed plan:** [U02](commits/U02.md) · [branch `feat/operator-console`](branches/feat-operator-console.md).
 
 - **Branch / owner:** `feat/operator-console` / P4. **Merge dependencies:** U01, B04.
 - **Paths:** `src/web/App.tsx`, `src/web/api/client.ts`, `src/web/hooks/useRun.ts`,
@@ -501,6 +672,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
 
 ### U03 — Add richer inspection of the measured scorecard [P1]
 
+**Detailed plan:** [U03](commits/U03.md) · [branch `feat/evaluation-view`](branches/feat-evaluation-view.md).
+
 - **Branch / owner:** `feat/evaluation-view` / P4. **Merge dependencies:** U02, Q05.
 - **Paths:** `src/web/components/EvaluationSummary.tsx`,
   `src/web/components/Scorecard.tsx`,
@@ -518,6 +691,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
 ## Independent fixtures, evaluation, and observability
 
 ### Q01 — Freeze scenario worlds, expected outcomes, and controllable fakes
+
+**Detailed plan:** [Q01](commits/Q01.md) · [branch `feat/evaluation-fixtures`](branches/feat-evaluation-fixtures.md).
 
 - **Branch / owner:** `feat/evaluation-fixtures` / P4. **Merge dependencies:** F02.
 - **Paths:** `tests/fixtures/world.json`, `tests/fixtures/scenarios.json`,
@@ -541,6 +716,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
 
 ### Q02 — Collect independent scoped evidence and export checker input
 
+**Detailed plan:** [Q02](commits/Q02.md) · [branch `feat/evidence-collector`](branches/feat-evidence-collector.md).
+
 - **Branch / owner:** `feat/evidence-collector` / P4. **Merge dependencies:** Q01,
   I02, I03, I04, I05, B01.
 - **Paths:** `src/server/evaluations/collector.ts`,
@@ -551,6 +728,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
   scoped namespace, protected records, associations/cross-links, Gmail drafts and
   relevant sent-mail evidence. Instantiate read-only collector capabilities and
   use frozen scenario expectations; retain complete operation/actor history.
+  Record controlled collector provenance and observation windows; bind logical
+  future IDs without changing the frozen expected fields or original manifest.
 - **Do not:** copy the executor's cached results, assert completeness on a failed
   page, or normalize unknown writes to definitive `error` for checker v1.
 - **Parallel inside this chunk:** provider read projections and exporter tests
@@ -563,14 +742,19 @@ guard, label a simulation live, or fill a missed measurement with a target.
 
 ### Q03 — Assess local events with durable measurement jobs
 
+**Detailed plan:** [Q03](commits/Q03.md) · [branch `feat/reliability-monitor`](branches/feat-reliability-monitor.md).
+
 - **Branch / owner:** `feat/reliability-monitor` / P4. **Merge dependencies:** B01, Q01.
 - **Paths:** `src/server/monitoring/worker.ts`,
-  `src/server/monitoring/trace-rules.ts`,
-  `src/server/monitoring/sweeper.ts`, `tests/app/monitor.test.ts`.
+  `src/server/monitoring/assess.ts`, `src/server/monitoring/claim-verdicts.ts`,
+  `src/server/monitoring/trace-rules.ts`, `src/server/monitoring/sweeper.ts`,
+  `tests/app/monitor.test.ts`, `tests/app/claim-verdicts.test.ts`.
 - **Do:** process local event watermarks; check immutable payload/approval binding,
   retry budgets, forbidden operations, duplicate claims, expiry, and premature
   completion. Use job leases/retry limits and deduplicated observation identities;
   include waiting/blocked/failed/partial/stalled runs.
+  Add monitor-v2 temporal claim assessment and corroborated M3 outcome credit;
+  retain legacy monitor-v1 behavior and distinguish unverified timing/later drift.
 - **Do not:** depend on LangSmith availability, mutate provider state, silently
   replace the required runtime auditor, or create denominators on each resume.
 - **Parallel inside this chunk:** trace rules and worker crash/reprocessing tests;
@@ -578,8 +762,13 @@ guard, label a simulation live, or fill a missed measurement with a target.
 - **Verify / handoff:** duplicate/out-of-order jobs do not double-count; monitor
   outage leaves a visible pending assessment; a start without terminal result is
   detected. Local persistence failure still stops protected writes via B01/B06.
+  Hand-check contradictory final state, early success later repaired, one claim
+  in both failure sets, duplicated claim delivery, later human edit, and missing
+  claim-time evidence. The union counter counts each false claim once.
 
 ### Q04 — Automate scenario runs and classify faults honestly
+
+**Detailed plan:** [Q04](commits/Q04.md) · [branch `feat/scenario-harness`](branches/feat-scenario-harness.md).
 
 - **Branch / owner:** `feat/scenario-harness` / P4. **Merge dependencies:** R01, Q01,
   Q02, Q03.
@@ -590,6 +779,10 @@ guard, label a simulation live, or fill a missed measurement with a target.
   through the real graph with stateful fake or live adapters; retain the evidence
   mode, raw history, active/wait time, source/approval transitions, and observed
   result. Cover all 18 family definitions; flag unsupported recovery as unrun.
+  Complete mandatory preflight/S0 before registration and bind those setup receipt
+  hashes at registration; failures after registration cannot move back to setup.
+  Join registered attempts to the complete planned census so not-run cases stay
+  visible without becoming invented task-success denominator entries.
 - **Do not:** mix fault injection with worker actions, score a repair as an
   uncorrected first success, or extend deadlines after a failed attempt.
 - **Parallel inside this chunk:** core, fault/partial, and concurrency test files
@@ -601,6 +794,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
 
 ### Q05 — Produce labeled quality results and reproducible metrics
 
+**Detailed plan:** [Q05](commits/Q05.md) · [branch `feat/evaluation-metrics`](branches/feat-evaluation-metrics.md).
+
 - **Branch / owner:** `feat/evaluation-metrics` / P4. **Merge dependencies:** Q02,
   Q03, Q04.
 - **Paths:** `src/server/evaluations/labels.ts`,
@@ -611,6 +806,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
   human corrections, auditor misses, and false blocks. Compute canonical M1–M7
   from frozen attempt identities with numerators/denominators, timestamps,
   versions, critical counters, and failed/unrun cases in each evidence mode.
+  Bind actual human reviewer reasons and per-claim labels to original text/source
+  digests. Aggregate Q03's v2 claim classifications; keep old-v1 semantics separate.
 - **Do not:** treat checker assertions as workflow runs, retry/resume as a new
   scenario denominator, human approval as original model correctness, or a
   successful safe stop as successful recovery within budget.
@@ -621,6 +818,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
   a reproducible measured report for U02/U03/R02 without uploading private raw data.
 
 ### Q06 — Export sanitized traces to LangSmith without blocking work [P1]
+
+**Detailed plan:** [Q06](commits/Q06.md) · [branch `feat/langsmith-export`](branches/feat-langsmith-export.md).
 
 - **Branch / owner:** `feat/langsmith-export` / P4 or freed P2.
   **Merge dependencies:** B01, Q03.
@@ -641,6 +840,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
 ## Graph integration and release
 
 ### R01 — Assemble the guarded graph and prove the first vertical slice
+
+**Detailed plan:** [R01](commits/R01.md) · [branch `feat/workflow-integration`](branches/feat-workflow-integration.md).
 
 - **Branch / owner:** `feat/workflow-integration` / P1.
   **Merge dependencies:** B02, B03, B04, B05, B06, B07, I02, I03, I04, I05,
@@ -666,6 +867,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
   do not hold integration code hostage to optional hosting or dashboard work.
 
 ### R02 — Freeze the release, verify completion, and package the evidence
+
+**Detailed plan:** [R02](commits/R02.md) · [branch `chore/demo-release`](branches/chore-demo-release.md).
 
 - **Branch / owner:** `chore/demo-release` / P1 with P4 as demo owner.
   **Merge dependencies:** R01, U02, Q04, Q05. Also B08, Q06, or U03 if their

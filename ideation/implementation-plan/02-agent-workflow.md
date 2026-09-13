@@ -1,9 +1,44 @@
 # Agent responsibilities and simple workflow
 
-**Status:** target implementation, not a diagram of running code. Only the
-[offline checker](../../tools/reliability/README.md) currently runs. This schematic
-implements the [architecture](../promiseguard-architecture.md) and keeps the
+**Status:** target application workflow. At the September 13 planning baseline,
+only the [offline checker](../../tools/reliability/README.md) ran. **September 14
+update (IST):** a Node 24/TypeScript/SQLite [standalone monitor](../../tools/monitoring/README.md)
+now assesses supplied observations, but the agents, app adapters, operator UI,
+and application execution in these diagrams remain unimplemented. F01/F02 and
+Q02–Q05 are partial; see [Global Scale](Global%20Scale.md). This schematic follows
+the [architecture](../promiseguard-architecture.md) and keeps the
 [proposal](../final-project-promiseguard.md)'s GitHub + HubSpot + Slack + Gmail scope.
+
+The [detailed reliability implementation plan](06-agent-reliability-implementation.md)
+owns the remaining integration work and its commit-level acceptance. The workflow
+must produce evidence for three distinct questions: was the original AI output
+grounded, were the actual actions authorized and correctly ordered, and do fresh
+independent provider observations match the frozen expected result?
+
+## Exact invocation and integration files
+
+The [agent spawning and LLM guide](07-agent-spawning-and-llm-integration.md)
+turns the roles below into explicit call sites:
+
+```text
+POST /api/runs -> B04 workflow/driver.ts -> R01 workflow/graph.ts + nodes.ts
+  -> A02 analyst/index.ts: analyzeIncident
+  -> A03 drafter/index.ts: draftCustomerUpdate
+  -> A04 auditor/index.ts: auditSemantics
+Each role -> A01 agents/runtime.ts: invokeRole -> agents/model.ts -> OpenAI API
+```
+
+These are proposed paths and project function names. The graph interleaves the
+required selection/proposal guards and freezes a plan only after the auditor.
+“Spawning” is one bounded role invocation in the Node backend. R01
+`src/server/composition.ts` supplies A01's client and each role's isolated context;
+B01 stores raw outputs/results; graph state retains references for safe resume.
+
+The [app integration guide](08-mcp-api-and-external-app-integration.md) specifies
+GitHub/HubSpot reads in R01 source nodes before B02 selection, Slack approval in
+B05, app writes in B06, B07 readbacks/finalization and separate Q02 collection.
+Each calls I01–I05 typed adapters. REST is the required transport; any later MCP
+implementation stays behind that boundary, with no tools handed to model roles.
 
 ## 1. End-to-end view
 
@@ -39,6 +74,10 @@ protected effects require `failed_partial`. An undecided, unexpired Slack plan i
 “Clear” from the auditor means no concern was flagged. It is neither human approval
 nor proof of truth. The final Slack summary lists only independently verified
 artifacts; before its own read-back it must not claim the entire run completed.
+The valid empty-selection branch emits a `no_affected` completion claim with
+`planRef` absent. Complete source reads, deterministic zero-eligible selection,
+and no protected effects support that claim; it needs no plan, approval, or Slack
+artifact. Final Slack readback is required for artifact-producing completion.
 
 ## 2. Where each component runs
 
@@ -50,17 +89,27 @@ flowchart LR
     API --> Store[("Application SQLite<br/>Plans, approvals, effects, evidence")]
     API --> Checkpoints[("Separate graph SQLite<br/>Checkpoint and resume state")]
     API --> Adapters["Typed adapters<br/>GitHub / HubSpot / Slack / Gmail"]
-    API --> Verify["Read-only verifier<br/>Fresh destination reads"]
+    API --> Verify["B07 inline read-only verifier<br/>Fresh destination reads; completion gate"]
     Verify --> Adapters
-    Store --> Monitor["Read-only monitor + evidence exporter<br/>Runtime rules, checker, quality labels"]
+    Store --> Monitor["Read-only monitor<br/>Runtime rules, checker, quality labels"]
+    Harness["Q01/Q04 harness<br/>Frozen suite census and expectations"] --> Collector["Q02 evaluation collector<br/>Independent scoped S0 / S1 reads"]
+    Collector --> Adapters
+    Collector --> Monitor
+    Harness --> Monitor
     Monitor -.-> Traces["Optional LangSmith diagnostics"]
 ```
 
 The model API performs the three language tasks. Their wrappers, policies, prompts,
 validation, and artifact persistence run inside the Node backend. No agent needs
 its own deployment. The browser has no provider credentials or approval bypass.
-The monitor writes local assessment records and sanitized telemetry only; it
-cannot approve, execute, or repair business effects.
+The intended integrated monitor writes local assessments and sanitized telemetry;
+it cannot approve, execute, or repair business effects. The current standalone
+monitor writes local observation/job/assessment records; telemetry export and
+connection to this application graph remain future work. B07's fresh readbacks
+gate runtime completion; Q02 independently collects evaluation evidence before
+and after the run. Q02 may reuse narrow read transport and normalization utilities,
+but cannot reuse the executor's responses or B07's verdict as observed state.
+Both read paths retain their own request, time, scope, and evidence references.
 
 The intended stack remains React/TypeScript/Vite, Fastify, Zod, LangGraph,
 LangChain structured model calls, SQLite, and optional LangSmith trace inspection.
@@ -158,10 +207,14 @@ remove an enabled auditor.
   approved plan. It returns assertions; it does not trust a writer's success text.
 - **State and events — `storage/`, `observability/`:** persist source/artifact
   references, immutable plans, approvals, attempt intent, effects, verification,
-  and canonical redacted events. Retain uncertainty across restart.
+  and canonical redacted events. Retain uncertainty across restart. Commit every
+  application transition, canonical event, and measurement job together in the
+  application database; checkpoints and providers remain outside that transaction.
 - **Monitor and evaluation — `monitoring/`, `evaluations/`:** join frozen scenario
   expectations, independent snapshots, runtime rules, the existing checker, and
   first-proposal labels. Report actual M1–M7 observations and missing evidence.
+  Q04 registers a complete suite census before execution; Q05 reports not-run
+  cases as well as the attempts supplied to the current monitor.
 - **Operator UI — `src/web/`:** start/reopen, show evidence/selection, show the
   exact approval plan and Slack link, render stage/status/verified results, and
   distinguish product verification from pending evaluation. It cannot authorize
@@ -214,3 +267,45 @@ jobs may run concurrently within bounded resources. Multi-person implementation
 can parallelize much more widely: each agent, each app adapter, UI, storage,
 policy, and the harness can develop against the shared contracts before the final
 graph is wired. Preserve that distinction when implementing the branch plan.
+
+## 9. Reliability evidence produced by the workflow
+
+This section specifies future integration; the current monitor consumes declared
+observations and has no runtime producer.
+
+1. **Before execution:** Q01/Q04 freeze scenario expectations, source/seed facts,
+   required roles, scope, budgets, versions, and evaluation attempt identity. Q02
+   collects complete scoped S0 independently as mandatory setup before evaluation
+   registration. Keep failed preflight/S0 as `setup_failed` census entries outside
+   M1/M7 attempted denominators. Key S0 receipts by `suiteEntryId`, bind their hashes
+   when registering immediately before graph dispatch, and retain every subsequent
+   failure as attempted. The harness cannot seed missing observations from expectations.
+   Use `ApprovedContentRef` for generated text: B03 freezes exact content in the
+   immutable approved plan before dispatch, and B07/Q02 resolve expected bytes
+   from that receipt alone. Provider output cannot supply expected content.
+   Original semantic facts/invariants stay fixed; approval does not prove quality.
+   Resolve future provider IDs separately through typed `EffectIdRef` bindings.
+2. **At each graph and model stage:** emit stage start/end, span/parent IDs,
+   actual attempt identities, latency, input/source references, pinned model and
+   prompt, output/refusal/parse/validation status, and original output artifacts.
+   A retry adds evidence while preserving the first proposal for M7.
+3. **At every tool dispatch:** save durable intent and approved request binding
+   before the call; emit normalized operation, actual attempt identity, transport
+   and provider outcome, retry owner/backoff/budget, reconciliation, and fresh
+   readback assertions with causal references. A lost result remains unknown.
+4. **At waiting, failure, blocked, partial, and completed checkpoints:** persist
+   product transition/event/job atomically. Record each public success claim with
+   stable `claimId`, emission time, revision, and the predicates it asserts.
+   B07 must verify artifacts and the final Slack summary before full completion.
+5. **During evaluation:** Q02 retrieves scoped S1 and temporal evidence; Q03 joins
+   it with traces, Q05 adds independent human labels on original outputs, and
+   the report separates trace, outcome, semantic, and first-proposal assessments.
+   Collector/label/measurement gaps remain unverified even when the product says
+   completed. Later drift is recorded without rewriting an earlier verified state.
+
+The new versioned evaluator separates premature success from claims contradicted
+by independent evidence at their emission time, and deduplicates their union by
+claim ID for `falseCompletion`. The current v1 counter covers premature claims
+only. Neither a zero legacy counter nor a later successful repair establishes
+that every original completion claim was correct. See the detailed plan for the
+claim-state contract and migration acceptance cases.

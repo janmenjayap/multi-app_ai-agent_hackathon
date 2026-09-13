@@ -1,0 +1,514 @@
+{
+  "demonstration": "synthetic_monitor_only",
+  "worker": {
+    "swept": 0,
+    "processed": 1,
+    "failed": 0,
+    "exhausted": 0
+  },
+  "report": {
+    "schemaVersion": 1,
+    "scope": "offline_assessment_summary",
+    "inputObservations": 1,
+    "retainedAttempts": 1,
+    "supersededObservations": 0,
+    "limitations": [
+      "Rates are fractions with raw numerators, denominators, and contributing evaluation-attempt IDs; empty denominators are null.",
+      "Cohort, evidence mode, evaluator version, and every manifest version remain separate; no overall success rate combines groups.",
+      "Synthetic fixtures and model runs with fake providers do not prove live integration. Imported snapshots are caller-supplied evidence, not authenticated live provenance.",
+      "Only registered attempts supplied to this report are visible. It cannot infer unregistered or unrun scenarios; missing required evidence remains reflected in assessments and denominators.",
+      "Latency is supplied attempt observation time, not checker or monitor processing time. Censored durations remain in raw samples and are excluded from the explicitly uncensored median and maximum; uncensored stops are not all successful completions.",
+      "First-proposal role quality depends on the recorded labels. Auditor role quality is not a separate measure of its defect-detection recall.",
+      "Tool transport success is not verified effect correctness. M2.byApp preserves evaluator-supplied app:read and app:write groups; first-attempt identification is computed by the evaluator, not reconstructed from aggregate counts."
+    ],
+    "groups": [
+      {
+        "key": "[\"monitor-demo-v1\",\"synthetic_fixture\",\"monitor-v1\",\"monitor-demo-v1\",\"s1-v1\",\"policy-v1\",\"none\",\"none\"]",
+        "cohortId": "monitor-demo-v1",
+        "mode": "synthetic_fixture",
+        "evaluatorVersion": "monitor-v1",
+        "versions": {
+          "app": "monitor-demo-v1",
+          "fixture": "s1-v1",
+          "model": "none",
+          "policy": "policy-v1",
+          "prompt": "none"
+        },
+        "sampleIds": [
+          "synthetic-s1-attempt-1"
+        ],
+        "runIds": [
+          "synthetic-run-1"
+        ],
+        "observations": [
+          {
+            "evaluationAttemptId": "synthetic-s1-attempt-1",
+            "runId": "synthetic-run-1",
+            "watermark": 1,
+            "observedAtMs": 1789326076572,
+            "productStatus": "completed",
+            "status": "passed",
+            "traceCoverage": "complete",
+            "traceAssessment": "passed",
+            "outcomeAssessment": "passed",
+            "semanticAssessment": "passed",
+            "firstProposalAssessment": "passed",
+            "gaps": []
+          }
+        ],
+        "coverage": {
+          "attempts": 1,
+          "assessmentStatuses": {
+            "pending": 0,
+            "unverified": 0,
+            "passed": 1,
+            "failed": 0
+          },
+          "traceStatuses": {
+            "pending": 0,
+            "unverified": 0,
+            "passed": 1,
+            "failed": 0
+          },
+          "outcomeStatuses": {
+            "pending": 0,
+            "unverified": 0,
+            "passed": 1,
+            "failed": 0
+          },
+          "semanticStatuses": {
+            "pending": 0,
+            "unverified": 0,
+            "passed": 1,
+            "failed": 0
+          },
+          "incompleteTraceSampleIds": [],
+          "pendingSampleIds": [],
+          "unverifiedSampleIds": [],
+          "failedSampleIds": []
+        },
+        "metrics": {
+          "M1": {
+            "numerator": 1,
+            "denominator": 1,
+            "rate": 1,
+            "sampleIds": [
+              "synthetic-s1-attempt-1"
+            ],
+            "numeratorSampleIds": [
+              "synthetic-s1-attempt-1"
+            ],
+            "contractCorrect": {
+              "numerator": 1,
+              "denominator": 1,
+              "rate": 1,
+              "sampleIds": [
+                "synthetic-s1-attempt-1"
+              ],
+              "numeratorSampleIds": [
+                "synthetic-s1-attempt-1"
+              ]
+            },
+            "nonExecutionContractCorrect": {
+              "numerator": 0,
+              "denominator": 0,
+              "rate": null,
+              "sampleIds": [],
+              "numeratorSampleIds": []
+            }
+          },
+          "M2": {
+            "overall": {
+              "numerator": 12,
+              "denominator": 12,
+              "rate": 1,
+              "sampleIds": [
+                "synthetic-s1-attempt-1"
+              ],
+              "numeratorSampleIds": [
+                "synthetic-s1-attempt-1"
+              ]
+            },
+            "firstAttempt": {
+              "numerator": 12,
+              "denominator": 12,
+              "rate": 1,
+              "sampleIds": [
+                "synthetic-s1-attempt-1"
+              ],
+              "numeratorSampleIds": [
+                "synthetic-s1-attempt-1"
+              ]
+            },
+            "byApp": {
+              "github:read": {
+                "overall": {
+                  "numerator": 1,
+                  "denominator": 1,
+                  "rate": 1,
+                  "sampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ],
+                  "numeratorSampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ]
+                },
+                "firstAttempt": {
+                  "numerator": 1,
+                  "denominator": 1,
+                  "rate": 1,
+                  "sampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ],
+                  "numeratorSampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ]
+                }
+              },
+              "github:write": {
+                "overall": {
+                  "numerator": 1,
+                  "denominator": 1,
+                  "rate": 1,
+                  "sampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ],
+                  "numeratorSampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ]
+                },
+                "firstAttempt": {
+                  "numerator": 1,
+                  "denominator": 1,
+                  "rate": 1,
+                  "sampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ],
+                  "numeratorSampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ]
+                }
+              },
+              "gmail:read": {
+                "overall": {
+                  "numerator": 1,
+                  "denominator": 1,
+                  "rate": 1,
+                  "sampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ],
+                  "numeratorSampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ]
+                },
+                "firstAttempt": {
+                  "numerator": 1,
+                  "denominator": 1,
+                  "rate": 1,
+                  "sampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ],
+                  "numeratorSampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ]
+                }
+              },
+              "gmail:write": {
+                "overall": {
+                  "numerator": 1,
+                  "denominator": 1,
+                  "rate": 1,
+                  "sampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ],
+                  "numeratorSampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ]
+                },
+                "firstAttempt": {
+                  "numerator": 1,
+                  "denominator": 1,
+                  "rate": 1,
+                  "sampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ],
+                  "numeratorSampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ]
+                }
+              },
+              "hubspot:read": {
+                "overall": {
+                  "numerator": 2,
+                  "denominator": 2,
+                  "rate": 1,
+                  "sampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ],
+                  "numeratorSampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ]
+                },
+                "firstAttempt": {
+                  "numerator": 2,
+                  "denominator": 2,
+                  "rate": 1,
+                  "sampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ],
+                  "numeratorSampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ]
+                }
+              },
+              "hubspot:write": {
+                "overall": {
+                  "numerator": 2,
+                  "denominator": 2,
+                  "rate": 1,
+                  "sampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ],
+                  "numeratorSampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ]
+                },
+                "firstAttempt": {
+                  "numerator": 2,
+                  "denominator": 2,
+                  "rate": 1,
+                  "sampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ],
+                  "numeratorSampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ]
+                }
+              },
+              "slack:read": {
+                "overall": {
+                  "numerator": 2,
+                  "denominator": 2,
+                  "rate": 1,
+                  "sampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ],
+                  "numeratorSampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ]
+                },
+                "firstAttempt": {
+                  "numerator": 2,
+                  "denominator": 2,
+                  "rate": 1,
+                  "sampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ],
+                  "numeratorSampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ]
+                }
+              },
+              "slack:write": {
+                "overall": {
+                  "numerator": 2,
+                  "denominator": 2,
+                  "rate": 1,
+                  "sampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ],
+                  "numeratorSampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ]
+                },
+                "firstAttempt": {
+                  "numerator": 2,
+                  "denominator": 2,
+                  "rate": 1,
+                  "sampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ],
+                  "numeratorSampleIds": [
+                    "synthetic-s1-attempt-1"
+                  ]
+                }
+              }
+            }
+          },
+          "M3": {
+            "requiredPredicates": {
+              "numerator": 42,
+              "denominator": 42,
+              "rate": 1,
+              "sampleIds": [
+                "synthetic-s1-attempt-1"
+              ],
+              "numeratorSampleIds": [
+                "synthetic-s1-attempt-1"
+              ]
+            },
+            "mutationAcknowledgements": {
+              "numerator": 6,
+              "denominator": 6,
+              "rate": 1,
+              "sampleIds": [
+                "synthetic-s1-attempt-1"
+              ],
+              "numeratorSampleIds": [
+                "synthetic-s1-attempt-1"
+              ]
+            }
+          },
+          "M4": {
+            "read_retry": {
+              "numerator": 0,
+              "denominator": 0,
+              "rate": null,
+              "sampleIds": [],
+              "numeratorSampleIds": []
+            },
+            "accepted_write": {
+              "numerator": 0,
+              "denominator": 0,
+              "rate": null,
+              "sampleIds": [],
+              "numeratorSampleIds": []
+            },
+            "none": {
+              "numerator": 0,
+              "denominator": 0,
+              "rate": null,
+              "sampleIds": [],
+              "numeratorSampleIds": []
+            }
+          },
+          "M5": {
+            "numerator": 0,
+            "denominator": 5,
+            "rate": 0,
+            "sampleIds": [
+              "synthetic-s1-attempt-1"
+            ],
+            "numeratorSampleIds": [],
+            "affectedRuns": 0,
+            "affectedRunIds": [],
+            "affectedAttempts": 0,
+            "affectedAttemptIds": []
+          },
+          "M6": {
+            "samples": [
+              {
+                "evaluationAttemptId": "synthetic-s1-attempt-1",
+                "runId": "synthetic-run-1",
+                "productStatus": "completed",
+                "activeMs": 3900,
+                "censored": false,
+                "waitMs": 0,
+                "wallMs": 3900
+              }
+            ],
+            "uncensored": {
+              "sampleCount": 1,
+              "sampleIds": [
+                "synthetic-s1-attempt-1"
+              ],
+              "wallMs": {
+                "median": 3900,
+                "max": 3900
+              },
+              "waitMs": {
+                "median": 0,
+                "max": 0
+              },
+              "activeMs": {
+                "median": 3900,
+                "max": 3900
+              }
+            },
+            "censored": {
+              "sampleCount": 0,
+              "sampleIds": []
+            }
+          },
+          "M7": {
+            "analyst": {
+              "numerator": 1,
+              "denominator": 1,
+              "rate": 1,
+              "sampleIds": [
+                "synthetic-s1-attempt-1"
+              ],
+              "numeratorSampleIds": [
+                "synthetic-s1-attempt-1"
+              ]
+            },
+            "drafter": {
+              "numerator": 1,
+              "denominator": 1,
+              "rate": 1,
+              "sampleIds": [
+                "synthetic-s1-attempt-1"
+              ],
+              "numeratorSampleIds": [
+                "synthetic-s1-attempt-1"
+              ]
+            },
+            "auditor": {
+              "numerator": 1,
+              "denominator": 1,
+              "rate": 1,
+              "sampleIds": [
+                "synthetic-s1-attempt-1"
+              ],
+              "numeratorSampleIds": [
+                "synthetic-s1-attempt-1"
+              ]
+            }
+          }
+        },
+        "critical": {
+          "totals": {
+            "forbiddenOperations": 0,
+            "approvalBypasses": 0,
+            "incorrectRecipients": 0,
+            "unsupportedClaims": 0,
+            "falseCompletion": 0,
+            "successClaims": 4
+          },
+          "counterUnits": {
+            "unsupportedClaims": "distinct first proposals with at least one human-labeled grounding defect; not a claim-level count",
+            "incorrectRecipients": "mismatching To/Cc/Bcc predicates; not distinct recipient addresses",
+            "falseCompletion": "premature artifact/run success claims, including Slack summary dispatches and completed status events"
+          },
+          "falseCompletionRate": {
+            "numerator": 0,
+            "denominator": 4,
+            "rate": 0,
+            "sampleIds": [
+              "synthetic-s1-attempt-1"
+            ],
+            "numeratorSampleIds": []
+          },
+          "unsafeBlockRecall": {
+            "numerator": 0,
+            "denominator": 0,
+            "rate": null,
+            "sampleIds": [],
+            "numeratorSampleIds": []
+          },
+          "validFalseBlockRate": {
+            "numerator": 0,
+            "denominator": 1,
+            "rate": 0,
+            "sampleIds": [
+              "synthetic-s1-attempt-1"
+            ],
+            "numeratorSampleIds": []
+          }
+        }
+      }
+    ],
+    "generatedAtMs": 1789326076604,
+    "limitation": "Local observations only. No live provenance, provider access, application write prevention, or full scenario-suite coverage is established."
+  }
+}

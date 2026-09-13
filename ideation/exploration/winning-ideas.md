@@ -7,16 +7,16 @@ Gmail-triggered Customer Promise Guardian below uses Linear and is an earlier
 candidate. The selected **PromiseGuard** workflow uses
 **GitHub + HubSpot + Slack + Gmail**, requires approval before protected app
 writes, and includes a verified Gmail draft in its core outcome. Follow the
-[final proposal](final-project-promiseguard.md),
-[architecture](promiseguard-architecture.md), and
-[current demo contract](demo-scenarios-and-reliability.md). Recommendations,
+[final proposal](../final-project-promiseguard.md),
+[architecture](../promiseguard-architecture.md), and
+[current demo contract](../demo-scenarios-and-reliability.md). Recommendations,
 estimates, candidate pipelines, and schedules below are historical alternatives,
 not implemented capabilities. Company/API research is retained as a dated
 snapshot and has not been reverified by this document review.
 
 The general reliability guidance remains useful; the current
-[metric definitions](demo-scenarios-and-reliability.md#7-small-meaningful-metric-set)
-and [scenario/evaluation plan](demo-scenarios-and-reliability.md#9-repeatable-evaluation-set-and-improvement-loop)
+[metric definitions](../demo-scenarios-and-reliability.md#7-small-meaningful-metric-set)
+and [scenario/evaluation plan](../demo-scenarios-and-reliability.md#9-repeatable-evaluation-set-and-improvement-loop)
 govern PromiseGuard. Offline checker passes are not measured agent success.
 
 ## Historical Audited Recommendation
@@ -203,7 +203,7 @@ Use the same scorecard across all ideas so the reliability claim is auditable:
 These are proposed release gates, not measured results or a guarantee. Always
 report raw counts, evidence mode, versions, deadlines, and failed/unrun cases;
 an empty denominator is **N/A**, not a perfect score. PromiseGuard's precise
-definitions and eligibility rules live in the [current metric contract](demo-scenarios-and-reliability.md#7-small-meaningful-metric-set).
+definitions and eligibility rules live in the [current metric contract](../demo-scenarios-and-reliability.md#7-small-meaningful-metric-set).
 
 - **End-to-end task success:** predeclared eligible attempts satisfying required
   final state, artifact quality, event invariants, and deadline / all such
@@ -1237,8 +1237,8 @@ dealbreakers, not the semantic ranking itself.
 This Gmail/Linear pipeline predates the selected GitHub-incident workflow. Its
 pre-approval CRM/Linear writes, draft-as-stretch choice, and demo script are not
 PromiseGuard's current acceptance criteria. Use the
-[current scenarios](demo-scenarios-and-reliability.md#4-end-to-end-scenario-catalog)
-and [video script](demo-scenarios-and-reliability.md#11-two-minute-video-and-extended-evidence)
+[current scenarios](../demo-scenarios-and-reliability.md#4-end-to-end-scenario-catalog)
+and [video script](../demo-scenarios-and-reliability.md#11-two-minute-video-and-extended-evidence)
 when implementing or recording the selected product.
 
 ### One-sentence demo story
@@ -1321,7 +1321,7 @@ Track one commitment object throughout the system:
 ### Evaluation suite
 
 Historical proposed suite for the Gmail/Linear candidate; use the current
-[PromiseGuard suite](demo-scenarios-and-reliability.md#9-repeatable-evaluation-set-and-improvement-loop)
+[PromiseGuard suite](../demo-scenarios-and-reliability.md#9-repeatable-evaluation-set-and-improvement-loop)
 for the selected project. These cases are planned, not executed results:
 
 1. Clear promise with an existing on-track Linear issue
@@ -1421,7 +1421,7 @@ works.
 
 This rule records the earlier selection decision, not a fresh event countdown or
 an instruction to switch PromiseGuard's apps. Any explicit scope reduction must
-use the current [build gates and fallback](demo-scenarios-and-reliability.md#12-remaining-build-decisions-and-prioritized-checklist)
+use the current [build gates and fallback](../demo-scenarios-and-reliability.md#12-remaining-build-decisions-and-prioritized-checklist)
 and prove the resulting integrations.
 
 Choose Customer Promise Guardian only if Gmail, HubSpot, Linear, and Slack all
@@ -1444,7 +1444,7 @@ three real app state changes, one safe failure, and a repeatable evaluation suit
 before 3:10 PM Pacific Time.
 
 The detailed execution schedule and submission checklist are in
-[requirements-and-timeline.md](requirements-and-timeline.md).
+[requirements-and-timeline.md](../requirements-and-timeline.md).
 
 ## 8. Sources
 

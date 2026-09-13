@@ -1,10 +1,17 @@
 # PromiseGuard: Final Hackathon Project Proposal
 
-**Status:** Proposed build. The repository currently contains planning documents
-and an offline evidence checker with synthetic examples/tests. The app, agents,
-adapters, approval flow, and durable recovery are not implemented or demonstrated.
+**Status — September 14, 2026 (IST):** proposed application, with a runnable
+offline checker and standalone TypeScript/SQLite
+[reliability monitor](../tools/monitoring/README.md). The monitor assesses supplied
+synthetic/imported observations; its generated label fixtures are not real human
+review. The app, agents, adapters, authentic approval flow, provider collector,
+and durable business recovery remain unimplemented and undemonstrated.
 See the [demo and reliability plan](demo-scenarios-and-reliability.md) for current
 evidence, acceptance criteria, and the canonical evaluation suite.
+The [detailed reliability implementation plan](implementation-plan/06-agent-reliability-implementation.md)
+now maps the audit gaps to the existing commit/branch backlog, with concrete
+producer, collector, evaluation, and release acceptance. Those tasks are proposed
+implementation work, not new evidence that the application has shipped.
 
 **Decision:** Combine the customer-commitment reasoning from Customer Promise
 Guardian with the incident evidence, deduplication, and verification model from
@@ -87,34 +94,54 @@ the resulting action remains valid at execution time.
 
 ## 4. External Apps and Access Plan
 
-All four apps can be used with free test accounts. GitHub, HubSpot, and Slack
-support straightforward token-based access. Gmail requires a free Google Cloud
-project, OAuth consent configuration, and a test user. Official MCP servers exist
-for all four, but Gmail's is Developer Preview and MCP is not required by the
-published rules. The prototype should use the shortest reliable integration for
-each operation.
+The required implementation uses GitHub, HubSpot, Slack and Gmail test
+environments through server-owned credentials and typed REST adapters. Account
+access, required operations and live readbacks are pending gates; a provider's
+available API or a connected assistant plugin does not establish that this
+backend is authenticated. See the
+[MCP/API/external-app integration guide](implementation-plan/08-mcp-api-and-external-app-integration.md)
+for exact adapter ownership, capability mapping and access checks.
 
-| App | Role in the workflow | Prototype access | Real action | Verdict |
-|---|---|---|---|---|
-| GitHub | Incident source, commits/deployments, engineering record | Fine-grained PAT and REST API; official MCP is mature | Create or update one issue comment | Ready |
-| HubSpot | Companies, active commitment tickets, owner, follow-up | Developer test account and private-app token; hosted MCP is available | Create one task and one internal note per affected commitment | Ready |
-| Slack | Human review, approval, and final coordination thread | Free workspace, bot token, Web API; hosted MCP is available but has more OAuth setup | Post/update one thread and read approval replies | Ready with normal app setup |
-| Gmail | Customer-update draft destination | Free Cloud project, OAuth test user, and Gmail REST API; official MCP is Developer Preview | Create and retrieve one approval-bound draft; never send | Required; budget 25-40 minutes for first-time OAuth setup |
+- **GitHub / I02:** R01's source-read nodes obtain incident/technical snapshots
+  through `src/server/adapters/github.ts` for B02's pure policy;
+  B06 creates/updates the approved engineering
+  impact comment; B07 reads it back.
+- **HubSpot / I03:** R01's source-read nodes obtain complete commitments,
+  companies, contacts and owners through `src/server/adapters/hubspot.ts`, then
+  B02 validates/selects; B06 creates a task and note per selected
+  commitment; B07 verifies fields and actual associations.
+- **Slack / I04:** B05 uses `src/server/adapters/slack.ts` for review posting,
+  review readback and trusted approval replies; B07 posts/reconciles and reads
+  the final summary. This is the human coordination boundary.
+- **Gmail / I05:** B06 uses `src/server/adapters/gmail.ts` and `gmail-mime.ts`
+  to create/reconcile an approval-bound draft; B07 retrieves its actual content.
+  OAuth access must work for the configured test mailbox. No worker send or
+  delete operation is exposed.
+
+Q02 independently reads all four apps for evaluation snapshots and provenance.
+R01's `src/server/composition.ts` supplies read, coordination and protected-write
+capabilities to their owners; model roles receive none of those capabilities.
 
 ### Recommended API choice
 
 - Use direct REST APIs behind typed adapters for all writes.
 - Use Gmail REST `users.drafts.create` and `users.drafts.get` as the required
-  implementation. Do not depend on Developer Preview MCP access.
-- Use MCP for reads only if authentication already works and its tool schemas pass
-  the same adapter contract tests.
+  implementation. Do not make required draft creation depend on MCP access.
+- Keep MCP disabled in the REST MVP. For the optional extension, qualify reads
+  first against the same adapter contract tests. Later protected-write mappings
+  require explicit adapter conformance and retain the same approval, effect-ledger
+  and verification gates. Enable no mapping until the chosen server and exact
+  allowed tool/schema map are approved and tested; do not discover tools
+  dynamically inside a running workflow.
 - Do not route consequential writes directly from unconstrained model tool calls.
 - Do not mix MCP and REST implementations inside one adapter during the event.
 
-This is less fashionable than making every call through MCP, but it is more
-reliable. The judges require at least three external apps and evidence of correct
-action, not three MCP servers. The planned PromiseGuard workflow requires real
-writes in four apps; those integrations still need implementation and live proof.
+REST and MCP are transports behind the same F02/I01 capability contract; choosing
+one does not change approval, retries, reconciliation or verification. F01 owns
+backend secret configuration; installed Codex/assistant plugins are development
+tools and are not runtime authentication. The four-app path still needs real
+writes and live proof. MCP is not an additional external app or an additional
+agent, and the project contract does not require it for the MVP.
 
 ### Minimum permissions
 
@@ -141,6 +168,14 @@ created object IDs:
 3. Post a Slack message and retrieve its thread replies.
 4. Complete Gmail OAuth for a disposable test user, create a uniquely marked
   draft, retrieve and verify it, then delete it.
+
+Use I01's planned `tools/smoke/providers.ts` and the I02–I05 per-provider smoke
+files with an explicitly scoped disposable fixture manifest. Cleanup/delete
+operations above belong only to the operator's fixture utility, never the
+workflow adapter. Also require F01/A01's real structured-output compatibility
+smoke for the configured model and each role schema. Record model-live and
+provider-live receipts separately: independent smoke successes do not prove one
+integrated four-app agent run. R01 must join those paths; R02 records its proof.
 
 Gmail authentication should be prepared before the build window if the rules
 allow credential setup. If any required integration is still unauthenticated at
@@ -266,8 +301,10 @@ before a local crash.
   allowed effects, and mechanically checkable claims. The target prototype also
   adds a blind semantic auditor that sees the source snapshots and draft, but
   not the worker's reasoning, and flags unsupported or contradictory language.
-  It can block or escalate; it cannot authorize a write. If this optional sensor
-  is cut for time, the deterministic pre-commit gate still controls execution.
+  It can block or escalate; it cannot authorize a write. All three roles are
+  required in the contracted build. An unavailable/invalid auditor exhausts
+  its bounded retries and stops the attempt; omitting it requires an explicit
+  revised release scope and evaluation.
 8. **Request approval in Slack.** Post the evidence, selected commitments,
    proposed HubSpot, GitHub, and Gmail effects, and human-readable draft. The
    approval hash binds the incident fingerprint, source versions, selected record
@@ -301,6 +338,28 @@ before a local crash.
 The run coordinates follow-up; it does not declare the production incident or
 customer issue resolved.
 
+### Where the three agents and LLM calls run
+
+B04's `src/server/workflow/driver.ts` starts/resumes one R01 graph invocation
+per incident. In `src/server/workflow/graph.ts` and `nodes.ts`, selected complete
+source snapshots flow through A02 `agents/analyst/index.ts`, A03
+`agents/drafter/index.ts`, deterministic B03 checks and A04
+`agents/auditor/index.ts` under `src/server/`. Every role uses A01
+`src/server/agents/runtime.ts`; the only model-client construction is
+`src/server/agents/model.ts`, using planned `@langchain/openai` `ChatOpenAI`
+structured calls with OpenAI Responses transport. F01 pins/smoke-tests the
+compatible packages/model/configuration, F02 freezes role and artifact schemas,
+and R01 composes these modules with injected persistence and budgets.
+
+Here “spawn” means a bounded backend role invocation with a separate prompt,
+schema, context and trace span. No new process, autonomous debate, provider-tool
+binding or extra server is needed. The normal selected path runs the three roles
+sequentially; blocked/no-affected input can exit before LLM dispatch. Persist
+first raw outputs and attempt evidence before corrections. Resume an unchanged
+approved plan from stored artifacts instead of asking the model to rewrite it.
+The [agent spawning and LLM guide](implementation-plan/07-agent-spawning-and-llm-integration.md)
+and A01–A04/B04/R01 commit briefs define the exact implementation and handoffs.
+
 ## 8. What the LLM May and May Not Do
 
 ### The LLM may
@@ -326,6 +385,24 @@ workflow, but authority stays in code.
 
 ## 9. Reliability Contract
 
+For this hackathon, **AI agent reliability is a P0 product deliverable** combining:
+
+1. **Original AI quality:** source-grounded first analyst/drafter outputs, complete
+   and honest uncertainty, and independently labeled auditor behavior. Preserve
+   defective first results when retries or human correction improve the final plan.
+2. **Execution correctness:** real model/tool traces plus code that enforces exact
+   approval, scope, request binding, bounded retries, unknown-write reconciliation,
+   and verification before claims. Trace monitoring measures these controls; it
+   cannot replace enforcement.
+3. **Outcome correctness:** independently collected scoped S0/S1 and operation
+   history match expectations frozen before execution, including exact records,
+   recipients, links, no duplicates/sends, and unchanged unrelated commitments.
+
+The existing checker and monitor implement parts of measurement over supplied
+observations. Real event production, independent collection, actual model review,
+and connected-app evaluation remain open. A trace pass or final response alone
+does not establish the contract below.
+
 A run is `completed` only when:
 
 - one immutable GitHub incident maps to one incident fingerprint;
@@ -336,7 +413,8 @@ A run is `completed` only when:
   revision, source versions, records, recipient, and Gmail draft;
 - all HubSpot tasks and notes, the Gmail draft, and the GitHub impact comment are
   independently read back and match the approved plan;
-- the Slack thread links to every verified destination record; and
+- the Slack thread links to every verified destination record;
+- the final Slack summary itself has passed fresh readback; and
 - no forbidden or duplicate effect appears in the event ledger.
 
 Allowed terminal outcomes are:
@@ -346,6 +424,12 @@ Allowed terminal outcomes are:
 - `safely_blocked`
 - `failed_partial`
 - `failed`
+
+`completed_no_affected_commitments` uses claim scope `no_affected` and no
+`planRef`: complete source reads, deterministic selection finding zero eligible
+commitments, and no protected effects support this outcome. It needs no plan,
+approval, or Slack artifact. Final Slack readback is required for artifact-producing
+`completed` runs.
 
 `awaiting_approval` is a persisted, resumable checkpoint, not a completed task or
 terminal success. A run can remain there until its human-response deadline;
@@ -444,7 +528,9 @@ flowchart LR
 Keep this as one deployable service. LangGraph expresses the existing state
 machine; LangChain supplies the scoped model interfaces. A message broker,
 microservices, or additional orchestration frameworks remain outside the demo.
-These framework and monitoring choices are proposed, not implemented features.
+The application frameworks remain proposed. A smaller standalone monitor now
+implements local observation storage, assessment jobs, and metric reports using
+Node 24's `node:sqlite`; it does not implement this application's run/effect ledger.
 
 ### Core persisted records
 
@@ -465,9 +551,32 @@ define named case families, variants, repetitions, modes, and denominators. Keep
 that suite authoritative instead of treating the overview below as a second test
 count. No product evaluation result is available yet.
 
+Freeze the suite census before execution so every family, variant, repetition,
+and repair leg has an identity, expected checkpoint, mode, seed, budgets, and
+versions. Register actual runs against it; report not-run cases beside failures
+and unverified evidence. The current monitor only sees supplied registered
+attempts, so Q04/Q05 must add this coverage ledger. The 18-family/42-attempt
+baseline remains a target until executed; variants and repair legs are separate.
+
 Seed all scenarios from known state, run the agent, settle only for declared
 eventual-consistency conditions, query each external app independently, and grade
 the resulting state. The worker's `done` message is never the oracle.
+
+Separate B07's inline readback, which gates product completion, from Q02's
+independent evaluation collector. The collector records provider request scope,
+pagination/completeness, observed timestamps/versions, raw-response references,
+and normalization; it cannot copy approved fields into observed values. Mode
+labels alone do not prove live provenance. Independent human reviews inspect
+original outputs and their source evidence, record reasons/corrections, and keep
+missing or uncertain labels unverified. Product completion and pending assessment
+remain separate on the result surface.
+
+Q01 freezes source facts and semantic invariants before execution. Generated
+content uses typed `ApprovedContentRef`: B03 freezes exact bytes in the immutable
+approved plan before dispatch, and B07/Q02 resolve expected bytes only from that
+receipt. Provider output cannot define expected content; approval does not prove
+quality or change the independent semantic oracle. Future destination IDs use
+separate `EffectIdRef` bindings.
 
 | Scenario | Expected result |
 |---|---|
@@ -506,6 +615,20 @@ not make the demo depend on multi-twin access.
   corrections and regenerations are recorded separately from eventual success
 - Gmail messages sent by the agent: **0**
 - Approved Gmail drafts with exact recipient, subject, and body: **100%**
+
+These targets require complete evidence and actual nonempty samples; an empty
+denominator displays N/A. Implement observation schema v2 and `monitor-v2` before
+claiming zero false completion. Current `monitor-v1` `falseCompletion` is only
+the legacy premature-claim counter and can remain zero despite failed outcome
+checks. The new report separates `prematureSuccessClaims` from
+`outcomeContradictedCompletionClaims`; `falseCompletion` counts their union once
+per unique `claimId`, with affected runs separate. Each claim is `confirmed`,
+`contradicted`, or `unverified` against independently supported state at emission,
+using frozen timing and causal evidence rules. Later drift cannot retroactively
+prove the original claim false. Missing temporal evidence remains unverified and
+prevents closing the release gate. Preserve v1 receipts and separate evaluator
+versions. M3 must corroborate acknowledged writes with actual provider fields;
+a declared `matches: true` alone cannot establish independent verification.
 
 Passing the declared fixtures does not prove production reliability. Results
 apply only to the frozen version, actual attempts, and declared test distribution.
@@ -547,6 +670,9 @@ Record the first working end-to-end run as a backup before adding visual polish.
 This is the original full-window estimate, not a fresh allocation of time. Use
 the [current demo-plan priorities](demo-scenarios-and-reliability.md#12-remaining-build-decisions-and-prioritized-checklist)
 and actual remaining time. Recording and submission time are reserved.
+Use the [detailed reliability implementation plan](implementation-plan/06-agent-reliability-implementation.md)
+for the current work sequence and commit acceptance; the clock blocks below
+remain the original estimate rather than a second active schedule.
 
 ### 0-40 minutes: integration gate
 
@@ -558,6 +684,8 @@ and actual remaining time. Recording and submission time are reserved.
 ### 40-90 minutes: contracts and adapters
 
 - Define Zod schemas, terminal states, adapter interfaces, and SQLite records.
+- Version the event/claim/provenance contracts and freeze scenario expectations,
+  suite census, rubric, and budgets before execution.
 - Implement the four narrow adapters and structured event logging.
 - Build resettable fake-adapter fixtures alongside the live adapters.
 
@@ -572,6 +700,8 @@ and actual remaining time. Recording and submission time are reserved.
 - Generate cited summaries and Gmail-ready drafts through the architecture's
   separate bounded analyst and drafter calls.
 - Add deterministic claim checks and the blind semantic auditor.
+- Persist original outputs and actual model attempt, validation, retry and timing
+  evidence before any corrected result replaces them in the working plan.
 - Build the approval-plan hash and expiry rules.
 
 ### 195-245 minutes: approval and execution
@@ -579,12 +709,17 @@ and actual remaining time. Recording and submission time are reserved.
 - Post and poll the Slack approval thread.
 - Implement the effect ledger, HubSpot task/note writes, Gmail draft write,
   GitHub comment write, bounded retry behavior, and provider markers.
+- Commit each application transition, canonical event, and measurement job in one
+  application transaction, then feed the reusable monitor through a durable path.
 
 ### 245-290 minutes: independent verification
 
 - Read back all effects, including exact Gmail draft content, and cross-links.
 - Implement duplicate replay, stale-state invalidation, and partial-run repair.
-- Make false completion structurally impossible in the state machine.
+- Gate completion on independent readbacks and instrument every success claim;
+  test and measure premature claims and outcome contradictions explicitly.
+- Add independent scoped S0/S1 collection with completeness/provenance and exact
+  MIME, association, cross-link, duplicate, and unrelated-record checks.
 
 ### 290-335 minutes: evaluations
 
@@ -592,6 +727,8 @@ and actual remaining time. Recording and submission time are reserved.
   path, replay, stale approval, draft verification, and a safe block.
 - Fix only critical invariant failures.
 - Save a machine-readable scorecard with raw counts.
+- Grade original model outputs with independent human labels and retain reasons,
+  failures, corrections, unverified evidence, and unrun census entries.
 
 ### 335-365 minutes: demo and brief
 
@@ -616,6 +753,8 @@ and actual remaining time. Recording and submission time are reserved.
 - State-bound approval
 - Idempotent effect ledger
 - Read-after-write verification
+- Actual stage/model/tool traces and atomic application event/measurement jobs
+- Independent before/after provider evidence and original-output semantic review
 - Duplicate replay
 - The canonical evaluation suite and an actual-results scorecard with failed and
   unrun cases visible
@@ -710,8 +849,8 @@ Do not name-drop these companies in the demo. Demonstrate the principles.
 
 - The prototype does not discover incidents from live observability; a GitHub
   issue is a controlled proxy. Judges may see this as less operationally complete.
-- Gmail OAuth is the largest setup risk. Its official MCP is Developer Preview,
-  while the practical REST scope can send as well as compose. Removing the send
+- Gmail OAuth is a required setup gate. The planned REST scope can send as well
+  as compose. Removing the send
   method from our adapter prevents agent access, but it does not make the OAuth
   credential itself least-privileged.
 - The hardest real-world problem is clean service-to-account and

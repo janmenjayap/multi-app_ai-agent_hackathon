@@ -1,12 +1,24 @@
 # Global Scale: implementation and completion verification
 
-**Current verdict: planning plus a verified offline checker; the PromiseGuard
+**Current verdict — September 14, 2026 (IST): planning, the verified offline
+checker, and a partial standalone reliability monitor; the PromiseGuard
 application is not implemented.** This file compares the intended system with
 observed repository evidence. It is the global completion checklist for the
 [commit plan](04-commit-plan.md), not a claim of production readiness or a
 percentage of work completed.
 
-**Audit checkpoint:** September 13, 2026, 18:23:28 UTC / 23:53:28 IST.
+**Delivery navigation:** [per-branch plans](branches/README.md) and
+[individual commit briefs](commits/README.md) now specify the remaining work,
+parallel subtasks, merge gates, and evidence handoffs. They preserve the original
+30 implementation IDs and add P00 to capture the tested monitor baseline. Their
+unchecked Git SHA/completion fields are future execution records; creating these
+documents does not advance any application capability or verification gate.
+The [agent reliability completion plan](06-agent-reliability-implementation.md)
+now adds the audit's remaining work to those same IDs: original proposal review,
+real runtime controls/traces, independently collected expected/actual state,
+versioned completion-claim evaluation and complete scenario census.
+
+**Historical audit checkpoint:** September 13, 2026, 18:23:28 UTC / 23:53:28 IST.
 **Scope:** GitHub + HubSpot + Slack + Gmail, with Evidence Analyst, Customer Update
 Drafter, and Blind Semantic Auditor. Selection, approval, execution, and final
 verification remain deterministic code. Read the [canonical demo contract](../demo-scenarios-and-reliability.md),
@@ -14,7 +26,24 @@ verification remain deterministic code. Read the [canonical demo contract](../de
 and [event requirements](../requirements-and-timeline.md) before changing acceptance
 criteria. The [contracts](05-contracts-and-handoffs.md) define branch handoffs.
 
-## 1. Observed repository baseline
+## LLM and app integration planning update — September 14, 2026
+
+The [LLM guide](07-agent-spawning-and-llm-integration.md) and
+[external-app guide](08-mcp-api-and-external-app-integration.md) now assign exact
+call sites, configuration, contracts, app methods and tests to the existing
+commit/branch plans. This is a documentation update: no model/provider call,
+account setup, implementation commit or new passing result is recorded here.
+
+For C05–C07, require actual A01-backed analyst/drafter/auditor output/attempt
+receipts and R01 graph-order/resume proof. For C08–C11, require I02–I05 live REST
+smokes plus B05 approval, B06 guarded effects and B07 independent reads. Q02/C13
+must collect its own provider evidence; C14 must preserve model/app mode and
+provenance in release receipts. Optional MCP stays unclaimed until a reviewed
+server/tool map, equivalent contract tests and live account evidence exist.
+All current capability statuses and historical measurement receipts remain as
+recorded below.
+
+## 1. Historical repository baseline
 
 - Git HEAD: `90a3793d1c1f9dea927372cbd055a0cd27c6ca2f` (`Add PromiseGuard ideation`).
 - This audit inspected the **working tree**, which differs from that commit.
@@ -66,6 +95,67 @@ working tree cannot silently inherit this result:
 4711d139305173828491a491fd15488d1666f8689c195354fed4aefdd4f65ba8  tools/reliability/examples/happy-path.synthetic.json
 ```
 
+### Current implementation update — September 14, 2026 (IST) — C02 / C13
+
+- **Implemented scope:** a standalone TypeScript monitor, documented in the
+  [monitor guide](../../tools/monitoring/README.md). Actual source now includes
+  [shared schemas](../../src/shared/reliability.ts),
+  [SQLite observation/job storage](../../src/server/storage/monitor-store.ts),
+  [assessment rules](../../src/server/monitoring/assess.ts),
+  [metric aggregation](../../src/server/evaluations/metrics.ts),
+  [worker/report assembly](../../src/server/monitoring/worker.ts), and
+  [CLI/demo commands](../../src/server/monitoring/cli.ts). Root package files,
+  lockfile, and TypeScript configuration now exist.
+- **Tested toolchain:** Node `v24.21.0`, obtained from the official Node
+  distribution and checked against its published SHA-256 checksum; built-in
+  `node:sqlite`; Zod `4.6.4`; TypeScript `7.0.2`; `@types/node` `24.13.4`.
+  This is not a test of the proposed Fastify/React/LangGraph/better-sqlite3 stack.
+- **Behavior:** frozen S1 manifests require all five artifact kinds; local event/
+  label/evidence appends and measurement jobs commit atomically. Leased jobs,
+  trace/checker/semantic checks, and version-separated M1–M7 reports handle
+  duplicate observation delivery and expose pending or unverified evidence.
+  Tool retries use logical call IDs distinct from provider-attempt IDs. Final
+  artifact quality and first-proposal quality are separate: a successful retry
+  can pass M1 while its original defective output remains a failed M7 sample.
+- **Evidence boundary:** [monitor tests](../../tests/monitoring/) and the
+  generated synthetic demo exercise offline behavior. Generated `human` labels
+  are fixtures, not actual reviewer judgments. Imported snapshots, approval
+  assertions, source references, and completeness declarations are supplied
+  inputs, not authenticated provider provenance. There is no provider collector
+  or Gmail MIME parser. The original checker and historical results above are
+  preserved; they are not new monitor or application results.
+- **Validation commands:** `npm ci`, `npm run build`, `npm test`, and
+  `npm run monitor -- demo`. Tests use `--test-isolation=none`; inspect named
+  subtests and final counts. The [verification receipt](../../tools/monitoring/verification.md)
+  records **129/129 tests passed** (95 monitor + 34 preserved checker), zero
+  skipped/failed, passing typecheck/build, and **115/115** original checker
+  assertions. The [saved synthetic report](../../tools/monitoring/examples/synthetic-report.json)
+  shows one assessed fixture; repeating it preserved one attempt and its counts.
+  [Source/report hashes](../../tools/monitoring/validation.sha256) identify the
+  tested working-tree increment on base `ba374912aec1f986ca3c89ba603ebeed60586005`;
+  that base commit alone does not contain this implementation.
+- **Capability effect:** **C02 is PARTIAL** for a runnable monitor scaffold;
+  **C13 is PARTIAL / VERIFIED OFFLINE monitor subset**. F01/F02 and Q02–Q05
+  are not complete. C03–C12 and C14 remain planned at their application scope.
+  Monitor SQLite transactions do not create an application effect ledger,
+  prevent provider writes, implement Slack approval, or resume a business run.
+- **Remaining proof:** no actual agents, app adapters, UI, LangSmith export,
+  live/model-driven workflow, or full 18-family application harness exists.
+  Product-family attempts and G1–G6 stay open. A synthetic event-stream assessment
+  is not a simulated execution of the entire application. Human labels and
+  proposal references are supplied inputs; the monitor does not create ground
+  truth. Separately predeclared correction stages retain the original result.
+
+**Verification checkpoint — September 14, 2026, 00:31:16 IST:** local monitor
+tests and one generated observation fixture are verified offline. Product
+scenario attempts, model-driven attempts, live-provider workflows, and actual
+human semantic reviews remain **0**. M1–M7 numbers in the saved synthetic report
+describe that input fixture; they do not close any product family or G1–G6 gate.
+Pending/exhausted jobs stay unverified, retain denominators, and have censored
+latency. Recovery credit requires causal fault/retry or adoption/verification
+evidence; an observed `safely_blocked` label requires passing trace/outcome checks
+before receiving block-recall credit.
+
 ## 2. Status rules for every update
 
 Assign implementation status separately from evidence mode and result:
@@ -93,7 +183,8 @@ different risk and effort. A release is ready only when its required gates pass.
 
 ## 3. Capability-by-capability comparison
 
-All `src/` paths below are **proposed destinations**, not existing source links.
+Application `src/` paths below remain proposed unless identified as implemented
+monitor source in the current update or a capability entry.
 Commit IDs refer to [04-commit-plan.md](04-commit-plan.md).
 
 ### C01 — Existing offline evidence checker
@@ -119,9 +210,14 @@ integration work. Do not portray the utility as enforcing provider permissions.
 
 **Expected:** one reproducible Node/Fastify backend, React console, locked
 dependencies, validated shared contracts, and documented configuration.
-**Actual:** **PLANNED**; no package manifest, application source, or start command.
+**Actual:** **PARTIAL**; package/lockfile, TypeScript configuration, shared monitor
+schemas, SQLite monitor storage, and CLI commands exist. Fastify/React, application
+contracts, authentication, health endpoints, and model frameworks remain absent.
 **Owner/commits:** integration owner; F01, F02. Proposed paths: root package files,
 `src/shared/`, `src/server/api/`, `src/web/`.
+
+- [x] Standalone monitor has a locked Node 24 toolchain, validated input contracts,
+  local SQLite initialization, and documented build/test/demo commands.
 
 - [ ] Pin and smoke-test the chosen Node 24, SQLite, LangGraph, LangChain/model,
   and structured-output combination; save the actual resolved versions.
@@ -134,7 +230,9 @@ dependencies, validated shared contracts, and documented configuration.
 
 **Expected:** one run per immutable incident, one active executor, stable effect
 keys, and persisted attempts across crash/restart and approval waits.
-**Actual:** **PLANNED**; no SQLite schema, ledger, checkpoint, or driver.
+**Actual:** **PLANNED** for business execution; no application effect schema,
+ledger, graph checkpoint, or driver. The separate monitor's observation/job
+SQLite store does not implement these controls.
 **Owner/commits:** backend owner; B01, B04, B06. Proposed paths:
 `src/server/storage/`, `src/server/workflow/`, `src/server/execution/`.
 
@@ -317,21 +415,36 @@ Proposed paths: `src/web/`, `src/server/api/`.
 
 **Expected:** frozen independent expectations, actual scoped snapshots, causal
 history, human semantic labels, and correctly counted M1–M7 observations.
-**Actual:** **PARTIAL / VERIFIED OFFLINE subset only** because C01 exists; no
-scenario harness, independent provider collector, local monitor, or metric engine.
+**Actual:** **PARTIAL / VERIFIED OFFLINE monitor subset**. C01 is now integrated
+into local schema/trace/outcome checks; persistent measurement jobs and M1–M7
+aggregation exist. There is no application scenario harness, independent provider
+collector, MIME parsing, actual model semantic review, or live evidence.
 **Owner/commits:** reliability owner; Q01–Q05, B01; optional U03/Q06 presentation
 and diagnostic export consume the resulting evidence.
 Proposed paths: `src/server/evaluations/`, `src/server/monitoring/`,
 `src/server/observability/`, `tests/scenarios/`.
 
-- [ ] Freeze complete S1 expectations including all five artifacts; reducing a
+- [x] Monitor manifests reject incomplete S1 contracts; supplied events and
+  evidence are checked against the frozen registered expectations.
+- [x] Offline rules assess declared approval/request hashes, tool identities,
+  coordination phases, verification order, unknown outcomes, and success claims.
+  These checks do not authenticate providers or enforce runtime permissions.
+- [x] Local observation/job atomicity, lease fencing, repeated delivery, and
+  version-separated raw metrics have executable regression coverage; pending
+  measurement is visible. Final suite totals belong in the validation receipt.
+- [x] First declared proposal references and associated labels are retained;
+  synthetic label fixtures are clearly distinguished from real human review.
+  M7 scores first proposals independently of final artifacts selected at plan
+  freeze, so ordinary retries cannot erase first-proposal defects.
+
+- [ ] Freeze independent **application scenario** S1 expectations including all five artifacts; reducing a
   caller-provided allowlist cannot turn missing work into success.
 - [ ] Independent S0/S1 collection preserves scope, pagination, timestamps,
   completeness, intermediate attempts, and deliberate human/fault events.
 - [ ] Separate runtime checks prove approval/payload binding, causal ordering,
   retry bounds, unknown-write handling, and no premature success.
-- [ ] Measurement job replay/resume updates observations without adding attempt
-  denominators; monitor failures show pending and cannot authorize business work.
+- [ ] Integrate measurement jobs with **application** transitions and replay/resume
+  without adding attempt denominators; monitor failures cannot authorize business work.
 - [ ] Preserve unedited proposals and independent labels; a repaired final draft
   cannot erase a first-proposal failure.
 - [ ] Publish the family/variant gaps and raw cohort counts below; never combine
@@ -356,10 +469,60 @@ and a tested application start procedure do not.
 - [ ] Verify final event submission requirements against the team's actual
   instructions; admission/submission confirmation is separate from code completion.
 
+### Reliability audit follow-through — required implementation, not new evidence
+
+The [September 14 reliability audit](../reliability-implementation-audit.md)
+confirmed the partial scope above. All following items remain unchecked until
+implemented and reviewed against the [detailed completion plan](06-agent-reliability-implementation.md):
+
+- [ ] **P00/F02:** preserve the `monitor-v1`/`checker-v1` receipt; introduce a
+  separately versioned observation schema v2. Do not silently broaden v1
+  `falseCompletion`, whose current meaning is premature success only.
+- [ ] **Q01/Q02:** freeze logical manifests with `EffectIdRef` values and the
+  full suite census. Resolve future IDs through unique independent binding
+  receipts and a separately hashed export. Distinct `ApprovedContentRef` binds
+  generated exact bytes from B03's approved immutable plan before dispatch;
+  pre-run source/semantic invariants stay fixed and provider output defines no expectation.
+- [ ] **Q02:** attach origin, scope, completeness, page/raw-response digests and
+  observation times through controlled collector ingest. Caller-supplied mode
+  strings cannot authenticate provenance or upgrade generated evidence.
+- [ ] **B01/Q03/R01:** implement real application transition/event/job atomicity
+  and real runtime event production. Q03 can develop against a frozen optional
+  collector interface; full provider integration joins Q02 and Q03 at R01.
+- [ ] **Q03:** implement `monitor-v2` claim verdicts by stable `claimId` with
+  scoped emission-time evidence. Preserve premature claims separately; count
+  `falseCompletion` as the union with outcome-contradicted claims without double
+  counting. Later drift is separate and uncertain timing remains unverified.
+  `no_affected` claims require complete source/selection, zero eligible commitments
+  and no protected writes, without planRef/approval/Slack artifacts.
+- [ ] **Q03/Q05:** independently confirm mutation acknowledgements against
+  actual retrieved fields; an uncorroborated `matches: true` cannot earn full M3
+  credit. Q03 owns verdict logic; Q05 aggregates the stored versioned verdicts.
+- [ ] **R01:** `tools/demo/run.ts` accepts minimal trusted human-review receipts
+  through F02/B01 before Q05's richer workflow; actual reviewer identity/reason
+  and original source/output digests are required, with no synthetic-label upgrade.
+- [ ] **A01–A04/Q05:** retain original output/source digests and actual reviewer
+  identity, per-claim support/reasons, completeness judgments and correction
+  history. Zero actual human labels cannot become a semantic pass.
+- [ ] **Q04/Q05:** join observed attempts to the entire frozen census. Keep
+  mandatory preflight/S0 under `suiteEntryId` before registration; failure is
+  setup-failed with no M1/M7 attempted sample. Bind successful S0's hash at
+  registration immediately before graph dispatch. Later faults remain attempted;
+  never move the boundary retrospectively. Keep untouched slots unrun and accepted
+  starts without results attempted/stalled, preserving IDs/versions/denominators.
+- [ ] **U02/R02:** show the three reliability axes and package actual claim-to-
+  evidence references. Optional LangSmith/U03 cannot replace P0 reliability proof.
+
+**No implementation completion is recorded by this documentation update.**
+The recorded 129 tests and synthetic checker assertions retain their prior
+scope; actual application/model/live workflows and human semantic reviews remain
+at the audited baseline until new receipts establish otherwise.
+
 ## 4. Canonical scenario coverage register
 
-**Baseline for every entry below: UNRUN, 0 attempted, 0 passed.** Existing checker
-regressions do not change this register. IDs `FAM01`–`FAM18` below match the
+**Product-workflow baseline for every entry below: UNRUN, 0 attempted, 0 passed.**
+Checker regressions and monitor assessments of generated event streams do not
+execute these application scenarios or change this register. IDs `FAM01`–`FAM18` below match the
 numbered families in [the canonical evaluation set](../demo-scenarios-and-reliability.md#9-repeatable-evaluation-set-and-improvement-loop);
 they are not alternate meanings of demo scenarios S1–S6.
 
@@ -367,7 +530,9 @@ they are not alternate meanings of demo scenarios S1–S6.
   correct artifacts, protected Beta unchanged, grounded text, authentic approval,
   ordered verification, and no forbidden effects.
 - [ ] **FAM02 — No eligible commitments** (B02): complete valid empty selection;
-  `completed_no_affected_commitments`, no protected writes.
+  `completed_no_affected_commitments`, no protected writes. The `no_affected`
+  claim requires complete source and deterministic selection evidence; no planRef,
+  approval or Slack artifact is required.
 - [ ] **FAM03 — Recipient ambiguity / S3** (B02/B05): precise safe block, zero
   protected writes; explicit source correction/new approval is a separate stage.
 - [ ] **FAM04 — Weak causal evidence** (A02–A04): investigating-only supported
@@ -425,7 +590,9 @@ Planned cohort sizes, **not results**:
 ## 5. Release gates and metric integrity
 
 Record each gate as **OPEN** until its evidence is attached. A documentation or
-merge milestone does not close the behavioral gate.
+merge milestone does not close the behavioral gate. A G4 completion claim needs
+v2 claim-time evidence and actual human review coverage; historical v1 zero
+premature-success counts and generated positive labels are insufficient.
 
 1. **G1 — Reproducible build:** C02 passes on the release checkout; actual
    dependency/runtime/model configuration is frozen.
@@ -437,8 +604,10 @@ merge milestone does not close the behavioral gate.
 4. **G4 — Evidence for stated claims:** C13 publishes actual cohorts and complete
    evidence for the controls claimed. Every release-critical predicate passes;
    there are zero observed forbidden sends, approval bypasses, wrong recipients,
-   unsupported claims, duplicates, or premature success claims in those runs.
-   Missing evidence remains unverified, even when no violation was observed.
+   unsupported claims, duplicates, premature success claims or independently
+   contradicted completion claims in those runs. Require complete emission-time
+   claim coverage and actual labels for the stated semantic scope; missing
+   evidence remains unverified even when no violation was observed.
 5. **G5 — Full planned evaluation:** all 18 family baselines, the six repeated
    baselines, declared required variants/repair legs, and the five live scenarios
    have recorded verdicts. Failed results remain visible and are fixed/retested
@@ -477,6 +646,17 @@ without changing their denominators:
 - **M7:** passing first unedited proposals / attempted fixtures requiring one,
   including missing/invalid/unresolved output. Record analyst/drafter quality and
   auditor detection separately; human correction does not retroactively pass a proposal.
+
+Critical-counter versions must be explicit. `monitor-v1` preserves its existing
+premature-only `falseCompletion`. Planned `monitor-v2` exposes
+`prematureSuccessClaims`, `outcomeContradictedCompletionClaims`, and their union
+of unique `claimId` values as `falseCompletion`; show all emitted success claims
+and unverified claims separately. Claim verdicts are confirmed/contradicted/
+unverified against the same run, applicable plan/artifacts or `no_affected`
+source/selection scope, and emission-time evidence.
+Later independently proven drift is a separate event; absent timing history
+cannot establish falsehood at emission. Reassessment/replayed delivery must not
+add claims or conceal prior premature violations.
 
 One `evaluationAttemptId` spans its normal runtime invocations, approval wait,
 resume, and retries. Additional fixture variants and correction/repair legs have
@@ -520,11 +700,17 @@ Copy this template for each evidence update:
 - Expected outcome and required/forbidden effects, fixed before execution:
 - Exact command or manual procedure:
 - runId / evaluationAttemptId / runtime attempt IDs / fault boundary:
-- Started / passed / failed / pending / unverified / unrun counts:
+- Frozen census hash / planned slots / registered and attempted counts:
+- Passed / failed / pending / unverified / unrun counts and category definitions:
 - Metric numerator / denominator / sample IDs / cutoff:
-- Independent source and destination evidence refs / timestamps / completeness:
+- Independent source/destination refs / collector identity and controlled ingest receipt:
+- Page/raw/normalized digests / account scope / collection and provider-observation times / completeness:
+- Logical manifest hash / EffectIdRef bindings / pre-dispatch ApprovedContentRef receipt / resolved export hash:
+- suiteEntryId / preflight and S0 result / S0 hash bound at registration / dispatch time:
 - Approval, request hash, dispatch, read-back, and success-claim event refs:
-- Original proposal refs / human labels / corrections:
+- Original source/output digests / proposal refs / reviewer identity / claim reasons / corrections:
+- Claim IDs / emission times / confirmed, contradicted and unverified verdicts:
+- Premature / outcome-contradicted / union false-completion counts / later drift:
 - Actual outcome and remaining mismatch against expectation:
 - Product status / outcome assessment / semantic assessment / trace coverage:
 - Review result and capability/gate changes:

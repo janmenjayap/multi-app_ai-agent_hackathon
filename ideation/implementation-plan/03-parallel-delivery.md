@@ -6,10 +6,40 @@ additional deployed services. Use the smaller-team allocations below if needed.
 All branches and commit IDs here are proposed; this documentation task does not
 create implementation branches or commits.
 
+Use the [per-branch index](branches/README.md) for exact dependency layers and
+one dedicated file per branch. The [individual commit files](commits/README.md)
+add ordered implementation steps and handoffs to this staffing overview. Start
+with P00 to preserve the existing monitor, then F01/F02 for application foundations.
+
 Read [the numbered commit tasks](04-commit-plan.md) for exact dependencies,
 allowed files, exclusions, and verification. Read [contracts](05-contracts-and-handoffs.md)
 before splitting work. The current base is `main`; preserve the existing dirty
 working tree when preparing a shared starting commit.
+
+The [detailed reliability plan](06-agent-reliability-implementation.md) now adds
+the audit's concrete work inside the existing commit/branch graph. Reliability is
+one required delivery track spanning original AI outputs, actual execution, and
+independent app state; it is not postponed until an optional dashboard is built.
+
+## LLM and external-app implementation joins
+
+Use the [LLM guide](07-agent-spawning-and-llm-integration.md) and
+[MCP/API guide](08-mcp-api-and-external-app-integration.md) as the call-site and
+configuration references alongside F02. P1 owns config/contracts and R01
+composition; P3 owns A01 model runtime plus A02–A04 role functions; P2 owns I01
+transport and I02–I05 app adapters; P4 owns stateful fakes, independent reads and
+model/app provenance checks. This allocates work within the existing lanes.
+
+During Wave 0, verify the model account and the four app accounts separately and
+record unready permissions. After F02, role prompts and per-app transports can be
+built in parallel against the same fixtures. A01 needs B01 before its persistence
+handoff; R01 joins real roles, adapters, guard/verifier and collector only after
+its existing prerequisites merge. Three runtime role calls stay sequential.
+
+REST is the required MVP transport. Optional MCP transport work must first have
+an explicit supported server/tool map and tested read/write/readback contract;
+keep it outside the critical release path. No agent branch privately changes
+dependencies, obtains broad mutation tools or bypasses app credential setup.
 
 ## 1. Three different kinds of parallelism
 
@@ -30,6 +60,7 @@ Keep these distinctions in task assignments: “can start coding” does not mea
 
 ```mermaid
 flowchart TD
+    P00["P00: preserve reviewed monitor baseline"] --> F01
     F01["F01: scaffold and dependency lock"] --> F02["F02: shared contracts"]
     F02 --> Storage["B01: durable storage and events"]
     F02 --> Core["B02-B04: policy, plans, driver"]
@@ -96,7 +127,7 @@ approve expectations generated from the worker's observed output.
 1. Inventory the current dirty tree and preserve it. Select the intended existing
    changes explicitly for a reviewed baseline PR; do not use a broad `git add .`
    or a reset to manufacture a clean starting point.
-2. P1 delivers F01 then F02. P2 verifies available account/token configuration
+2. P1 delivers P00, F01, then F02. P2 verifies available account/token configuration
    and the exact sandbox app capabilities. P3 freezes selection and role examples;
    P4 freezes independent expected artifacts and labels. These preparations can
    run concurrently, but shared schema edits funnel through P1.
@@ -162,6 +193,37 @@ return through affected regressions and R02's final freeze; a failed optional
 feature is disabled and disclosed, never counted as passed.
 
 ## 5. Branch mechanics
+
+### Reliability integration joins
+
+Reserve these joins explicitly in the staffing queue:
+
+1. **F02 contract review:** P1 freezes v2 events, evidence timing/provenance,
+   logical artifact/content bindings, normal and no-affected claims, labels,
+   and census with P2/P3/P4. Provider
+   readers and model wrappers then implement those same contracts independently.
+2. **B01/Q03 storage handoff:** P1 completes a transaction-aware application store
+   before P4 integrates worker scheduling. There is one state/event/job commit,
+   not app persistence followed by a second monitor append.
+3. **B07/Q02 independent-read review:** P3 proves inline readback blocks false
+   success; P4 collects separate S0/S1/claim receipts through P2's restricted
+   readers. Both preserve actual fields, timing, and observed identity bindings.
+4. **Q03/Q05 measurement handoff:** P4 assesses scoped time-linked claims in Q03
+   and aggregates unique claim IDs in Q05. Another available contributor computes
+   expected counts independently. Later drift, contradiction, premature success,
+   and missing evidence require different test cases.
+5. **Q04/Q05/R02 proof join:** assign scenario execution and original-output human
+   review as concrete work. Retain not-run census entries and failed attempts;
+   publish the existing seven metrics plus complete critical-claim evidence.
+
+These joins retain the current hard dependency DAG. Q03 accepts the F02/Q01
+collected-evidence interface before Q02's implementation exists and marks absent
+evidence unverified; R01 joins both. Q05 can prepare its review path early while
+its merge still waits for Q04. P4 is a shared UI/evaluation owner: delegate a ready
+provider collector or human-label task to freed P2/P3 instead of scheduling those
+responsibilities as simultaneous work for one person.
+
+### Branch procedure
 
 Use short-lived branches from the latest reviewed `main`, named by the commit
 plan, for example `feat/agent-analyst` or `feat/gmail-adapter`.

@@ -9,6 +9,19 @@ The checked-in example is explicitly **synthetic**. Passing it establishes that
 the checker accepts one internally consistent example, not that PromiseGuard
 performed a live four-app workflow.
 
+**Newer wrapper — September 14, 2026 (IST):** the standalone Node 24
+[reliability monitor](../monitoring/README.md) now adds frozen manifests, local
+SQLite measurement jobs, supplied-trace checks, and grouped metric reports around
+this checker. It does not change checker v1's contract or limitations below,
+authenticate imported observations, collect providers, or run the application.
+
+The [reliability implementation plan](../../ideation/implementation-plan/06-agent-reliability-implementation.md)
+keeps this utility unchanged as one outcome-checking component. Hackathon agent
+reliability also requires original-output semantic review, actual execution traces
+and runtime controls, and independently collected expected-versus-actual app state.
+The integration work belongs to the existing application/Q01–Q05 commits; a checker
+pass alone cannot close that P0 deliverable.
+
 ## Run
 
 Run from the repository root using Node.js 18.19.1 or later:
@@ -234,11 +247,41 @@ There is no provider exporter or integration in this repository yet. To make
 exporter that captures before/after records from all four test accounts, covers
 the entire scoped demo namespace and unrelated protection records, includes all
 mutations in its ledger, and derives expected fields from the frozen reviewed
-plan. Capture failures and partial writes; do not fill missing evidence with
+plan. The harness freezes source facts, semantic invariants, scope, and required
+artifact predicates before execution. A typed `ApprovedContentRef` resolves
+generated text to the exact immutable B03 plan bytes approved before dispatch;
+B07/Q02 obtain expected bytes only from that receipt, never provider output.
+Approval does not establish quality or alter the original semantic oracle.
+Future provider IDs use separate `EffectIdRef` bindings. Never reduce expectations
+to whichever objects were created. Capture
+failures and partial writes; do not fill missing evidence with
 empty arrays. `complete: true` must mean the relevant scope was fully collected,
 not merely that a paginated API returned one page. Retrieve Gmail drafts and
 inspect the applicable sent-mail namespace separately; a draft-only query cannot
 prove that no send occurred.
+
+Q02 is the independent evaluation collector; B07 is the inline readback verifier
+that gates runtime completion. They may share read transport/normalization code,
+but Q02 must issue its own scoped requests and retain collection identity, query
+scope, pagination/termination, capture interval, provider versions when available,
+normalization version, and raw-response references/hashes. B07's verdict, writer
+responses, and approved payloads cannot be substituted for provider observations.
+An imported evidence-mode string does not establish that this collection happened.
+
+Preserve this checker-v1 contract while evolving the monitor to observation schema
+v2 and `monitor-v2`. The current monitor's `falseCompletion` counter covers premature
+claims and can remain zero when this checker rejects a claimed final state. The
+planned evaluator separately checks premature claims and outcome contradictions
+at each claim's emission time, classifies supporting evidence as confirmed,
+contradicted, or unverified, and deduplicates their union by `claimId`. Later drift
+does not prove a formerly correct claim false; missing temporal evidence stays
+unverified. This requires richer evidence than checker v1's final snapshot and
+ordered ledger. Preserve earlier reports/receipts under their original version.
+The v2 monitor's `no_affected` claim scope covers
+`completed_no_affected_commitments` with absent `planRef`, complete source and
+deterministic zero-eligible selection evidence, and no protected effects. It needs
+no plan, approval, or Slack artifact; final Slack readback applies to whole-run
+artifact-producing completion. This typed claim contract does not change checker v1.
 
 Keep credentials, OAuth tokens, authorization headers, raw mail bodies, unrelated
 CRM records, and private model reasoning out of these files. Use disposable

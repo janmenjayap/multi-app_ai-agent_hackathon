@@ -1,21 +1,34 @@
 # PromiseGuard: Fine-Grained Agent and Reliability Architecture
 
-**Status:** Proposed application architecture; implementation and deployment have
-not started. The repository's offline evidence checker/tests are runnable, but
-do not implement or demonstrate this agent workflow. The
+**Status — September 14, 2026 (IST):** the application architecture remains
+proposed. The original offline checker and a standalone TypeScript/SQLite
+[reliability monitor](../tools/monitoring/README.md) are now runnable. The monitor
+assesses supplied observations; it does not implement the agents, app adapters,
+approval enforcement, application effect ledger, or deployment described below. The
 [demo and reliability plan](demo-scenarios-and-reliability.md) is the source of
 truth for scenario coverage, measured evidence, and remaining work.
 
+The [agent reliability implementation plan](implementation-plan/06-agent-reliability-implementation.md)
+maps the [implementation audit](reliability-implementation-audit.md) to the existing
+commit/branch backlog. Reliability remains P0: independent original-output quality,
+actual execution traces backed by runtime enforcement, and independently collected
+expected-versus-actual app state must all be implemented and demonstrated. The
+sections below describe the target integration; none upgrades synthetic monitor
+evidence into a live product result.
+
 **Basis:** [Final project proposal](final-project-promiseguard.md) and the
-[reliability standard](winning-ideas.md#2-reliability-standard-for-every-idea).
+[reliability standard](exploration/winning-ideas.md#2-reliability-standard-for-every-idea).
 The final proposal defines the product scope. This design adds explicit agent
 roles to meet the requested multi-agent direction.
 
 **Current design decision:** use **LangGraph + LangChain + LangSmith** for
 orchestration, structured agent calls, and trace inspection respectively. This
 refines the implementation of the existing pipeline; it adds no new business
-app or autonomous customer action. The application/frameworks and monitor remain
-proposed. The existing offline checker is the only runnable reliability component.
+app or autonomous customer action. The application/frameworks remain proposed.
+The implemented monitor uses Node 24's `node:sqlite`, locked Zod/TypeScript
+dependencies, and local measurement jobs. Its local observation/job transactions
+do not establish the future application's effect/approval durability. The proposed
+application still uses `better-sqlite3` and a separate LangGraph checkpoint store.
 
 The business order stays: **GitHub incident → exact HubSpot selection → evidence
 analysis and drafting → checks/audit → Slack approval → fresh-state guards →
@@ -73,9 +86,9 @@ This is one deployable application with separate internal modules. Multiple
 agents do not require multiple servers, databases, or model providers.
 Use the named packages directly; the top-level `langchain` package, a generic
 ReAct executor, CrewAI, and a second orchestration framework are unnecessary.
-No framework dependencies have been installed or compatibility-tested in this
-repository. Resolve compatible published releases and commit a lockfile during
-implementation instead of copying version numbers from examples.
+The standalone monitor has a tested Node 24 toolchain and dependency lockfile.
+The application frameworks listed above have not been installed or compatibility-
+tested. Resolve their compatible releases during application implementation.
 
 ## 2. Overall architecture diagram
 
@@ -90,7 +103,7 @@ flowchart TB
         Agents["LangChain structured agent calls<br/>Evidence analyst, drafter, blind auditor"]
         Guards["Deterministic policy<br/>Identity, approval, freshness, allowed effects"]
         Executor["Effect executor<br/>Unique keys and reconciliation"]
-        Verifier["Independent verifier<br/>Fresh reads and field-level assertions"]
+        Verifier["B07 inline verifier<br/>Fresh reads; product completion gate"]
         Adapters["Typed REST adapters<br/>GitHub, HubSpot, Slack, Gmail"]
         Events["Local event writer and durable outbox"]
         Monitor["Read-only reliability monitor<br/>Trace checks, outcome checks, metric facts"]
@@ -103,6 +116,8 @@ flowchart TB
     Slack["Slack<br/>Review thread, approval, verified summary"]
     Gmail["Gmail<br/>Customer update drafts"]
     Smith["LangSmith<br/>Sanitized traces and diagnostic inspection"]
+    Harness["Q01/Q04 evaluation harness<br/>Frozen expectations and suite census"]
+    Collector["Q02 independent collector<br/>Scoped S0/S1, provenance, completeness"]
 
     User --> UI
     UI -->|"HTTPS: commands and status"| API
@@ -133,11 +148,20 @@ flowchart TB
     Events -.->|"Redacted asynchronous export"| Smith
     Smith -.->|"Optional trace-tree enrichment"| Monitor
     Monitor -->|"Assessment facts; no workflow authority"| DB
+    Harness --> Collector
+    Harness --> Monitor
+    Collector -->|"Independent provider read requests"| Adapters
+    Collector -->|"Observed evidence; never expected-value copies"| Monitor
 ```
 
 The adapter layer exposes separate read, coordination, and mutation interfaces.
 Only the executor receives HubSpot/GitHub/Gmail mutation capabilities. Agents
 receive bounded data and return proposals; they never receive provider tokens.
+The B07 verifier and Q02 collector have separate responsibilities. B07 must gate
+execution using fresh destination reads. Q02 independently captures evaluation
+state and cannot treat B07's verdict, a mutation response, or plan fields as
+observations. Shared low-level read transports are acceptable; collection
+invocation, scope, timestamps, raw response references, and provenance stay distinct.
 
 ## 3. Frontend: a small operator console
 
@@ -192,17 +216,51 @@ effects match the approved plan. Persist `awaiting_approval` and release the
 worker between Slack polls; do not hold a database transaction or model session
 open while waiting for a human.
 
+### Exact agent invocation and composition boundary
+
+The planned code path is `POST /api/runs` → B04
+`src/server/workflow/driver.ts` → R01 `src/server/workflow/graph.ts` and
+`nodes.ts` → A02 `src/server/agents/analyst/index.ts` → A03
+`src/server/agents/drafter/index.ts` → B03 deterministic validation → A04
+`src/server/agents/auditor/index.ts`. Each role invokes A01
+`src/server/agents/runtime.ts`; only `src/server/agents/model.ts` constructs the
+configured `ChatOpenAI` structured-call client using the OpenAI Responses
+transport. The driver schedules the graph; it does not dispatch its own second
+set of role calls.
+
+“Spawning” is a bounded function/runnable invocation inside this single backend,
+with separate prompt/schema/context and recorded attempt IDs. It does not mean
+spawning shell processes, a new server, an autonomous tool loop, or extra coding
+agents. Normal valid selected runs invoke the three roles in order. Complete
+no-affected selection and blocked ingestion exit before model dispatch. Waiting
+for approval and replaying an unchanged approved revision reuse stored artifacts;
+only an explicitly invalidated/new plan revision creates new role work.
+
+R01's `src/server/composition.ts` creates the model client, role services, app
+adapters, persistence/event sinks, and graph exactly once at application startup.
+F01 owns server-only configuration and compatible dependency pins; F02 owns role,
+artifact, adapter, and event contracts; A01 owns total model-call/retry budgets
+and original-response persistence. Shared clients are injected, while prompts
+and graph state contain only scoped data and references. No API key, app token,
+refresh token, or arbitrary provider request function enters a role input.
+Application package/model compatibility remains a smoke-test gate, not a property
+established by the existing offline monitor.
+
+Implement the exact seams and acceptance in the
+[agent spawning and LLM guide](implementation-plan/07-agent-spawning-and-llm-integration.md)
+and its F01/F02, A01–A04, B04, R01/R02 commit briefs. This section specifies
+future code locations; it does not claim those modules exist.
+
 ## 5. Multi-agent schematic
 
 ```mermaid
 flowchart TD
     Start["Validated GitHub incident"] --> Technical["Code: fetch bounded technical snapshots"]
-    Technical --> Analyst["Agent 1: Incident Evidence Analyst<br/>Cited facts, contradictions, unknowns"]
     Technical --> Customer["Code: fetch HubSpot commitments and contacts"]
     Customer --> Selection{"Exact identity and eligibility valid?"}
     Selection -->|"Ambiguous"| Block["Safely blocked"]
     Selection -->|"No eligible commitments"| NoAction["Completed: no affected commitments"]
-    Selection -->|"Eligible set fixed by code"| Drafter
+    Selection -->|"Eligible set fixed by code"| Analyst["Agent 1: Incident Evidence Analyst<br/>Cited facts, contradictions, unknowns"]
     Analyst --> Drafter["Agent 2: Customer Update Drafter<br/>Grounded customer language and rationale"]
     Drafter --> Gate["Code: validate claims, IDs, recipients,<br/>dates, templates, and allowed effects"]
     Gate -->|"Invalid"| Block
@@ -263,10 +321,10 @@ Implement each role as `prepare scoped input → LangChain prompt/model runnable
 Zod and reference validation → immutable result record`. Keep the unedited first
 proposal before any repair. Detailed graph boundaries are specified below.
 
-The final proposal makes the auditor optional. This architecture includes it in
-the intended three-agent build to satisfy the requested schematic. If it is
-explicitly removed from a later reduced release, disclose the two-agent design
-and rerun its evaluations; do not silently skip a failed auditor during a run.
+The contracted build includes all three roles. A failed required auditor ends
+the attempt under the bounded failure policy; it cannot be skipped to reach
+approval. Removing a role later is an explicit product/contract change requiring
+revised release claims and evaluation, not a runtime fallback.
 
 ## 6. Approval-to-execution sequence
 
@@ -378,6 +436,51 @@ unnecessary for the single-instance MVP.
 ## 8. External adapters and reliability boundaries
 
 ### Four app adapters
+
+REST is the required MVP transport. R01 injects I01–I05's typed capability
+interfaces into deterministic callers as follows:
+
+- **I02 `src/server/adapters/github.ts`:** R01's source-read nodes obtain
+  incident/technical snapshots for B02's pure validation/selection policy;
+  B05 obtains fresh source state; B06 finds/reconciles and creates or updates the
+  approved impact comment; B07 reads the actual comment for verification.
+- **I03 `src/server/adapters/hubspot.ts`:** R01's source-read nodes obtain complete
+  commitment, company, owner and contact data for B02's pure selection policy;
+  B05 refreshes the eligible set and approval
+  inputs; B06 reconciles/creates approved tasks and notes; B07 reads records and
+  associations back.
+- **I04 `src/server/adapters/slack.ts`:** B05
+  `src/server/workflow/review.ts` posts/reconciles and reads back the review;
+  `approval-wait.ts` resumes only after independently retrieved reply evidence
+  passes `src/server/policy/approval.ts`. B07
+  `src/server/verification/finalize.ts` posts/reconciles the evidence-based final
+  summary and reads it back before final completion.
+- **I05 `src/server/adapters/gmail.ts` and `gmail-mime.ts`:** B06 reconciles and
+  creates the exact approved draft; B07 obtains full draft content for recipient,
+  subject, MIME/body and cross-link checks. Worker capabilities cannot send or
+  delete mail.
+- **Q02 `src/server/evaluations/provider-readers.ts` and `collector.ts`:**
+  separately invoke read-only capabilities for scoped S0/S1 and claim-time
+  observations across all four apps. Their provenance and collection windows
+  remain independent of B06 responses and B07 verdicts.
+
+I01's `src/server/adapters/common/transport.ts` owns bounded requests, attempt
+receipts and error normalization; `pagination.ts` owns complete bounded reads.
+Transport cannot bypass B06's durable claims, freshness checks, serial ordering,
+or uncertain-write reconciliation. B05/B07's Slack coordination path is separate
+from protected HubSpot/Gmail/GitHub effects but remains deterministic and logged.
+
+MCP is a disabled optional transport extension behind the same typed adapter
+boundary. Qualify read mappings first; later protected-mutation mappings require
+explicit adapter conformance and the same approval/effect-ledger contracts.
+Enable no mapping until the selected server, credentials, exact tool
+names/schemas, pagination behavior and normalized results have an approved tested
+operation map. Pick one transport for each adapter configuration; do not silently
+switch on failure or discover new tools during a run. Keep the required MVP on REST.
+No MCP tool is bound to a model role, and a desktop assistant's installed
+connector/plugin session is not the application's server credential. Details and
+per-app access/smoke gates live in the
+[MCP/API/external-app guide](implementation-plan/08-mcp-api-and-external-app-integration.md).
 
 Every list/search adapter must paginate to completion within configured page,
 record, response-size, and time budgets. An exhausted budget, malformed page,
@@ -847,20 +950,20 @@ library defaults with another unnoticed retry layer.
 
 ## 15. Trace collection and reliability-monitoring pipeline
 
-The new pipeline observes the product workflow. Its only writes are local
+The proposed integrated pipeline observes the product workflow. Its only writes are local
 measurement records and sanitized telemetry. It cannot approve a plan, resume a
 protected mutation, edit a customer artifact, or override the inline verifier.
 
 ```mermaid
 flowchart TD
-    Workflow["Existing product graph<br/>Agents, adapters, approvals, verifier"]
+    Workflow["Proposed product graph<br/>Agents, adapters, approvals, inline verifier"]
     Workflow --> Writer["Canonical local event writer"]
     Workflow -.->|"Optional masked callbacks"| Smith["LangSmith trace tree"]
     Writer --> Store[("Application SQLite<br/>Events, attempts, plans, evidence")]
     Store --> Outbox["Durable measurement jobs and trace-export outbox"]
     Outbox --> Reader["Read-only monitor<br/>Join by run, attempt, plan, effect IDs"]
     Smith -.->|"Diagnostic enrichment"| Reader
-    Manifest["Frozen scenario manifest<br/>Expected effects and semantic labels"] --> Reader
+    Manifest["Frozen manifest and suite census<br/>Expected predicates and review rubric"] --> Reader
     Collector["Independent provider collector<br/>Scoped S0/S1 and completeness"] --> Reader
     Reader --> TraceRules["Trace rules<br/>Approval, ordering, retries, deadlines, early success"]
     Reader --> Exporter["Checker-v1 evidence adapter"]
@@ -877,8 +980,18 @@ flowchart TD
 
 ### Canonical events and identities
 
+**Compatibility boundary:** the current monitor's v1 observation contract already
+supports declared attempts/results and selected trace rules, but does not contain
+the complete producer envelope below. F02 defines observation schema v2 and
+`monitor-v2`; Q03/Q05 implement it without changing preserved `monitor-v1` reports
+or checker-v1 input semantics. Retain versioned fixtures and reject unsupported
+versions rather than coercing missing producer fields into fabricated evidence.
+
 Give each business incident one `runId`/graph thread. Each accepted graph
-invocation or resume gets a fresh runtime `attemptId`. Separately, freeze an
+invocation or resume gets a fresh `runtimeAttemptId`. The v2 compatibility
+projection maps legacy v1 `attemptId` to `runtimeAttemptId`; retain the legacy
+field in unchanged v1 records and never create a second invocation identity.
+Separately, freeze an
 `evaluationAttemptId` for each scenario attempt: it spans the initial invocation,
 approval wait/resume, bounded tool retries, and its final assessment. A normal
 resume must not create a second M1/M7 denominator entry or restart M6 elapsed
@@ -887,7 +1000,8 @@ identities and cohort labels, as required by the demo plan; they do not overwrit
 the original attempt. Record the mapping from runtime attempts to evaluation
 attempts before execution.
 
-Every model/tool attempt gets its own `spanId` and `providerAttemptId`. Record
+Every model/tool attempt gets its own `spanId`. Use `modelAttemptId` for model
+attempts and `providerAttemptId` for dispatched app-tool attempts. Record
 `parentSpanId`, local `sequence`, and per-effect causal references. Keep LangSmith
 root IDs in a separate mapping: one graph thread and evaluation attempt can have
 several invocation traces.
@@ -896,11 +1010,11 @@ A proposed versioned event envelope is:
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "eventId": "event-017",
   "runId": "run-demo",
   "evaluationAttemptId": "evaluation-s1-repetition-1",
-  "attemptId": "attempt-2",
+  "runtimeAttemptId": "attempt-2",
   "spanId": "span-gmail-create-1",
   "parentSpanId": "span-execute-effect",
   "sequence": 17,
@@ -928,6 +1042,33 @@ prompt/policy versions. Emit stage start/end, source completeness, model-result
 references and validation, approval decisions/revalidation, dispatch/result,
 retry scheduling, verification, human edits, injected faults, and every public
 completion claim. Record wait intervals separately from active time.
+
+Define and test producer ownership before graph wiring:
+
+- **B04 graph driver:** stage start/end/error and invocation/span hierarchy,
+  persisted waits/resumes, checkpoint status, and stable evaluation mapping.
+- **A01 model wrapper, A02–A04 roles:** one child span for every actual model
+  attempt; pinned role/model/prompt/schema, source/input/output references, refusal,
+  parsing and reference validation outcomes, actual usage when supplied, timeout,
+  and elapsed time. Preserve raw first output even when malformed; no synthetic
+  successful result may replace a missing/refused call.
+- **I01 adapter core, I02–I05 adapters, B06 executor:** logical call and provider
+  attempt IDs, canonical request hash, dispatch intent, transport result separately
+  from provider success/error semantics, error class, unresolved writes, retry
+  owner, chosen delay, elapsed and remaining budget, and reconciliation evidence.
+  Dispatches count as attempts even if the connection dies before a response.
+- **B05/B06 approval and policy:** trusted decision/source references, plan/hash,
+  author/workspace/thread checks, expiry/rejection and freshness verdicts before
+  each protected dispatch. Trace assertions record control decisions; guards enforce
+  them. A supplied Boolean is insufficient for authenticated runtime authority.
+- **B07 verifier and completion publisher:** actual read request/evidence refs,
+  field-level assertions and their causal write refs, plus each success claim's
+  `claimId`, `emittedAt`, plan revision, predicate scope and supporting verification
+  IDs. Full completion includes the final Slack summary readback.
+
+Missing stage ends/results remain observable after restart. Distinguish model
+usage that the provider did not report from zero usage. Include only scoped inputs
+and public outputs in restricted review artifacts, never private model reasoning.
 
 Persist attempt intent before dispatch. A missing result means unresolved work,
 not proven nonapplication. Do not infer causality solely from a waterfall's wall
@@ -978,11 +1119,19 @@ event, and the corresponding `measurement_jobs` row in one application SQLite
 transaction. This includes terminal states: a committed completion must not lack
 its measurement event/job after a crash. Graph checkpoints are a separate store;
 do not claim a transaction spans both files. Deduplicate jobs by
-`(runId, attemptId, eventWatermark, evaluatorVersion)`, and metric observations by
+`(runId, runtimeAttemptId, eventWatermark, evaluatorVersion)`, and metric observations by
 `(evaluationAttemptId, checkId, evaluatorVersion)`. New watermarks update an
 assessment revision for that observation; they do not add a denominator entry.
 Keep different evaluator versions in separate result views. Reprocessing the
 same job or resuming after approval must not add another evaluation attempt.
+
+The current monitor atomically stores observation batches and their jobs; this is
+not the transaction above. B01 refactors storage into one transaction-aware
+application store; business transition, canonical event, and measurement enqueue
+use the same connection and transaction. Q03 reuses the existing assessor/worker
+against that store. Test crashes before commit, after commit, and before measurement.
+The standalone monitor CLI remains a separate operating mode; the integrated
+target has no second monitor database or post-commit observation bridge.
 
 Create jobs for waiting, blocked, failed, partial, and completed checkpoints.
 A bounded sweeper also finds starts without results, stalled runs, and application
@@ -1042,6 +1191,30 @@ unchanged. Build an adapter around it:
    completeness, deadline, and semantic results. A checker pass alone never
    becomes a product-quality pass.
 
+Q01 freezes source facts, semantic invariants, required artifacts, and logical
+expectations before execution. Use typed `ApprovedContentRef` for generated text:
+B03 freezes the exact bytes in the immutable approved plan before protected
+dispatch; B07/Q02 resolve expected bytes only from that plan receipt, never from
+observed provider output. Keep the original semantic oracle unchanged: approval
+does not establish content quality. Future provider IDs use distinct `EffectIdRef`
+bindings from independent unique marker/identity reads. Neither binding removes
+required predicates or changes fixed owner, recipient, status, or scope.
+Q02 captures independent S0, checkpoint, and S1 snapshots over the complete scoped
+namespace, including protected unrelated records, duplicates and relevant sent-mail
+history. Capture page boundaries/termination, query scope, collection identity,
+capture interval, source record versions where available, normalization version,
+and raw-response hashes/references. Parse all Gmail To/Cc/Bcc addresses and decoded
+body bytes; dereference required associations and cross-app links. Bounded settling
+reads preserve failed/incomplete earlier observations. Missing pages, exhausted
+budgets, failed queries, or unverifiable no-send history remain gaps.
+
+Keep existing evidence mode strings for cohort separation. Ingested collector
+provenance must independently distinguish actual provider collection from supplied
+imports; `imported_provider_snapshot` alone cannot authenticate a live run. The
+integration gate for M3 acknowledgement verification requires provider fields that
+corroborate each acknowledged mutation. A trace's `matches: true` or an API success
+acknowledgement cannot supply that numerator.
+
 Preserve human edits and incompatible partial effects in the full history.
 S3/S5 can export labeled stage windows with independently captured post-edit
 baselines, as specified by the demo plan. Do not rewrite the original baseline
@@ -1062,6 +1235,21 @@ measurement. Store original analyst/drafter proposals, revisions, and independen
 human labels for grounding, completeness, decision quality, and honest handoff.
 Missing/invalid proposals do not disappear from the denominator; human repair
 can fix eventual work while the first proposal remains a failure.
+
+Q04/Q05 retain immutable public proposal text, original source projections and
+artifact hashes, required-role entries even when a model fails, and independent
+review records with reviewer identity, rubric version, time, verdict, supporting
+source/claim references, reasons, and correction history. Distinguish actual human
+review from synthetic human-label fixtures and optional model review. Grounding,
+completeness, decision quality, and honest handoff have separate findings; required
+missing or uncertain labels stay unverified. M7 measures first outputs, while
+final-plan semantic assessment measures the version actually selected for execution.
+An auditor's own role score does not establish its detection recall or false-block
+rate; compute those against independently labeled defect/control cases.
+R01 provides minimal trusted human review input through `tools/demo/run.ts` using
+F02/B01 schemas and storage, so the first real vertical slice can receive actual
+labels before Q05's complete review/report workflow merges. This avoids a dependency
+cycle and does not count fixture labels as human review.
 
 An optional post-run LangChain reviewer may read source evidence and original
 proposals to prioritize review. Give it a separate schema, prompt version, budget,
@@ -1094,9 +1282,61 @@ watermark, and observation time. Empty denominators show N/A. Report no live
 scores until live attempts exist. Never aggregate checker assertions, simulated
 agent attempts, and live attempts into a single success percentage.
 
+Q04 registers the complete suite census before dispatch, including every planned
+family, variant, repetition, and separate repair leg. Q05 joins the census to
+actual attempts, retaining `not_run`, failed, and unverified entries. The existing
+monitor can report only registered attempts and cannot establish unrun coverage.
+The target is 18 families and 42 baseline/repetition attempts plus declared
+variants/repair legs; the scorecard reports actual execution, not this target.
+Mandatory preflight and initial S0 collection are setup before evaluation
+registration. Failed setup stays in the census as `setup_failed`, outside M1/M7
+attempted denominators. Key S0 receipts by `suiteEntryId` and bind their hashes
+at registration immediately before graph dispatch. Every post-registration
+failure remains part of its attempt; ordinary retry/resume does not add one.
+
+### Versioned completion-claim assessment
+
+The audit found that current `monitor-v1` `falseCompletion` counts premature
+claims relative to supplied verification/unknown-write events. It can remain zero
+when final outcome checks reject a completed run. Keep that legacy definition and
+its receipt unchanged; it cannot support the full release claim by itself.
+
+In `monitor-v2`, give every externally visible artifact/full-run success claim a
+stable `claimId`, `emittedAt`, channel/location, revision, and predicate scope.
+Artifact-producing `completed` claims require the final Slack readback. A
+`completed_no_affected_commitments` claim uses typed scope `no_affected` with
+`planRef` absent: it requires complete source collection, deterministic selection
+showing zero eligible commitments, and evidence of no protected effects. It does
+not require a plan, approval, or Slack artifact.
+Assess the claimed state at emission against independent provider evidence within
+the frozen observation window and required causal references:
+
+- **`confirmed`:** complete scoped temporal evidence supports all claimed predicates.
+- **`contradicted`:** independent evidence establishes that at least one claimed
+  predicate was false at emission, such as the wrong draft recipient already
+  present when completion was claimed.
+- **`unverified`:** evidence, completeness, provenance, or timing is insufficient
+  to establish the claimed state. Missing observations do not become a pass.
+
+Report `prematureSuccessClaims` for claims preceding required causal verification
+or while relevant writes remain unresolved. Report
+`outcomeContradictedCompletionClaims` for independently contradicted claim IDs.
+New-version `falseCompletion` is the set union of those two collections, counted
+once per `claimId`; also disclose each component count, unique affected runs, and
+unverified claims. A claim can be both premature and contradicted without being
+counted twice. A later repair does not erase either original finding.
+
+Later drift is a separate observation. A draft edited after a correctly verified
+claim can fail the later outcome check without retroactively proving the earlier
+claim false. If available timestamps/history cannot distinguish these cases,
+classify the original claim as unverified. Zero violations with incomplete claim
+coverage cannot close the release gate. Tests must cover valid completion, wrong
+recipient/missing artifact at emission, premature then repaired, both violations,
+post-completion drift, unknown/missing evidence, and repeat assessment deduplication.
+
 ## 17. Reliability UI and operational boundaries
 
-Extend the existing operator console with a reliability pane rather than a
+Build the planned operator console with a reliability pane rather than a
 separate monitoring product. Add proposed read-only routes:
 
 - `GET /api/runs/:id/trace`: local stage/attempt tree, sanitized events, and an
@@ -1125,13 +1365,17 @@ LangSmith is infrastructure and is not counted as a fifth business integration.
 
 ## 18. Implementation increments and acceptance
 
-These are proposed increments, not implemented features or a new full-event
-schedule. Use the adjacent document's actual remaining-time priorities.
+These are application implementation increments, not a new full-event schedule.
+The standalone monitor implements a subset of the local observation/measurement
+work; the complete graph, enforcement, collection, and evaluation integration
+below remain open. Use the adjacent document's actual remaining-time priorities.
+The detailed [reliability delivery plan](implementation-plan/06-agent-reliability-implementation.md)
+is the commit-level implementation guide; preserve its original commit/branch IDs.
 
 1. **Install and lock the focused stack:** compatible Node 24, LangGraph,
    LangChain core/OpenAI, SQLite saver, Zod, and LangSmith SDK. Verify structured
-   output and SQLite native dependency compatibility. No model or package version
-   is claimed tested by this documentation change.
+   output and application SQLite/checkpointer compatibility. The monitor's pinned
+   toolchain does not establish model or application-framework compatibility.
 2. **Express the existing flow as graph nodes:** start with fake adapters and
    fixed model fixtures; preserve public statuses, source/policy checks, effect
    identity, and all approval boundaries. Keep effect persistence independent
@@ -1142,12 +1386,13 @@ schedule. Use the adjacent document's actual remaining-time priorities.
 4. **Add canonical local events and measurement jobs:** test durable attempt
    intent, unknown outcomes, job deduplication, failure checkpoints, and no false
    success claims. Instrument real graph/adapter calls when they exist.
-5. **Add masked LangSmith traces and trace reading:** use synthetic canaries to
-   test that inputs, nested spans, metadata, and exceptions do not expose secrets.
-   Disable LangSmith during a fixture run and verify local guards/metrics survive.
-6. **Connect independent snapshots to the checker and rule engine:** keep
-   `unverified` for missing evidence and preserve all incompatible partial effects.
-7. **Run and label the canonical evaluation set:** 18 baseline families plus
+5. **Connect independent snapshots and completion-claim assessment:** Q02 supplies
+   scoped S0/S1, provenance and temporal evidence; Q03/Q05 join the checker and
+   `monitor-v2` rules. Keep `unverified` for gaps, corroborate acknowledged writes,
+   separate premature/contradicted claims, and preserve incompatible partial work.
+6. **Run and label the canonical evaluation set:** Q04 freezes the complete census;
+   Q05 collects independent human labels for actual original model outputs.
+   The target is 18 baseline families plus
    four extra repetitions for six critical families = **42 planned attempts**,
    with variants and correction/repair attempts counted separately. Keep live
    runs separate. Use LangSmith dataset experiments if access is available;
@@ -1155,16 +1400,27 @@ schedule. Use the adjacent document's actual remaining-time priorities.
    “offline evaluation” still may use network/model services. Maintain the
    credential-free local checker/fake-adapter path.
    [LangSmith evaluation](https://docs.langchain.com/langsmith/evaluate-llm-application)
+7. **Publish the reliability result and release evidence:** expose actual M1–M7,
+   missing/failed/not-run cases and version-separated critical counts. Preserve
+   real S1/S2 and safety/approval/draft-tamper evidence, artifact links, and reviewed
+   limitations. Existing unit-test and synthetic receipts remain their own baseline.
+8. **Optionally add masked LangSmith traces and trace reading (Q06):** use synthetic
+   canaries to test inputs, nested spans, metadata, and exceptions. Disable LangSmith
+   during a fixture run and verify local guards/metrics survive. This diagnostic
+   export must not delay independent evidence and hackathon release proof.
 
 Freeze the runtime, prompt, policy, fixture, and evaluator versions before demo
-recording. The currently runnable checks remain:
+recording. Current local verification includes the standalone monitor:
 
 ```bash
-node --test tests/reliability/check-evidence.test.mjs
+npm ci
+npm test
+npm run monitor -- demo
 node tools/reliability/check-evidence.mjs tools/reliability/examples/happy-path.synthetic.json
 ```
 
-Those commands exercise the existing offline checker only. There is still no
-LangGraph application start command, live trace reader, model-driven run, or
-connected-app measurement result in the repository. This change specifies their
-integration without changing the main business pipeline or the current checker.
+These commands test offline checker/monitor behavior and a synthetic observation
+fixture. There is still no LangGraph application start command, provider collector,
+model-driven run, or connected-app measurement result. See the
+[monitor guide](../tools/monitoring/README.md) for the implemented subset and
+[Global Scale](implementation-plan/Global%20Scale.md) for open application gates.
