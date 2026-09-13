@@ -1,0 +1,1225 @@
+{
+  "schemaVersion": 1,
+  "manifestVersion": "promiseguard-release-v1",
+  "implementationId": "R02",
+  "conventionsVersion": "1.2",
+  "branch": "chore/demo-release",
+  "createdAt": "2026-09-13T23:44:52.175339Z",
+  "status": "documented_with_open_release_gates",
+  "releaseScope": "Reproducible mock-model/fake-provider demonstration and preserved failed synthetic evaluation; no live release or submission claim.",
+  "source": {
+    "gitSha": "fa148667016be9f3c778bc76ad9c8ee232f9151d",
+    "treeSha": "ea78fca54bf755f936a91e7413e30c66c487a7b5",
+    "sourceCleanAtWorktreeCreation": true,
+    "codeDirty": false,
+    "codeDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "codeInventorySha256": "350aac70afb65912d20cb41e16d8fd840dda2508c919de65ab213c6034ce7a4f",
+    "codeFileCount": 177,
+    "codeInventoryAlgorithm": "SHA-256 of compact recursively key-sorted UTF-8 JSON array of {path,sha256}, ordered by path. Include git-tracked src/, tests/, tools/ and root files except README.md. Hash each file as raw bytes. Release documentation is excluded; base Git SHA pins the full original tree.",
+    "documentationPaths": [
+      "README.md",
+      "docs/reliability-brief.md",
+      "docs/demo-runbook.md",
+      "docs/release-manifest.json",
+      "docs/evaluation-summary.md",
+      "ideation/implementation-plan/Global Scale.md"
+    ],
+    "documentationOnlyAfterSourceFreeze": true,
+    "originalDirtyCheckout": "Preserved without staging or modifying its files; release is based on fetched origin/main in a separate worktree.",
+    "releaseCommitLookup": "git log --all --fixed-strings --format='%H %s' --grep='docs(release): [R02]'",
+    "initialWorktreeGitSha": "8722598eb1c83fc81c6a6c36930899f5da811772",
+    "sourceFreezeWorkingTreeState": "Runtime/configuration/test bytes clean against final source; only allowed release documentation modified or untracked.",
+    "refreezeReason": "Gemini runtime migration 25ba4727f0425849a8d10f1fd3b04dd6abcf8c7f landed during final fetch; source advanced to fa148667016be9f3c778bc76ad9c8ee232f9151d, followed by fresh locked install/typecheck/build/demo."
+  },
+  "prerequisites": [
+    {
+      "implementationId": "R01",
+      "gitSha": "bacb8ea4e2c340f547fe2a081c6836b911fe24d3",
+      "onFrozenMain": true,
+      "receipt": "ideation/implementation-plan/commits/R01.md"
+    },
+    {
+      "implementationId": "U02",
+      "gitSha": "93a6cdfe16eb9692dc683879fcba88520e18f9c9",
+      "onFrozenMain": true,
+      "receipt": "ideation/implementation-plan/commits/U02.md"
+    },
+    {
+      "implementationId": "Q04",
+      "gitSha": "fbc04a5750ec0aa1f87fb24c29ca7937c1dc942e",
+      "onFrozenMain": true,
+      "receipt": "ideation/implementation-plan/commits/Q04.md"
+    },
+    {
+      "implementationId": "Q05",
+      "gitSha": "5b250645eef9ccf15feaf69d97ce1470776b4dc0",
+      "onFrozenMain": true,
+      "receipt": "ideation/implementation-plan/commits/Q05.md"
+    }
+  ],
+  "runtime": {
+    "node": "24.21.0",
+    "npm": "11.19.0",
+    "platform": "linux",
+    "architecture": "x64",
+    "nodeSqlite": "3.53.4",
+    "nodeEngine": ">=24.15.0 <25",
+    "runtimeFile": {
+      "path": ".node-version",
+      "sha256": "73fb1b615e2043a933be1c0895cde4358036acc28d785692509b822aa53c761f",
+      "byteLength": 8
+    }
+  },
+  "packages": {
+    "name": "promiseguard",
+    "version": "0.1.0",
+    "package": {
+      "path": "package.json",
+      "sha256": "f01d5dd37f63e558216c2c5f2e414681a29fbdd6bd3a35e5dc72606e9412c409",
+      "byteLength": 2085
+    },
+    "lockfile": {
+      "path": "package-lock.json",
+      "sha256": "8282046f502cbd6495e8d10e70afe3b615c2d0f3329cbba345d9f2fbf8121c66",
+      "byteLength": 140946
+    },
+    "dependencies": {
+      "@fastify/static": "10.1.3",
+      "@langchain/core": "1.2.11",
+      "@langchain/langgraph": "1.4.15",
+      "@langchain/langgraph-checkpoint-sqlite": "1.0.4",
+      "better-sqlite3": "12.11.1",
+      "fastify": "5.12.4",
+      "react": "19.3.0",
+      "react-dom": "19.3.0",
+      "zod": "4.6.4"
+    },
+    "devDependencies": {
+      "@axe-core/playwright": "4.13.0",
+      "@playwright/test": "1.63.0",
+      "@testing-library/jest-dom": "7.0.1",
+      "@testing-library/react": "16.3.3",
+      "@types/better-sqlite3": "9.6.0",
+      "@types/node": "24.13.4",
+      "@types/react": "19.3.0",
+      "@types/react-dom": "19.3.0",
+      "@vitejs/plugin-react": "6.1.1",
+      "axe-core": "4.13.0",
+      "jsdom": "30.0.1",
+      "typescript": "7.0.2",
+      "vite": "8.3.0",
+      "vitest": "5.0.0"
+    },
+    "installedFromLock": true
+  },
+  "configuration": {
+    "modelMode": "mock",
+    "adapterMode": "fake",
+    "evidenceMode": "synthetic_fixture",
+    "fixtureId": "promiseguard-demo-v1",
+    "enabledRoles": [
+      "analyst",
+      "drafter",
+      "auditor"
+    ],
+    "roleModelIds": {
+      "analyst": "mock-promiseguard-demo-v1",
+      "drafter": "mock-promiseguard-demo-v1",
+      "auditor": "mock-promiseguard-demo-v1"
+    },
+    "liveModels": null,
+    "modelBudgets": {
+      "timeoutMs": 30000,
+      "roleBudgetMs": 90000,
+      "maxAttempts": 1,
+      "maxOutputTokens": 2000,
+      "maxInputChars": 100000,
+      "maxCommitments": 100
+    },
+    "providerBudgets": {
+      "timeoutMs": 5000,
+      "totalMs": 15000,
+      "maxAttempts": 1,
+      "maxPages": 100,
+      "maxRecords": 1000,
+      "maxResponseBytes": 1000000
+    },
+    "approvalPolicy": {
+      "impactHorizonHours": 72,
+      "approvalTtlMs": 600000,
+      "sourceFreshnessMs": 30000
+    },
+    "liveCredentialPreflight": "unrun",
+    "connectedWorkflowModule": "not_supplied",
+    "operatorAuthenticationAndCsrf": "not_qualified_for_release",
+    "providers": [
+      {
+        "app": "github",
+        "transport": "fake",
+        "liveTransportImplemented": "rest",
+        "accountScope": "synthetic_fixture_namespace",
+        "liveScopeReceipt": null,
+        "liveReadWriteReadback": "unrun"
+      },
+      {
+        "app": "hubspot",
+        "transport": "fake",
+        "liveTransportImplemented": "rest",
+        "accountScope": "synthetic_fixture_namespace",
+        "liveScopeReceipt": null,
+        "liveReadWriteReadback": "unrun"
+      },
+      {
+        "app": "slack",
+        "transport": "fake",
+        "liveTransportImplemented": "rest",
+        "accountScope": "synthetic_fixture_namespace",
+        "liveScopeReceipt": null,
+        "liveReadWriteReadback": "unrun"
+      },
+      {
+        "app": "gmail",
+        "transport": "fake",
+        "liveTransportImplemented": "rest",
+        "accountScope": "synthetic_fixture_namespace",
+        "liveScopeReceipt": null,
+        "liveReadWriteReadback": "unrun"
+      }
+    ],
+    "modelProviderImplementation": "gemini_developer_api",
+    "modelTransport": "models.generateContent",
+    "requestedLiveModel": "gemini-3.8-flash",
+    "requestedLiveModelQualified": false
+  },
+  "versions": {
+    "application": "0.1.0",
+    "applicationSchema": 2,
+    "apiSchema": 2,
+    "eventSchema": 2,
+    "evaluationSchema": 2,
+    "evaluator": "monitor-v2",
+    "legacyEvaluator": "monitor-v1",
+    "checker": "checker-v1",
+    "report": "evaluation-report-v2",
+    "harness": "scenario-harness-v1",
+    "prompts": [
+      {
+        "role": "analyst",
+        "promptVersion": "analyst-prompt-v1",
+        "outputSchemaVersion": "analyst-v2",
+        "file": {
+          "path": "src/server/agents/analyst/prompt.ts",
+          "sha256": "3fc5253274cc1c2025a631db1ac1d84263ae30be3bd0669a3bba068efb5af279",
+          "byteLength": 3615
+        }
+      },
+      {
+        "role": "drafter",
+        "promptVersion": "drafter-prompt-v1",
+        "outputSchemaVersion": "drafter-v2",
+        "file": {
+          "path": "src/server/agents/drafter/prompt.ts",
+          "sha256": "a2b6c24c4d0464ff71a3369c32cb07d9add945e287131b417b1313394c621753",
+          "byteLength": 4097
+        }
+      },
+      {
+        "role": "auditor",
+        "promptVersion": "auditor-prompt-v1",
+        "outputSchemaVersion": "auditor-v2",
+        "file": {
+          "path": "src/server/agents/auditor/prompt.ts",
+          "sha256": "c99a659e9a6469057af05907b557daeebe7c63f435ef13264d6966239530fddb",
+          "byteLength": 4390
+        }
+      }
+    ],
+    "policies": [
+      {
+        "name": "selection",
+        "version": "selection-v1",
+        "file": {
+          "path": "src/server/policy/selection.ts",
+          "sha256": "372653e84f7f0eb9af034be9676f331c28b618c25c33595195b6b979b5019f6f",
+          "byteLength": 13241
+        }
+      },
+      {
+        "name": "plan",
+        "version": "plan-v1",
+        "file": {
+          "path": "src/server/policy/plan.ts",
+          "sha256": "7ade35abfe1151ac36a81db01443d08ff0218d921c46524e648fe2aa511ac46b",
+          "byteLength": 14794
+        }
+      },
+      {
+        "name": "canonical",
+        "version": "plan-canonical-v1",
+        "file": {
+          "path": "src/server/policy/canonical.ts",
+          "sha256": "2403d6609a59ef5f2829f3901166d1efd62413b86ddbf1649c4804da041d8d54",
+          "byteLength": 1196
+        }
+      },
+      {
+        "name": "effect-keys",
+        "version": "effect-key-v1",
+        "file": {
+          "path": "src/server/policy/effect-keys.ts",
+          "sha256": "78a7930bcd8d9bc5f3868c9bdeea9553f0566f33261513c7dce0c059fdd6fcf9",
+          "byteLength": 2008
+        }
+      }
+    ],
+    "sharedFiles": [
+      {
+        "path": "src/shared/adapters.ts",
+        "sha256": "ddb37dc1477f9bbca2df0705cfa887d5589a77d924d42395f625d605a1f52c0e",
+        "byteLength": 14853
+      },
+      {
+        "path": "src/shared/agents.ts",
+        "sha256": "15615047d99dd6e0a490dacdddc5961b14881bcdc6be0356ecaf25e9e1aa27cf",
+        "byteLength": 12431
+      },
+      {
+        "path": "src/shared/api.ts",
+        "sha256": "2474e057f48bf718c8e51accfe43049c522ff1c3f5873d42a40f00a19c641acf",
+        "byteLength": 21377
+      },
+      {
+        "path": "src/shared/checker.d.ts",
+        "sha256": "bdce9170912e1883406ee0e4f61dd4b4dc2e41703f5f27b45aea5da0beee754b",
+        "byteLength": 257
+      },
+      {
+        "path": "src/shared/domain.ts",
+        "sha256": "a3a51e2aaf4599efc36d3252a77b31b68c4b34ee4e8379a8be80b6654a46923a",
+        "byteLength": 20905
+      },
+      {
+        "path": "src/shared/evaluation.ts",
+        "sha256": "ca5417b35c83fa235b5c9a2f0514f1a505c48b243a2b563ac8e3c8649ec79059",
+        "byteLength": 26087
+      },
+      {
+        "path": "src/shared/events.ts",
+        "sha256": "c0d7e970cd059c05011264a907cc3a2352d24216e9774181c085722e17c7b205",
+        "byteLength": 11927
+      },
+      {
+        "path": "src/shared/reliability.ts",
+        "sha256": "3688a853646bb32d6d81fbc1657d461fbe4f427d009c728f8179f360c7df67e0",
+        "byteLength": 9680
+      }
+    ],
+    "migrations": [
+      {
+        "path": "src/server/migrations/001-initial.sql",
+        "sha256": "ebfaaf787ecb566badd58846886947d1c7b67a712771dbf26b2184c377f5de45",
+        "byteLength": 13738
+      },
+      {
+        "path": "src/server/migrations/002-workflow-driver.sql",
+        "sha256": "fdded7d6d8c6e60ef40c77eb5e0e5f3f7f10b314d9817dca5cf8c76b49b6e983",
+        "byteLength": 1749
+      },
+      {
+        "path": "src/server/migrations/003-trace-exports.sql",
+        "sha256": "9086fe261be4c956e1ee6565e8da510d95c032a8470ef7615d5f3b56a481db9b",
+        "byteLength": 2884
+      }
+    ],
+    "fixtureFiles": [
+      {
+        "path": "tests/fixtures/world.json",
+        "sha256": "07381f27ace2daa5e451d6021d196435d6433a5f5b234fcba5538c9e9eae3db4",
+        "byteLength": 3077
+      },
+      {
+        "path": "tests/fixtures/scenarios.json",
+        "sha256": "4560f2e218e78dc3191cf72d6bbce42488dd9db69f22559dc2224ad868968a99",
+        "byteLength": 148240
+      },
+      {
+        "path": "tests/fixtures/source-labels.json",
+        "sha256": "35de62b834bd90d62283903fa282e7a1fc7239893d444aeb52ac9070324819ed",
+        "byteLength": 20949
+      },
+      {
+        "path": "tests/fixtures/faults.ts",
+        "sha256": "014f78e615ea1ca9eca307668e0397a9e3b49392b5af37caf51d60cf6a5210a4",
+        "byteLength": 12469
+      },
+      {
+        "path": "tests/fakes/model.ts",
+        "sha256": "59bf9fd9040917242edb373c086ae08d7644cccc34846c0e9c39923dede8e67f",
+        "byteLength": 14887
+      }
+    ],
+    "sourceOracle": "promiseguard-source-oracle-v1"
+  },
+  "optionalCapabilities": {
+    "automaticRecovery": {
+      "implementationId": "B08",
+      "enabled": false,
+      "status": "deferred",
+      "retainedBehavior": "B06 reconcile-or-stop; manual/explicit restart demonstration is not B08 automatic recovery."
+    },
+    "deeperScorecard": {
+      "implementationId": "U03",
+      "enabled": false,
+      "status": "deferred"
+    },
+    "langsmithExport": {
+      "implementationId": "Q06",
+      "enabled": false,
+      "status": "merged_offline_only",
+      "gitSha": "62c69ad7f41a28e6266e43ca67be438c93d66f06",
+      "receipt": "ideation/implementation-plan/commits/Q06.md",
+      "liveSmoke": "unrun"
+    },
+    "mcp": {
+      "enabled": false,
+      "status": "unsupported_transport"
+    },
+    "hosting": {
+      "enabled": false,
+      "status": "not_deployed"
+    }
+  },
+  "evaluation": {
+    "reportVersion": "evaluation-report-v2",
+    "reportId": "report-5bb5b9127b0b2034befe53cd00d0381f146a68e267d84c2375453eee6c52dc85",
+    "revision": 1,
+    "cohortId": "cohort-af82ab805973fea04176bd810db89832e2f843a08fc2ef11e55a1a31eafde087",
+    "source": {
+      "execution": {
+        "app": "q04-graph-runtime-v1",
+        "model": "q04-scripted-model-v1",
+        "policy": "selection-v1",
+        "prompt": "analyst-prompt-v1_drafter-prompt-v1_auditor-prompt-v1",
+        "schema": "schema-v2",
+        "source": "source-sha256:c3bef035b6a54b61b8f7b29eeba5b880b6676e47bd1c7f39a60fa441ba07059c"
+      },
+      "report": {
+        "dirtySha256": "49abc5f58bdc692142c113e4a80f1811c0afe5b1fdab21eafc47bf1360330550",
+        "gitSha": "5b250645eef9ccf15feaf69d97ce1470776b4dc0"
+      }
+    },
+    "versions": {
+      "app": "foundation-f02",
+      "fixture": "promiseguard-demo-v1",
+      "model": "scripted-model-v1",
+      "policy": "selection-v1",
+      "prompt": "promiseguard-roles-v1"
+    },
+    "evaluatorVersion": "monitor-v2",
+    "manifestVersion": "2",
+    "harnessVersion": "scenario-harness-v1",
+    "harnessRevision": 168,
+    "suiteId": "promiseguard-q01-v1",
+    "suiteHash": "a58137ad7a59377cdc110af3c917b8edecc295c280dac6d2a3bd6ae2026def77",
+    "frozenCensusHash": "70145957a2ee8d003bc95aaf5a9d2ab04d9b1c942ced1e1a4172861ce5c5d4fe",
+    "censusHash": "ed42e63c213ab9953d5901da41a19107dedf5f20625b74744309f8eb6691632e",
+    "configuration": {
+      "evidenceMode": "synthetic_fixture",
+      "fixtureId": "promiseguard-demo-v1",
+      "modelMode": "mock",
+      "providerMode": "fake",
+      "schemaVersion": 2
+    },
+    "cutoffAt": "2026-09-13T17:45:00.103Z",
+    "observedAt": "2026-09-13T17:45:00.103Z",
+    "watermark": "8562d037560f4cec7529b51b2229eb593dc92dc186bb63e81a2d0f8fdf3e33e4",
+    "counts": {
+      "assessed": 75,
+      "attempted": 75,
+      "failed": 71,
+      "passed": 0,
+      "pending": 0,
+      "planned": 92,
+      "registered": 75,
+      "setupFailed": 0,
+      "unrun": 17,
+      "unverified": 4
+    },
+    "targets": {
+      "baselineRepetition": 42,
+      "families": 18,
+      "live": [
+        {
+          "disposition": "not_run",
+          "reason": "live_account_preflight_not_run",
+          "scenario": "golden"
+        },
+        {
+          "disposition": "not_run",
+          "reason": "live_account_preflight_not_run",
+          "scenario": "replay"
+        },
+        {
+          "disposition": "not_run",
+          "reason": "live_account_preflight_not_run",
+          "scenario": "stale_approval"
+        },
+        {
+          "disposition": "not_run",
+          "reason": "live_account_preflight_not_run",
+          "scenario": "draft_verification"
+        },
+        {
+          "disposition": "not_run",
+          "reason": "live_account_preflight_not_run",
+          "scenario": "safe_block"
+        }
+      ]
+    },
+    "freshExecutionInR02": false,
+    "payloadSha256": "c53b756f131de856b1a133b2f5e19c16bd193d3eb8136e4e7cf9a222aa1edb38",
+    "payloadHashAlgorithm": "SHA-256 of canonical {summary,detail}; differs from saved file-byte SHA-256.",
+    "restrictedArtifacts": [
+      {
+        "path": "/tmp/promiseguard-q05/.local/q05-final/report-5bb5b9127b0b2034befe53cd00d0381f146a68e267d84c2375453eee6c52dc85-r1.detail.json",
+        "sha256": "ed32948ef81a1790a5244bc057fc251f96aef3150a0598056d3c546ce2d619c5",
+        "byteLength": 458128
+      },
+      {
+        "path": "/tmp/promiseguard-q05/.local/q05-final/report-5bb5b9127b0b2034befe53cd00d0381f146a68e267d84c2375453eee6c52dc85-r1.json",
+        "sha256": "ea7a61a2374da86b9eec1bffdebe8311489e2e8bbc401e5d04787554d1d2ac62",
+        "byteLength": 485359
+      },
+      {
+        "path": "/tmp/promiseguard-q05/.local/q05-final/report-5bb5b9127b0b2034befe53cd00d0381f146a68e267d84c2375453eee6c52dc85-r1.md",
+        "sha256": "7c2480aa98e0402d147faf5fb4dee3826d36c96519f497627dd307e60012166b",
+        "byteLength": 4213
+      },
+      {
+        "path": "/tmp/promiseguard-q05/.local/q05-final/report-5bb5b9127b0b2034befe53cd00d0381f146a68e267d84c2375453eee6c52dc85-r1.summary.json",
+        "sha256": "301b93f7b84787c2f5ce1483633c90c3b4769d22b772f256911ae929315c5f70",
+        "byteLength": 25672
+      }
+    ],
+    "restrictedCensus": {
+      "path": "/tmp/promiseguard-q04/.local/q04-final/census.json",
+      "sha256": "bf16421d84c725ee1380d1cfbe182cb4d29e3342dfba17a3aee33491e3b97198",
+      "byteLength": 226242
+    },
+    "attemptIds": [
+      "0366e510-cce3-4f23-ba00-a5bb829dfa07",
+      "1303e648-f70e-47c7-8155-43e452164f37",
+      "1e1de5f0-598a-4e66-a399-5e9eee715b1d",
+      "27202097-ddb2-4330-8a80-d9e4de3f0e97",
+      "2c604933-bc0c-4270-a887-4b7783749d12",
+      "30759ff5-bc0b-45c3-b63c-927a4cec854c",
+      "373efdfd-cc37-4d0f-9075-40386103a208",
+      "3817bd3c-103f-4c2f-a088-79004b3cba90",
+      "38533b1d-ef50-4f2f-8961-61f99018db72",
+      "39641b6e-5eae-401c-8c12-002ce4bf8f87",
+      "3c8658bf-43cd-4751-ae2e-56c2f11ea842",
+      "4094540a-7973-4456-85f4-a0c369837208",
+      "433a2af8-577d-4042-8e36-22017b6f0257",
+      "437f29a0-cb66-4980-88e3-2ea44f45ab29",
+      "463963de-1e5a-4690-a372-4313987a3f26",
+      "470a927e-3fa0-4214-a5a8-855724ccec93",
+      "48d63931-3f1f-4a1f-9170-2c8e918617cf",
+      "49eda201-9dd3-4e1c-a99d-d39e8b85d755",
+      "5b0987f4-075e-41af-aeab-8f07c33ddfd8",
+      "5fd0ffc8-eb5a-4a3d-abe0-13382fdb1b86",
+      "609f3d9e-063c-4949-8dc0-3f2afc22b8c1",
+      "63ef8932-b786-461d-9fa4-3f39c1323e0a",
+      "65708f4c-726b-4db9-b563-9ead23c39658",
+      "65b587f9-6b6b-4f8a-9d00-1b51e3fefc5e",
+      "65c02735-364a-4db3-bfa0-6a17ec36e30b",
+      "66460f05-9f5b-41c2-ada8-652e9b87f851",
+      "67a4bd14-24b8-4914-b726-ea2fb600575b",
+      "67e3cf83-d4cb-4f30-8696-a10ff7570d2f",
+      "69158021-503d-4962-b8d3-d9e87f7d4e6c",
+      "6ae6b7c1-f04a-4391-860c-d3cc736dfb2b",
+      "6c6efadc-2d11-4475-b387-bf70134023b4",
+      "72d05290-b226-41d8-adad-39ca13cebc70",
+      "78f76c52-f634-4f7e-9486-bbd51e611fa2",
+      "7a475036-443b-4d2b-a24e-7dc4c9d5837a",
+      "7e003ba8-b72d-4028-aa39-da1726877818",
+      "89a89b2b-a203-40c5-bfca-f241dff75da7",
+      "8ddeaf32-70e3-44a8-bbad-2e5ed68e028a",
+      "976fa141-7101-4581-8251-e6be4cf429d1",
+      "98301d56-8bf0-4ff4-9d92-bfcd9e644b64",
+      "9f8b6cde-7352-4954-a378-8b1274fb4c5b",
+      "9fbd1ef1-663c-4dca-8a2c-7b5047fc19aa",
+      "a31f461c-ed1a-48ac-89f0-f147ef353e4f",
+      "a333c038-7e76-4f5b-934f-fdbe147d6cd8",
+      "a4f9a5de-3f30-4dd2-849f-fd842b7da153",
+      "a63a6013-b183-4feb-922a-ff9160cc6b2a",
+      "a7732a7d-54db-40e2-bc0b-4b52b3682ae7",
+      "a98b2512-53ec-44bc-8c99-084a3deef5e8",
+      "a9e48ea2-31b7-4cbc-aa69-85e6c46adee5",
+      "aa87b7df-3ffd-4f26-9eb9-167a03f0bfd9",
+      "b1149d2e-72ae-4837-8d4e-717b269ea99f",
+      "b18ac0d0-71dd-4b89-a6c1-b174a3f458e6",
+      "b3bf0e44-f5f2-404e-ac57-baca2287aa6a",
+      "b76fc58e-7592-440b-8d66-de8162b6a4ec",
+      "bb41b403-bbc6-4a0c-972b-eeceb11a7aab",
+      "bc4c1266-3872-4920-877f-95f4909b1726",
+      "bf23b9c3-1eb5-4c82-af2f-e423ab93a9f0",
+      "c467df6e-bde8-401c-b28f-b762e77895f0",
+      "c669e1b6-25de-4171-9feb-be10833b2830",
+      "c9f19233-bb46-4c6c-a2ef-1f03bd47be3d",
+      "ccb0d4ee-788b-43fc-a016-c52cc1315f57",
+      "d04b9eb4-ecda-46bb-9692-3b376c148953",
+      "d3a21712-ee83-4d0c-a11a-b4f896f526fb",
+      "d579127f-48f2-4397-a4a1-5d072fa5dd87",
+      "d6f0fc0c-9ecc-4ec0-bab1-0a1035de2c21",
+      "d757d31d-0b9f-4bd9-82e8-ace0a0c64c2c",
+      "e5f89dd5-85f4-4328-b748-3cbbaf0ef0ca",
+      "e82d91ab-2c0b-4f29-9aec-a815a3a57619",
+      "e869af19-df45-4b75-bd83-d3f6cfb84ac2",
+      "e8c1a639-0b8b-485f-b3ac-3fa8de5969de",
+      "e9560bc4-5a18-485a-809d-a98e3d7610cc",
+      "ebe55fcd-453a-4d37-b242-89ce1d1362f3",
+      "f6ab6e34-63a4-45d1-b4e9-133e278ef932",
+      "f7df1de7-e5fd-4318-bc99-74782d010383",
+      "facb9115-0290-49a0-a327-ee37ae9bb4ae",
+      "fed6c50d-4362-4bc1-8b87-bb77f45eedf4"
+    ],
+    "metricDenominators": [
+      {
+        "availability": "available",
+        "denominator": 18,
+        "dimension": "execution_attempts",
+        "metricId": "M1",
+        "numerator": 0,
+        "role": null,
+        "unit": "execution_attempts",
+        "value": 0
+      },
+      {
+        "availability": "available",
+        "denominator": 3003,
+        "dimension": "tool_attempts",
+        "metricId": "M2",
+        "numerator": 2994,
+        "role": null,
+        "unit": "tool_attempts",
+        "value": 0.997002997002997
+      },
+      {
+        "availability": "available",
+        "denominator": 1102,
+        "dimension": "first_logical_calls",
+        "metricId": "M2",
+        "numerator": 1095,
+        "role": null,
+        "unit": "first_logical_calls",
+        "value": 0.9936479128856625
+      },
+      {
+        "availability": "available",
+        "denominator": 1121,
+        "dimension": "required_predicates",
+        "metricId": "M3",
+        "numerator": 0,
+        "role": null,
+        "unit": "required_predicates",
+        "value": 0
+      },
+      {
+        "availability": "available",
+        "denominator": 71,
+        "dimension": "mutation_acknowledgements",
+        "metricId": "M3",
+        "numerator": 0,
+        "role": null,
+        "unit": "mutation_acknowledgements",
+        "value": 0
+      },
+      {
+        "availability": "available",
+        "denominator": 3,
+        "dimension": "read_retry",
+        "metricId": "M4",
+        "numerator": 0,
+        "role": null,
+        "unit": "read_retry",
+        "value": 0
+      },
+      {
+        "availability": "available",
+        "denominator": 2,
+        "dimension": "accepted_write",
+        "metricId": "M4",
+        "numerator": 0,
+        "role": null,
+        "unit": "accepted_write",
+        "value": 0
+      },
+      {
+        "availability": "na",
+        "denominator": 0,
+        "dimension": "none",
+        "metricId": "M4",
+        "numerator": 0,
+        "role": null,
+        "unit": "none",
+        "value": null
+      },
+      {
+        "availability": "na",
+        "denominator": 0,
+        "dimension": "excess_applied_creations",
+        "metricId": "M5",
+        "numerator": 0,
+        "role": null,
+        "unit": "excess_applied_creations",
+        "value": null
+      },
+      {
+        "availability": "available",
+        "denominator": 54,
+        "dimension": "first_proposals",
+        "metricId": "M7",
+        "numerator": 0,
+        "role": "analyst",
+        "unit": "first_proposals",
+        "value": 0
+      },
+      {
+        "availability": "available",
+        "denominator": 54,
+        "dimension": "first_proposals",
+        "metricId": "M7",
+        "numerator": 0,
+        "role": "drafter",
+        "unit": "first_proposals",
+        "value": 0
+      },
+      {
+        "availability": "available",
+        "denominator": 54,
+        "dimension": "first_proposals",
+        "metricId": "M7",
+        "numerator": 0,
+        "role": "auditor",
+        "unit": "first_proposals",
+        "value": 0
+      }
+    ],
+    "latency": [
+      {
+        "availability": "na",
+        "censoredCount": 75,
+        "dimension": "wall",
+        "maxMs": null,
+        "medianMs": null,
+        "metricId": "M6",
+        "role": null,
+        "sampleCount": 0,
+        "sampleIds": []
+      },
+      {
+        "availability": "na",
+        "censoredCount": 75,
+        "dimension": "wait",
+        "maxMs": null,
+        "medianMs": null,
+        "metricId": "M6",
+        "role": null,
+        "sampleCount": 0,
+        "sampleIds": []
+      },
+      {
+        "availability": "na",
+        "censoredCount": 75,
+        "dimension": "active",
+        "maxMs": null,
+        "medianMs": null,
+        "metricId": "M6",
+        "role": null,
+        "sampleCount": 0,
+        "sampleIds": []
+      }
+    ],
+    "claims": {
+      "successClaims": 24,
+      "prematureSuccessClaims": 21,
+      "outcomeContradictedCompletionClaims": 0,
+      "falseCompletion": 21,
+      "unverifiedClaims": 24
+    },
+    "humanLabelCount": 0,
+    "criticalCounts": [
+      {
+        "availability": "available",
+        "code": "forbiddenEffects",
+        "count": 0
+      },
+      {
+        "availability": "available",
+        "code": "approvalBypasses",
+        "count": 0
+      },
+      {
+        "availability": "available",
+        "code": "prematureSuccessClaims",
+        "count": 21
+      },
+      {
+        "availability": "available",
+        "code": "outcomeContradictedCompletionClaims",
+        "count": 0
+      },
+      {
+        "availability": "available",
+        "code": "falseCompletion",
+        "count": 21
+      },
+      {
+        "availability": "available",
+        "code": "successClaims",
+        "count": 24
+      },
+      {
+        "availability": "unavailable",
+        "code": "unsupportedClaims",
+        "count": null
+      },
+      {
+        "availability": "unavailable",
+        "code": "duplicates",
+        "count": null
+      },
+      {
+        "availability": "unavailable",
+        "code": "incorrectRecipients",
+        "count": null
+      },
+      {
+        "availability": "unavailable",
+        "code": "recoveryFailures",
+        "count": null
+      }
+    ],
+    "criticalFailureOccurrences": {
+      "checker_protected_record_changed_or_missing": 23,
+      "checker_subset": 23,
+      "checker_terminal_status_mismatch": 2,
+      "completion_verification_missing": 10,
+      "deadline_exceeded": 2,
+      "first_proposal_failed": 10,
+      "next_write_before_verification": 54,
+      "orphan_or_duplicate_stage_result": 147,
+      "outcome_mismatch": 17,
+      "premature_success": 11,
+      "summary_before_verification": 11,
+      "tool_budget_exceeded": 11,
+      "undeclared_mutation": 73,
+      "undeclared_reconciliation": 2,
+      "verification_readback_missing": 113
+    },
+    "gaps": [
+      "actual_human_labels_missing",
+      "auditor_detection_labels_unavailable",
+      "census_contains_failed_attempts",
+      "checker_export_invalid",
+      "checker_protected_record_changed_or_missing",
+      "checker_subset",
+      "checker_terminal_status_mismatch",
+      "claim_outcome_unverified",
+      "completion_verification_missing",
+      "creation_facts_unavailable_in_monitor_v2",
+      "deadline_exceeded",
+      "first_proposal_failed",
+      "first_proposal_labels_missing",
+      "human_edit_schedule_not_implemented",
+      "independent_outcome_bundle_missing",
+      "model_retry_configuration_unavailable",
+      "mutation_acknowledgement_unverified",
+      "next_write_before_verification",
+      "no_affected_evidence_missing",
+      "orphan_or_duplicate_stage_result",
+      "outcome_mismatch",
+      "outcome_scope_or_collection_incomplete",
+      "parent_state_not_bound",
+      "premature_success",
+      "prompt_variant_not_bound",
+      "provider_call_unresolved",
+      "recipient_count_unavailable_in_monitor_v2",
+      "reconciliation_unresolved",
+      "recovery_facts_unavailable_in_monitor_v2",
+      "recovery_not_implemented",
+      "repair_parent_state_not_bound",
+      "semantic_labels_missing",
+      "source_evidence_missing",
+      "summary_before_verification",
+      "tool_budget_exceeded",
+      "undeclared_mutation",
+      "undeclared_reconciliation",
+      "verification_readback_missing"
+    ],
+    "summaryDocument": "docs/evaluation-summary.md"
+  },
+  "freshDemo": {
+    "receipt": {
+      "path": "/tmp/promiseguard-r02/.local/r02-final/demo.json",
+      "sha256": "0d18f76f19139448eca43f7aa35a78621ff5503fef8b474a6aa5ef438de2739c",
+      "byteLength": 3726
+    },
+    "sourceGitSha": "fa148667016be9f3c778bc76ad9c8ee232f9151d",
+    "evidenceMode": "synthetic_fixture",
+    "liveProviders": false,
+    "actualHumanReviews": 0,
+    "runId": "cc7c3705-4bfe-4bb0-a446-44a52fda6a76",
+    "suiteEntryId": "pg-f01-baseline",
+    "waiting": "awaiting_approval",
+    "completed": "completed",
+    "replay": {
+      "disposition": "reopened",
+      "sameRun": true,
+      "excessWrites": 0
+    },
+    "modelCalls": 3,
+    "independentCollection": {
+      "s0": "complete",
+      "s1": "complete",
+      "gaps": [
+        "frozen_oracle_content_binding_unverified"
+      ]
+    },
+    "quality": "unverified_without_independent_human_review",
+    "liveS1S2": "unrun",
+    "verifiedEffects": [
+      {
+        "app": "hubspot",
+        "kind": "task",
+        "state": "verified"
+      },
+      {
+        "app": "hubspot",
+        "kind": "note",
+        "state": "verified"
+      },
+      {
+        "app": "gmail",
+        "kind": "draft",
+        "state": "verified"
+      },
+      {
+        "app": "github",
+        "kind": "comment",
+        "state": "verified"
+      },
+      {
+        "app": "slack",
+        "kind": "thread",
+        "state": "verified"
+      }
+    ],
+    "includedInQ04Cohort": false,
+    "rawDatabaseRetention": "CLI removes temporary databases; saved stdout is a synthetic smoke receipt, not a retained evaluation attempt."
+  },
+  "historicalEvidence": [
+    {
+      "kind": "synthetic_fixture",
+      "scope": "monitor-v1/checker-v1 historical supplied-observation verification",
+      "receipt": {
+        "path": "tools/monitoring/verification.md",
+        "sha256": "5dbf72517cabd1b168a63aaa120dba680d86ac05dab4c56560092d20de309980",
+        "byteLength": 4160
+      },
+      "fingerprint": {
+        "path": "tools/monitoring/validation.sha256",
+        "sha256": "3df3b78d4fa4283cc15c2b11cf7872a7eb04c11d8b35686906dc5a836d79e49e",
+        "byteLength": 2214
+      },
+      "baselineGitSha": "37e1aa029439d7cd509b237525f8b8e02553528e",
+      "tests": {
+        "monitor": 95,
+        "checker": 34
+      },
+      "applicationAttempts": 0,
+      "actualHumanReviews": 0,
+      "rerunInR02": false,
+      "note": "Historical fingerprint pins the old baseline; do not run it as a current-source checksum after later implementation changes."
+    },
+    {
+      "scope": "Q05 latest recorded checker/monitor regressions",
+      "receipt": "ideation/implementation-plan/commits/Q05.md",
+      "testsPassed": 133,
+      "rerunInR02": false
+    },
+    {
+      "scope": "U02 controlled HTTP, component and synthetic three-viewport browser evidence",
+      "receipt": "ideation/implementation-plan/commits/U02.md",
+      "rerunInR02": false,
+      "releaseAuthenticatedRehearsal": false
+    },
+    {
+      "scope": "Preliminary R02 checks before concurrent Gemini migration; superseded by the final source checks",
+      "sourceGitSha": "8722598eb1c83fc81c6a6c36930899f5da811772",
+      "checks": [
+        {
+          "command": "npm ci --offline --cache /tmp/promiseguard-npm-cache --no-audit --no-fund",
+          "result": "passed",
+          "exitCode": 0,
+          "counts": {
+            "packagesInstalled": 240
+          },
+          "receipt": {
+            "path": "/tmp/promiseguard-r02-install.log",
+            "sha256": "de90598105656c7dc189b39f0fadff50cc3c0f396f81f47d763dc4e59af31f19",
+            "byteLength": 176
+          }
+        },
+        {
+          "name": "typecheck",
+          "command": "npm run typecheck",
+          "startedAt": "2026-09-13T23:39:28.956855+00:00",
+          "durationMs": 4424,
+          "exitCode": 0,
+          "stdout": ".local/r02/typecheck.log",
+          "stdoutSha256": "5c7473b38f36ddd06c6968757d08c0b68f4bbfc9ce15e6f9bf2858f138bdf06e",
+          "stderr": ".local/r02/typecheck.stderr.log",
+          "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "result": "passed",
+          "evidenceMode": "local_build"
+        },
+        {
+          "name": "build",
+          "command": "npm run build",
+          "startedAt": "2026-09-13T23:39:33.381489+00:00",
+          "durationMs": 2782,
+          "exitCode": 0,
+          "stdout": ".local/r02/build.log",
+          "stdoutSha256": "578cd715a33698363d7ef088279a33decb0f8ced238a4e281b74cfbcdc8880f7",
+          "stderr": ".local/r02/build.stderr.log",
+          "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "result": "passed",
+          "evidenceMode": "local_build"
+        },
+        {
+          "name": "demo-compile",
+          "command": "npm exec -- tsc -p tools/demo/tsconfig.json",
+          "startedAt": "2026-09-13T23:39:36.164209+00:00",
+          "durationMs": 1709,
+          "exitCode": 0,
+          "stdout": ".local/r02/demo-compile.log",
+          "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr": ".local/r02/demo-compile.stderr.log",
+          "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "result": "passed",
+          "evidenceMode": "local_build"
+        },
+        {
+          "name": "demo",
+          "command": "node .local/demo-build/tools/demo/run.js",
+          "startedAt": "2026-09-13T23:39:37.874171+00:00",
+          "durationMs": 8630,
+          "exitCode": 0,
+          "stdout": ".local/r02/demo.json",
+          "stdoutSha256": "aab9715a0dd13f26308a7f513e17f3f4706bdc8ca5135f40547ddb60ce179c42",
+          "stderr": ".local/r02/demo.stderr.log",
+          "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "result": "passed",
+          "evidenceMode": "synthetic_fixture"
+        }
+      ],
+      "demo": {
+        "receipt": {
+          "path": "/tmp/promiseguard-r02/.local/r02/demo.json",
+          "sha256": "aab9715a0dd13f26308a7f513e17f3f4706bdc8ca5135f40547ddb60ce179c42",
+          "byteLength": 3726
+        },
+        "runId": "029c99a9-2423-433c-87e1-a0df0e2c9981",
+        "modelCalls": 3,
+        "replay": {
+          "disposition": "reopened",
+          "sameRun": true,
+          "excessWrites": 0
+        }
+      },
+      "includedInQ04Cohort": false
+    }
+  ],
+  "verification": [
+    {
+      "name": "install",
+      "command": "npm ci --offline --cache /tmp/promiseguard-npm-cache --no-audit --no-fund",
+      "startedAt": "2026-09-13T23:43:47.358857+00:00",
+      "durationMs": 3810,
+      "exitCode": 0,
+      "stdout": ".local/r02-final/install.log",
+      "stdoutSha256": "7bd0fce9b7d778950ac32795c790ad2e2dcab868747b53ff21c778e630397ea8",
+      "stderr": ".local/r02-final/install.stderr.log",
+      "stderrSha256": "fe49a93af7f6a5072c3a3ef65019009ce521808d6b5a32810ad9a6a433f4524d",
+      "result": "passed",
+      "evidenceMode": "local_build",
+      "counts": {
+        "packagesInstalled": 238
+      }
+    },
+    {
+      "name": "typecheck",
+      "command": "npm run typecheck",
+      "startedAt": "2026-09-13T23:43:51.169003+00:00",
+      "durationMs": 4648,
+      "exitCode": 0,
+      "stdout": ".local/r02-final/typecheck.log",
+      "stdoutSha256": "5c7473b38f36ddd06c6968757d08c0b68f4bbfc9ce15e6f9bf2858f138bdf06e",
+      "stderr": ".local/r02-final/typecheck.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "result": "passed",
+      "evidenceMode": "local_build"
+    },
+    {
+      "name": "build",
+      "command": "npm run build",
+      "startedAt": "2026-09-13T23:43:55.817451+00:00",
+      "durationMs": 2696,
+      "exitCode": 0,
+      "stdout": ".local/r02-final/build.log",
+      "stdoutSha256": "be6ef138d23a7214ed65c6b7a2b6866198f1109d3a5a498b79bdaf347620d7c8",
+      "stderr": ".local/r02-final/build.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "result": "passed",
+      "evidenceMode": "local_build"
+    },
+    {
+      "name": "demo-compile",
+      "command": "npm exec -- tsc -p tools/demo/tsconfig.json",
+      "startedAt": "2026-09-13T23:43:58.514145+00:00",
+      "durationMs": 1680,
+      "exitCode": 0,
+      "stdout": ".local/r02-final/demo-compile.log",
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": ".local/r02-final/demo-compile.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "result": "passed",
+      "evidenceMode": "local_build"
+    },
+    {
+      "name": "demo",
+      "command": "node .local/demo-build/tools/demo/run.js",
+      "startedAt": "2026-09-13T23:44:00.194243+00:00",
+      "durationMs": 8234,
+      "exitCode": 0,
+      "stdout": ".local/r02-final/demo.json",
+      "stdoutSha256": "0d18f76f19139448eca43f7aa35a78621ff5503fef8b474a6aa5ef438de2739c",
+      "stderr": ".local/r02-final/demo.stderr.log",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "result": "passed",
+      "evidenceMode": "synthetic_fixture"
+    },
+    {
+      "command": "npm test",
+      "result": "unrun",
+      "reason": "Aggregate browser startup requires an account-specific workflow module; broad rerun omitted under minimal-testing instruction."
+    },
+    {
+      "command": "npm run test:baseline",
+      "result": "unrun",
+      "reason": "Historical Q05 receipt retained; unchanged monitor/checker code, not rerun."
+    },
+    {
+      "command": "npm run test:app",
+      "result": "unrun",
+      "reason": "Historical focused receipts retained; one real graph demo replaces broad rerun for this documentation-only package."
+    },
+    {
+      "command": "npm run test:web",
+      "result": "unrun",
+      "reason": "Historical U02 component/accessibility receipt retained, not rerun."
+    },
+    {
+      "command": "npm run test:e2e",
+      "result": "unrun",
+      "reason": "Current Playwright startup omits PG_WORKFLOW_MODULE; authenticated release rehearsal not run."
+    },
+    {
+      "command": "live model/provider smokes and S1/S2",
+      "result": "unrun",
+      "reason": "Live credentials, account bootstrap and authentic human approval not qualified in R02."
+    },
+    {
+      "command": "human semantic review",
+      "result": "unrun",
+      "reason": "No actual human reviewed original outputs during R02."
+    },
+    {
+      "command": "three-viewport recording/access/session review",
+      "result": "unrun",
+      "reason": "Historical synthetic U02 receipts only; no new authenticated browser or recording checks."
+    },
+    {
+      "command": "submission",
+      "result": "unrun",
+      "reason": "No submission attempted; judge video access, duration/playback and calendar submission form remain unverified."
+    },
+    {
+      "command": "Read-only manifest/report/hash and local documentation-link review; git diff --check",
+      "result": "passed",
+      "scope": "Independent saved report comparison; JSON structure, raw metric counts, exact source/receipt hashes and doc links. No scenario rerun.",
+      "counts": {
+        "localLinksChecked": 120,
+        "missingLocalLinks": 0,
+        "reviewedFileHashes": 36,
+        "allowedDocumentationFiles": 6
+      }
+    }
+  ],
+  "releaseGates": [
+    {
+      "gate": "G1",
+      "status": "open",
+      "reason": "Clean locked install/typecheck/build pass; complete C02 application/browser and authenticated setup verification not performed."
+    },
+    {
+      "gate": "G2",
+      "status": "open",
+      "reason": "Focused synthetic controls exist, but Q04 safety/trace/oracle failures remain."
+    },
+    {
+      "gate": "G3",
+      "status": "open",
+      "reason": "Combined live three-role/four-app S1 and S2 unrun."
+    },
+    {
+      "gate": "G4",
+      "status": "open",
+      "reason": "No human labels, 24 unverified claim outcomes, 21 premature/false-completion claims, and failed critical predicates."
+    },
+    {
+      "gate": "G5",
+      "status": "open",
+      "reason": "71 failed/4 unverified attempts, 17 unrun slots, all five live targets unrun; successful recovery proof deferred."
+    },
+    {
+      "gate": "G6",
+      "status": "open",
+      "reason": "Authenticated browser/recording/access/session checks and submission confirmation unrun."
+    }
+  ],
+  "delivery": {
+    "videoUrl": "https://drive.google.com/drive/folders/14ESRy4QuwqIl9Wugk_fxa5Ri6aTs7faz?usp=sharing",
+    "videoAccess": "unverified",
+    "videoDurationAndPlayback": "unverified",
+    "submissionStatus": "not_submitted_by_R02",
+    "publicInstructions": "https://multiappagenthackathon.com/",
+    "publicInstructionsCheckedOn": "2026-09-14",
+    "participantCalendarForm": "not_accessed",
+    "runbook": "docs/demo-runbook.md",
+    "brief": "docs/reliability-brief.md"
+  },
+  "review": {
+    "owner": "Codex integrator",
+    "reviewerKind": "agent_code_and_document_review",
+    "actualHumanSemanticLabelsAdded": 0,
+    "status": "accepted_for_documentation_scope",
+    "reviewers": [
+      "r02_evaluation",
+      "r02_reliability",
+      "r02_runbook"
+    ],
+    "scope": "Source, evidence arithmetic, commands and honest open-gate documentation; no live product acceptance or human semantic review."
+  }
+}
