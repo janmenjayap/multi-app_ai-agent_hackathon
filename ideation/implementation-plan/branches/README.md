@@ -6,6 +6,12 @@ Each branch has its own Markdown file; each commit has a separate file under
 [`commits/`](../commits/README.md). No Git branches, commits, or pushes are created
 by writing these plans. The current monitor remains a partial application foundation.
 
+Every branch MUST follow the
+[global implementation conventions](../00-global-implementation-conventions.md)
+in addition to its branch plan and commit briefs. Its handoff records the
+conventions version used; a branch-local alias or duplicate schema cannot
+override that contract.
+
 The [reliability implementation plan](../06-agent-reliability-implementation.md)
 now defines the audit-driven acceptance work for these same branches. Read its
 contracts, temporal completion cases, and evidence handoffs with the detailed
@@ -23,6 +29,7 @@ making either branch import the other's unmerged files.
 
 ```text
 implementation-plan/
+   00-global-implementation-conventions.md  mandatory cross-branch contract
   branches/README.md                 branch order and team rules
   branches/feat-foundation.md        F01 then F02 on one branch
   branches/feat-operator-console.md  U01 then U02 on one branch
@@ -225,9 +232,10 @@ these commit counts; select scope against the actual remaining deadline.
 
 ## Handoff that every branch must supply
 
-Supply the actual base/commit SHA, prerequisite PRs, owned paths, passing commands,
-failed or unrun checks, fixture/policy/prompt/model/evaluator versions, evidence
-mode, remaining limits, and named receiving owner. The [individual commit files](../commits/README.md)
+Supply the conventions version, actual base/commit SHA, prerequisite PRs, owned
+paths, passing commands, failed or unrun checks, fixture/policy/prompt/model/
+evaluator versions, evidence mode, remaining limits, and named receiving owner.
+The [individual commit files](../commits/README.md)
 hold the checklists; [Global Scale](../Global%20Scale.md) holds the completion
 verdict. Synthetic checks, human labels, model calls, and live provider workflows
 are distinct evidence categories and must remain distinct in the handoff.

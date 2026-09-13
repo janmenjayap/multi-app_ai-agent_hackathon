@@ -73,7 +73,7 @@ pipeline. The required reading order is:
 | Incident URL [........................................] [Start or reopen] |
 | Product status | assessment status | last verified | Slack review link    |
 +--------------------------------------------------------------------------+
-| Pipeline: ingest - select - analyst - drafter - auditor - approval        |
+| Pipeline: ingest - select - analyze - draft - audit - approve             |
 |           - execute - verify - assess                                     |
 +-----------------------------------+--------------------------------------+
 | Evidence and promises             | Exact plan and approval              |
@@ -117,9 +117,9 @@ status or change browser history unexpectedly.
 
 Always render these independently:
 
-- `productStatus`: business workflow state such as waiting, awaiting approval,
-  safely blocked, failed partial, failed, completed, or completed with no affected
-  commitments.
+- `productStatus`: the canonical run state: pending, running, awaiting approval,
+  executing, safely blocked, failed, failed partial, completed, or completed with
+  no affected commitments. Waiting is a stage state, not a run-state alias.
 - `traceAssessment`: process evidence pending, pass, fail, incomplete, or N/A.
 - `outcomeAssessment`: expected-versus-observed result pending, pass, fail,
   incomplete, or N/A.
@@ -134,29 +134,29 @@ product with pending, missing, or failed assessment stays visibly unverified.
 
 Render one stable ordered pipeline. Rows or nodes do not move as statuses change:
 
-1. Ingest incident and complete source retrieval.
-2. Select affected commitments with deterministic policy.
-3. Evidence Analyst model role.
-4. Customer Update Drafter model role.
-5. Blind Semantic Auditor model role.
-6. Freeze plan and wait for Slack approval.
-7. Execute guarded HubSpot, Gmail, and GitHub effects.
-8. Verify each provider artifact and final Slack summary.
-9. Collect and assess independent reliability evidence.
+1. `ingest`: ingest incident and complete source retrieval.
+2. `select`: select affected commitments with deterministic policy.
+3. `analyze`: run the Evidence Analyst model role.
+4. `draft`: run the Customer Update Drafter model role.
+5. `audit`: run the Blind Semantic Auditor model role.
+6. `approve`: freeze the plan and wait for Slack approval.
+7. `execute`: apply guarded HubSpot, Gmail, and GitHub effects.
+8. `verify`: verify each provider artifact and final Slack summary.
+9. `assess`: collect and assess independent reliability evidence.
 
 Each visible stage consumes a server-provided stable stage ID and shows:
 
-- status: `not_started`, `queued`, `running`, `waiting`, `succeeded`, `failed`,
-  `blocked`, `skipped`, or `unknown`;
+- status: `pending`, `running`, `waiting`, `completed`, `blocked`, `failed`, or
+  `skipped`;
 - first start and latest update time;
 - attempt count and latest attempt reference when authorized;
 - short outcome or waiting reason;
 - evidence mode and source where relevant;
 - child model/tool attempts in a disclosure, never hidden counts.
 
-The stage status is execution progress, not truth. A succeeded drafter means a
-validly shaped draft was produced; it does not mean its claims passed human
-review. A succeeded provider call does not mean the artifact passed readback.
+The stage status is execution progress, not truth. A completed `draft` stage means
+a validly shaped draft was produced; it does not mean its claims passed human
+review. A completed provider call does not mean the artifact passed readback.
 
 Show the three model roles by name and preserve their order. Do not visualize
 deterministic policy, Slack approval, execution, verification, or assessment as
@@ -239,17 +239,40 @@ absence states are mandatory so U01, B04, Q05, and U02 do not invent competing
 projections.
 
 ```ts
-type AssessmentState = "pending" | "pass" | "fail" | "incomplete" | "unverified" | "na";
-type StageState =
-  | "not_started"
-  | "queued"
+type AssessmentState =
+  | "pending"
+  | "pass"
+  | "fail"
+  | "incomplete"
+  | "unverified"
+  | "not_applicable";
+type RunStatus =
+  | "pending"
+  | "running"
+  | "awaiting_approval"
+  | "executing"
+  | "safely_blocked"
+  | "failed"
+  | "failed_partial"
+  | "completed"
+  | "completed_no_affected_commitments";
+type StageStatus =
+  | "pending"
   | "running"
   | "waiting"
-  | "succeeded"
+  | "completed"
   | "failed"
   | "blocked"
-  | "skipped"
-  | "unknown";
+  | "skipped";
+type EffectStatus =
+  | "planned"
+  | "intent_persisted"
+  | "dispatching"
+  | "unknown"
+  | "applied"
+  | "verified"
+  | "failed";
+type ReportAvailability = "pending" | "available" | "unavailable";
 
 interface RunView {
   schemaVersion: string;
@@ -257,7 +280,7 @@ interface RunView {
   runId: string;
   incident: IncidentView;
   configuration: ConfigurationView;
-  productStatus: string;
+  productStatus: RunStatus;
   statusReason?: string;
   stages: StageView[];
   commitments: CommitmentSelectionView;
@@ -270,7 +293,7 @@ interface RunView {
     firstProposal: AssessmentSummaryView;
   };
   report?: EvaluationSummaryView;
-  reportAvailability: "available" | "pending" | "unavailable" | "unauthorized";
+  reportAvailability: ReportAvailability;
   createdAt: string;
   updatedAt: string;
   verifiedAt?: string;
@@ -334,7 +357,7 @@ U01 fixtures and U02 integration tests cover all of these distinct views:
 
 - no run selected;
 - command validation failure;
-- accepted and queued;
+- accepted and pending;
 - active model or provider stage;
 - persisted waiting for Slack approval;
 - safely blocked before protected effects;
@@ -350,12 +373,14 @@ U01 fixtures and U02 integration tests cover all of these distinct views:
 - polling offline with stale last-known projection;
 - reconnecting with duplicate or out-of-order events;
 - stale projection/report revision;
-- unauthorized run or evidence reference;
+- unauthorized run or evidence reference, represented by the HTTP error contract
+  rather than a report-availability value;
 - expired operator session;
 - backend ready but monitor temporarily unavailable.
 
 Use explicit text plus icon and color for every status. Never rely on color alone,
-turn `unknown` into `failed`, or turn a transport error into a product failure.
+turn an `unknown` effect into `failed`, or turn a transport error into a product
+or stage failure.
 
 ## 8. Responsive and accessibility requirements
 

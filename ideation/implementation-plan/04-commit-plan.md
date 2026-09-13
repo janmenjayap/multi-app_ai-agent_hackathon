@@ -252,8 +252,9 @@ guard, label a simulation live, or fill a missed measurement with a target.
 - **Branch / owner:** `feat/foundation` / P1. **Merge dependencies:** P00.
 - **Paths:** `package.json`, `package-lock.json`, `.node-version`, `tsconfig.json`,
   `vite.config.ts`, `vitest.config.ts`, `playwright.config.ts`, `index.html`,
-  `.env.example`, `.gitignore`, `src/server/index.ts`, `src/web/main.tsx`,
-  `tests/app/bootstrap.test.ts`, `tests/web/bootstrap.test.tsx`,
+  `.env.example`, `.gitignore`, `src/server/config.ts`, `src/server/index.ts`,
+  `src/web/main.tsx`, `tests/app/bootstrap.test.ts`,
+  `tests/app/web-bootstrap.test.tsx`,
   `tests/e2e/bootstrap.spec.ts`.
 - **Do:** pin a tested Node 24 toolchain; establish React/Vite, Fastify/Zod,
   LangGraph/LangChain/OpenAI, SQLite/checkpointer, component/accessibility and
@@ -304,7 +305,7 @@ guard, label a simulation live, or fill a missed measurement with a target.
 
 - **Branch / owner:** `feat/durable-core` / P1. **Merge dependencies:** F02.
 - **Paths:** `src/server/storage/database.ts`,
-  `src/server/storage/migrations/001-initial.sql`,
+  `src/server/migrations/001-initial.sql`,
   `src/server/storage/repositories.ts`, `src/server/observability/events.ts`,
   `src/server/observability/redaction.ts`, `tests/app/storage.test.ts`;
   the reviewed transaction-aware refactor of existing

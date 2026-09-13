@@ -5,6 +5,12 @@ its exact suggested subject, branch, prerequisite IDs, ordered work, allowed
 files, parallel subtasks, exclusions, checks, and evidence handoff. IDs such as
 `B06` are planning identifiers, not existing Git SHAs. This task only writes plans.
 
+Every commit MUST follow the
+[global implementation conventions](../00-global-implementation-conventions.md)
+in addition to its brief. The global document wins for naming, canonical paths,
+shared schemas, state vocabularies, ownership, and handoff format; a suggested
+legacy subject or path in an older brief does not create an exception.
+
 There are **31 commit plans across 29 proposed branches**: the existing 30
 implementation tasks plus P00 to preserve the already implemented local monitor.
 The [branch index](../branches/README.md) explains the branching and merge order;
@@ -48,7 +54,8 @@ commits. REST stays required; optional MCP must pass the same app contracts.
 
 ## Use a commit brief
 
-1. Read the matching branch file and the linked prerequisites. Distinguish code
+1. Read the global conventions, matching branch file, and linked prerequisites.
+   Record the conventions version in the handoff. Distinguish code
    preparation against frozen fixtures from permission to merge working consumers.
 2. Assign one file owner per subtask. The implementer and independent test/fixture
    reviewer may work concurrently; join their work before declaring the commit ready.

@@ -67,7 +67,7 @@ starts.
 | P1 | Foundation, storage, driver, approval, execution, integration, release | `package.json`, lockfile, root config, `src/shared/*`, migration numbering, API mounts, `src/server/composition.ts`, graph wiring |
 | P2 | Common transport and GitHub, HubSpot, Slack, Gmail adapters | `src/server/adapters/*`, provider smoke tools, provider-specific fixtures and receipts |
 | P3 | Deterministic selection/plan policy, model runtime and roles, inline verifier | `src/server/policy/*`, `src/server/agents/*`, `src/server/verification/*` |
-| P4 | Frozen expectations, independent collection/assessment, frontend, scenarios, metrics, demo evidence | `tests/fixtures/*`, `tests/fakes/*`, `src/server/collectors/*`, evaluation modules, `src/web/*` |
+| P4 | Frozen expectations, independent collection/assessment, frontend, scenarios, metrics, demo evidence | `tests/fixtures/*`, `tests/fakes/*`, `src/server/evaluations/*`, `src/server/monitoring/*`, `src/web/*` |
 
 One person owns one active implementation PR at a time. Helpers may work in
 disjoint files, but the branch owner integrates their changes. Only P1 changes
