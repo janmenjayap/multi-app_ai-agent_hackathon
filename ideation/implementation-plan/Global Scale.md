@@ -238,6 +238,28 @@ The dependency-complete isolated checkout passes **44/44 focused synthetic
 selection tests**, `npm run typecheck`, and `npm run build` on Node **24.21.0**.
 P2/P4 and final delegated merge review accepted the implementation and B03/R01
 input/output handoff. See [B02's receipt](commits/B02.md#completion-receipt).
+
+## B03 execution update — September 14, 2026
+
+B03's deterministic plan policy is implemented at
+`fe017b511b28cc8cef76c46d706019f3b6f56753`, with reviewed normalization and
+compile corrections at `f3a1eae4534174537670772af6dc224afcf080e8` and
+`fe35ba5bf3fd0bf2f36778dfa54ec48dbd6b391c`. The final code merge is
+`bb7cbcafc001bcc72a2ebba11b01644440a920db` under conventions **1.2** and
+application schema **2**.
+
+The policy freezes exact normalized content and server-owned recipients/actions,
+validates role/citation/audit references, hashes complete plans and requests,
+derives revision-independent logical effect keys, preserves first-output/source
+provenance, exposes claim-scope templates, and resolves only declared future-ID
+bindings. An independent Explore review found a CRLF/LF forbidden-claim matching
+gap; it was corrected before final validation.
+
+The merged tree passes **8/8 focused B03 tests**, `npm run typecheck`, and
+`npm run build:server`. See [B03's receipt](commits/B03.md#completion-receipt).
+Evidence is synthetic/offline: B05 approval, B06 protected writes, B07/Q02 fresh
+readback/collection, assembled workflow execution, live providers/models, and
+actual human semantic review remain downstream and unrun.
 These checks exercise frozen family 2/3/13/14 policy legs and additional boundary
 cases, not registered assembled-workflow attempts. Live provider retrieval,
 actual model calls, protected effects, full scenario execution, and human
