@@ -142,6 +142,22 @@ provider/model clients, sessions, and optional Q03/Q05 projection adapters.
 Live writes, authentic approval, U02 integration, and a measured four-app release
 remain unproven by this bounded synthetic implementation.
 
+## U02 execution update — September 14, 2026
+
+U02 is implemented at `93a6cdfe16eb9692dc683879fcba88520e18f9c9` on
+`feat/operator-console`, conventions **1.2**, API schema **2**. The default console
+uses B04 HTTP commands and polling; explicit `/?preview=1` retains U01 examples.
+Synthetic tests cover CSRF, read/reconnect identity, stale revisions across
+outages, duplicate commands, partial reconciliation, authorization/session
+errors and saved report presentation. An assembled HTTP/SQLite/controlled-graph
+browser test retains one run/evaluation/runtime through browser closure.
+
+The [U02 receipt](commits/U02.md#reviewed-implementation-and-verification-receipt)
+records raw counts, viewport checks, accepted consumer review and limitations.
+Production startup/session/CSRF and the real graph await R01; actual collected
+saved reports await Q05. Synthetic screenshots/report comparisons and a single
+controlled node do not close the live S1/S2/S3 release or four-app evidence gates.
+
 ## Q01 execution update — September 14, 2026
 
 Q01's frozen evaluation fixtures and stateful fakes are implemented at
@@ -614,9 +630,9 @@ exact plan, all three named model roles plus deterministic control stages, Slack
 review status, persisted effects/readbacks, provider links, and reliability
 coverage in the fixed hierarchy from the
 [frontend pipeline and reliability guide](09-frontend-pipeline-and-reliability.md).
-**Actual:** **PARTIAL / VERIFIED SYNTHETIC U01**; F01/F02 scaffold/contracts and
-the fixture console are merged. Durable authenticated API wiring and live
-workflow observation remain U02 work.
+**Actual:** **PARTIAL / U01 + U02 WITH SYNTHETIC HTTP EVIDENCE**; the fixture
+console and durable API client are implemented. Production authentication and
+assembled live workflow/report observation remain R01/Q05/R02 gates.
 **Owner/commits:** product owner; U01/U02, optional U03, with F02/B04/Q05 handoffs.
 Proposed paths: `src/web/`, `src/server/api/`.
 
@@ -628,7 +644,7 @@ Proposed paths: `src/web/`, `src/server/api/`.
   completed-but-unverified, no affected commitments, offline, expired session,
   unavailable report, zero labels and N/A are visibly distinct and synthetic
   fixtures stay labeled.
-- [ ] Reopen/reconnect resumes observation of backend state; UI never approves
+- [x] Reopen/reconnect resumes observation of backend state (synthetic HTTP); UI never approves
   through a Boolean, starts duplicate model/effect work, extends deadlines, or
   mistakes a scheduled reconcile command for completion. Stale/out-of-order
   responses cannot replace a newer run/report revision.
@@ -636,8 +652,8 @@ Proposed paths: `src/web/`, `src/server/api/`.
   links, created-versus-reused effects, field comparisons and verification times;
   backend validates operator access and commands, with no client-side secrets or
   private raw artifacts.
-- [ ] Product status, trace coverage, outcome assessment, and semantic assessment
-  are separate; stage success, HTTP success, monitor outages and missing labels/
+- [x] Product status, trace coverage, outcome assessment, and semantic assessment
+  are separate in tested synthetic HTTP projections; stage success, HTTP success, monitor outages and missing labels/
   evidence do not turn missing assessment into a green score.
 - [ ] U02 displays Q05's saved M1-M7 numerators/denominators or N/A, critical
   counts, census/gaps, modes, versions, cutoff and watermark without browser
