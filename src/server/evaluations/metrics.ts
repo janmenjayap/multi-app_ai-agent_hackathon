@@ -193,3 +193,219 @@ export function summarize(assessments: Assessment[]) {
       .map(([key, attempts]) => summarizeGroup(key, [...attempts.values()])),
   };
 }
+
+// V2 consumes Q03 verdicts. The preserved v1 engine above remains unchanged.
+import { digest } from '../../shared/reliability.js';
+import { canonical } from '../../shared/domain.js';
+import { EvaluationAttemptRegistrationSchema, LogicalManifestSchema, MetricCountSchema, SuiteEntrySchema,
+  parseReviewLabel, type OriginalOutput, type ReviewLabel, type LogicalManifest, type MetricCount } from '../../shared/evaluation.js';
+import { ApplicationAssessmentSchema, type ApplicationAssessment } from '../monitoring/assess.js';
+import { ScenarioEntrySchema } from './manifest.js';
+import type { HarnessReport } from './harness.js';
+
+export interface ApplicationMetricsInput {
+  harness: HarnessReport;
+  assessments: unknown[];
+  manifests?: LogicalManifest[];
+  cutoffAt: string;
+  originalOutputs?: OriginalOutput[];
+  labels?: ReviewLabel[];
+  /** Supplied only by authenticated review intake, never deserialized from a report. */
+  isTrustedReview?: (label: ReviewLabel) => boolean;
+}
+
+/** One frozen release/configuration cohort. Call separately for other modes or versions. */
+export function summarizeApplication(input: ApplicationMetricsInput) {
+  const { harness } = input;
+  if (harness.schemaVersion !== 2 || harness.evaluatorVersion !== 'monitor-v2') throw new Error('report_evaluator_version_mismatch');
+  const cutoff = Date.parse(input.cutoffAt);
+  if (!Number.isFinite(cutoff)) throw new Error('invalid_report_cutoff');
+  const frozen = harness.frozenEntries.map(entry => ScenarioEntrySchema.parse(entry));
+  const entries = new Map(frozen.map(entry => [entry.suiteEntryId, entry]));
+  if (entries.size !== frozen.length) throw new Error('duplicate_frozen_slot');
+  const census = new Map(harness.census.map(value => { const entry = SuiteEntrySchema.parse(value); return [entry.suiteEntryId, entry] as const; }));
+  if (census.size !== harness.census.length || [...census.keys()].some(id => !entries.has(id))) throw new Error('invalid_report_census');
+  const registrations = new Map<string, HarnessReport['attempts'][number]['registration']>();
+  const slotAttempts = new Map<string, string>();
+  for (const attempt of harness.attempts) {
+    const registration = EvaluationAttemptRegistrationSchema.parse(attempt.registration);
+    if (!entries.has(registration.suiteEntryId) || canonical(registration.configuration) !== canonical(harness.configuration))
+      throw new Error('report_registration_cohort_mismatch');
+    if (Date.parse(registration.registeredAt) > cutoff) throw new Error('report_cutoff_before_registration');
+    const prior = registrations.get(registration.evaluationAttemptId);
+    if ((prior && canonical(prior) !== canonical(registration)) ||
+        (slotAttempts.has(registration.suiteEntryId) && slotAttempts.get(registration.suiteEntryId) !== registration.evaluationAttemptId))
+      throw new Error('report_attempt_identity_conflict');
+    registrations.set(registration.evaluationAttemptId, registration);
+    slotAttempts.set(registration.suiteEntryId, registration.evaluationAttemptId);
+  }
+  for (const entry of census.values()) if (entry.disposition === 'attempted' && slotAttempts.get(entry.suiteEntryId) !== entry.evaluationAttemptId)
+    throw new Error('report_attempt_registration_missing');
+  const manifests = new Map((input.manifests ?? []).map(value => {
+    const manifest = LogicalManifestSchema.parse(value);
+    return [manifest.suiteEntryId, manifest] as const;
+  }));
+  for (const registration of registrations.values()) {
+    const manifest = manifests.get(registration.suiteEntryId);
+    if (manifest && (digest(manifest) !== registration.manifestHash || manifest.cohortId !== harness.suiteId ||
+        manifest.mode !== harness.configuration.evidenceMode || canonical(manifest.versions) !== canonical(harness.versions)))
+      throw new Error('report_manifest_registration_mismatch');
+  }
+  const assessments = new Map<string, ApplicationAssessment>();
+  const excluded: { evaluationAttemptId: string | null; reason: string }[] = [];
+  for (const raw of input.assessments) {
+    const parsed = ApplicationAssessmentSchema.safeParse(raw);
+    if (!parsed.success) {
+      const id = raw && typeof raw === 'object' && 'evaluationAttemptId' in raw && typeof raw.evaluationAttemptId === 'string' ? raw.evaluationAttemptId : null;
+      excluded.push({ evaluationAttemptId: id, reason: 'assessment_unavailable_or_other_version' }); continue;
+    }
+    const row = parsed.data, registration = registrations.get(row.evaluationAttemptId);
+    if (!registration || registration.runId !== row.runId || row.cohortId !== harness.suiteId || row.mode !== harness.configuration.evidenceMode ||
+        canonical(row.versions) !== canonical(harness.versions)) throw new Error('report_assessment_cohort_mismatch');
+    if (row.observedAtMs > cutoff) { excluded.push({ evaluationAttemptId: row.evaluationAttemptId, reason: 'assessment_after_cutoff' }); continue; }
+    const prior = assessments.get(row.evaluationAttemptId);
+    if (prior && prior.watermark === row.watermark && prior.observedAtMs === row.observedAtMs && canonical(prior) !== canonical(row))
+      throw new Error('conflicting_assessment_revision');
+    if (!prior || row.watermark > prior.watermark || (row.watermark === prior.watermark && row.observedAtMs > prior.observedAtMs)) assessments.set(row.evaluationAttemptId, row);
+  }
+  const outputs = new Map<string, OriginalOutput>();
+  for (const output of input.originalOutputs ?? []) {
+    const prior = outputs.get(output.outputId), registration = registrations.get(output.evaluationAttemptId);
+    if ((prior && canonical(prior) !== canonical(output)) || (registration && registration.runId !== output.runId))
+      throw new Error('report_original_output_identity_conflict');
+    outputs.set(output.outputId, output);
+  }
+  const labels: ReviewLabel[] = [];
+  const history: ReviewLabel[] = [];
+  for (const raw of input.labels ?? []) {
+    const output = outputs.get(raw.outputId);
+    if (!output) continue;
+    if (history.some(label => label.labelId === raw.labelId)) {
+      if (canonical(history.find(label => label.labelId === raw.labelId)) !== canonical(raw)) throw new Error('conflicting_label_revision');
+      continue;
+    }
+    const label = parseReviewLabel(raw, output, history); history.push(label);
+    if (registrations.has(label.evaluationAttemptId) && Date.parse(label.reviewedAt) <= cutoff && label.reviewer.kind === 'human' && input.isTrustedReview?.(raw) === true) labels.push(label);
+  }
+  const superseded = new Set(labels.map(label => label.supersedesLabelId));
+  const currentLabels = labels.filter(label => !superseded.has(label.labelId));
+  const reviewed = (outputId: string | null) => currentLabels.filter(label => label.outputId === outputId);
+  const qualityState = (outputId: string | null, verdict: Verdict): Verdict => {
+    const current = reviewed(outputId), output = outputId ? outputs.get(outputId) : undefined;
+    if (verdict === 'failed' || (output && (output.parseStatus !== 'valid' || output.validationStatus !== 'valid'))) return 'failed';
+    if (!output || !current.length) return 'unverified';
+    if (current.some(label => [label.grounding, label.completeness, label.decision, label.handoff].some(value => value === false) ||
+        label.findings.some(finding => finding.judgment === 'unsupported'))) return 'failed';
+    if (current.some(label => [label.grounding, label.completeness, label.decision, label.handoff].some(value => value === 'uncertain') ||
+        label.findings.some(finding => finding.judgment === 'uncertain'))) return 'unverified';
+    return verdict;
+  };
+  const qualityPass = (outputId: string | null, verdict: Verdict) => qualityState(outputId, verdict) === 'passed';
+  const ids = [...registrations.keys()].sort();
+  const rows = ids.flatMap(id => assessments.has(id) ? [assessments.get(id)!] : []);
+  const entryFor = (id: string) => entries.get(registrations.get(id)!.suiteEntryId)!;
+  const slots = frozen.map(entry => {
+    const recorded = census.get(entry.suiteEntryId);
+    const evaluationAttemptId = slotAttempts.get(entry.suiteEntryId) ?? null;
+    const assessment = evaluationAttemptId ? assessments.get(evaluationAttemptId) : undefined;
+    const roleStates = entry.requiredRoles.map(role => qualityState(assessment?.facts.quality[role]?.selectedOutputId ?? null,
+      assessment?.facts.quality[role]?.selectedPlanAssessment ?? 'unverified'));
+    const assessmentStatus = !assessment ? null : assessment.status === 'failed' || roleStates.includes('failed') ? 'failed' :
+      assessment.status === 'passed' && roleStates.some(state => state !== 'passed') ? 'unverified' : assessment.status;
+    // Durable registration wins even if a stale census calls it a setup failure.
+    return { suiteEntryId: entry.suiteEntryId, family: entry.family, leg: entry.leg,
+      disposition: evaluationAttemptId ? 'attempted' : recorded?.disposition ?? 'not_run', evaluationAttemptId,
+      result: evaluationAttemptId ? assessment?.status === 'failed' || (recorded?.disposition === 'attempted' && recorded.result === 'failed') ? 'failed' :
+        assessmentStatus ?? 'pending' : null,
+      assessmentStatus,
+      reason: recorded && 'reason' in recorded ? recorded.reason : !recorded ? 'missing_census_slot' : null };
+  });
+  const counts = { planned: frozen.length, registered: ids.length, attempted: ids.length, assessed: rows.length,
+    passed: slots.filter(slot => slot.result === 'passed').length, failed: slots.filter(slot => slot.result === 'failed').length,
+    pending: slots.filter(slot => slot.result === 'pending').length, unverified: slots.filter(slot => slot.result === 'unverified').length,
+    setupFailed: slots.filter(slot => slot.disposition === 'setup_failed').length, unrun: slots.filter(slot => slot.disposition === 'not_run').length };
+  const metric = (metricId: MetricCount['metricId'], dimension: string, numerator: (row: ApplicationAssessment) => number,
+    denominator: (id: string) => number, role: Role | null = null): MetricCount & { numeratorSampleIds: string[]; unit: string } => {
+    const eligible = ids.filter(id => denominator(id) > 0);
+    const n = rows.reduce((sum, row) => sum + numerator(row), 0), d = eligible.reduce((sum, id) => sum + denominator(id), 0);
+    return { ...MetricCountSchema.parse({ metricId, dimension, role, numerator: n, denominator: d,
+      value: d === 0 ? null : n / d, availability: d === 0 ? 'na' : 'available', sampleIds: eligible }),
+      numeratorSampleIds: rows.filter(row => numerator(row) > 0).map(row => row.evaluationAttemptId), unit: dimension };
+  };
+  const factCount = (id: string, get: (row: ApplicationAssessment) => number) => assessments.has(id) ? get(assessments.get(id)!) : 0;
+  const metrics = [
+    metric('M1', 'execution_attempts', row => indicator(entryFor(row.evaluationAttemptId).executionEligible && row.facts.contractPassed && slots.some(slot => slot.evaluationAttemptId === row.evaluationAttemptId && slot.result === 'passed') &&
+      entryFor(row.evaluationAttemptId).requiredRoles.every(role => qualityPass(row.facts.quality[role]?.selectedOutputId ?? null, row.facts.quality[role]?.selectedPlanAssessment ?? 'unverified'))), id => indicator(entryFor(id).executionEligible)),
+    metric('M2', 'tool_attempts', row => row.facts.tools.succeeded, id => factCount(id, row => row.facts.tools.dispatched)),
+    metric('M2', 'first_logical_calls', row => row.facts.tools.firstSucceeded, id => factCount(id, row => row.facts.tools.firstDispatched)),
+    metric('M3', 'required_predicates', row => row.facts.predicates.confirmed, id => {
+      const manifest = manifests.get(registrations.get(id)!.suiteEntryId);
+      return manifest ? 1 + manifest.protectedRecords.length + manifest.effects.reduce((n, effect) => n + 2 + Object.keys(effect.requiredFields).length, 0)
+        : factCount(id, row => row.facts.predicates.required);
+    }),
+    metric('M3', 'mutation_acknowledgements', row => row.facts.mutationAcks.verified, id => factCount(id, row => row.facts.mutationAcks.total)),
+    ...['read_retry', 'accepted_write', 'none'].map(kind => metric('M4', kind, () => 0, id =>
+      indicator(kind === 'read_retry' ? entryFor(id).family === 8 : kind === 'accepted_write' ? entryFor(id).family === 9 : false))),
+    metric('M5', 'excess_applied_creations', () => 0, () => 0),
+    ...ROLES.map(role => metric('M7', 'first_proposals', row => indicator(entryFor(row.evaluationAttemptId).requiredRoles.includes(role) &&
+      qualityPass(row.facts.quality[role]?.firstOutputId ?? null, row.facts.quality[role]?.firstProposalAssessment ?? 'unverified')),
+      id => indicator(entryFor(id).requiredRoles.includes(role)), role)),
+  ];
+  const selectedPlanQuality = ROLES.map(role => metric('M7', 'selected_proposals', row => indicator(entryFor(row.evaluationAttemptId).requiredRoles.includes(role) &&
+    qualityPass(row.facts.quality[role]?.selectedOutputId ?? null, row.facts.quality[role]?.selectedPlanAssessment ?? 'unverified')),
+    id => indicator(entryFor(id).requiredRoles.includes(role)), role));
+  const byApp = Object.fromEntries([...new Set(rows.flatMap(row => Object.keys(row.facts.tools.byApp)))].sort().map(app => [app, {
+    overall: metric('M2', app, row => row.facts.tools.byApp[app]?.succeeded ?? 0, id => factCount(id, row => row.facts.tools.byApp[app]?.dispatched ?? 0)),
+    firstAttempt: metric('M2', app, row => row.facts.tools.byApp[app]?.firstSucceeded ?? 0, id => factCount(id, row => row.facts.tools.byApp[app]?.firstDispatched ?? 0)),
+  }]));
+  const latencySamples = rows.map(row => ({ evaluationAttemptId: row.evaluationAttemptId, ...row.facts.latency }));
+  const uncensored = latencySamples.filter(sample => !sample.censored);
+  const latency = (['wall', 'wait', 'active'] as const).map(dimension => {
+    const values = duration(uncensored.map(sample => sample[`${dimension}Ms`]));
+    return { metricId: 'M6' as const, dimension, role: null, availability: uncensored.length ? 'available' as const : 'na' as const,
+      sampleCount: uncensored.length, censoredCount: latencySamples.filter(sample => sample.censored).length + ids.length - rows.length,
+      medianMs: values.median, maxMs: values.max, sampleIds: uncensored.map(sample => sample.evaluationAttemptId) };
+  });
+  const claimRows = rows.flatMap(row => row.claimFacts.classifications.map(claim => ({ evaluationAttemptId: row.evaluationAttemptId, ...claim,
+    premature: row.claimFacts.prematureSuccessClaims.includes(claim.claimId), falseCompletion: row.claimFacts.falseCompletion.includes(claim.claimId) })));
+  // Claim IDs are globally unique; never blend conflicting assignments between attempts.
+  if (new Set(claimRows.map(claim => claim.claimId)).size !== claimRows.length) throw new Error('report_claim_identity_conflict');
+  const claimIds = (predicate: (claim: typeof claimRows[number]) => boolean) => claimRows.filter(predicate).map(claim => claim.claimId).sort();
+  const claims = { successClaims: claimIds(() => true), prematureSuccessClaims: claimIds(claim => claim.premature),
+    outcomeContradictedCompletionClaims: claimIds(claim => claim.outcome === 'contradicted'), falseCompletion: claimIds(claim => claim.falseCompletion),
+    unverifiedClaims: claimIds(claim => claim.outcome === 'unverified'), classifications: claimRows };
+  const originalIds = new Set(rows.flatMap(row => Object.values(row.facts.quality).flatMap(quality => quality.firstOutputId ? [quality.firstOutputId] : [])));
+  const firstLabels = currentLabels.filter(label => originalIds.has(label.outputId));
+  const unsupported = [...new Map(firstLabels.flatMap(label => label.findings.filter(f => f.judgment === 'unsupported')
+    .map(finding => [canonical([label.outputId, finding.claimId]), { outputId: label.outputId, evaluationAttemptId: label.evaluationAttemptId,
+      claimId: finding.claimId, labelId: label.labelId }] as const))).values()];
+  const gaps = [...new Set([
+    ...rows.flatMap(row => row.checks.filter(check => check.status !== 'passed').map(check => check.code)),
+    ...excluded.map(entry => entry.reason), ...(slots.some(slot => slot.result === 'failed') ? ['census_contains_failed_attempts'] : []), ...slots.flatMap(slot => slot.reason ? [slot.reason] : []),
+    ...(rows.length < ids.length ? ['assessment_missing_for_registered_attempt', 'tool_and_predicate_denominators_incomplete'] : []),
+    ...(labels.length === 0 ? ['actual_human_labels_missing'] : []),
+    'recovery_facts_unavailable_in_monitor_v2', 'creation_facts_unavailable_in_monitor_v2',
+    'recipient_count_unavailable_in_monitor_v2', 'auditor_detection_labels_unavailable',
+    ...(firstLabels.some(label => label.grounding === false && !label.findings.length) ? ['unsupported_claims_use_legacy_proposal_proxy'] : []),
+  ])].sort();
+  return { counts, slots, metrics, selectedPlanQuality, byApp, latency, latencySamples, claims,
+    humanLabelCount: labels.length, labelIds: labels.map(label => label.labelId),
+    labelRevisions: history.map(label => ({ labelId: label.labelId, digest: digest(label), outputId: label.outputId,
+      supersedesLabelId: label.supersedesLabelId, trusted: labels.some(trusted => trusted.labelId === label.labelId) })),
+    quality: rows.map(row => ({ evaluationAttemptId: row.evaluationAttemptId, roles: Object.fromEntries(Object.entries(row.facts.quality).map(([role, value]) =>
+      [role, { ...value, firstProposalAssessment: qualityState(value.firstOutputId, value.firstProposalAssessment),
+        selectedPlanAssessment: qualityState(value.selectedOutputId, value.selectedPlanAssessment) }])) })),
+    interventions: { regeneratedOutputIds: [...outputs.values()].filter(output => registrations.has(output.evaluationAttemptId) && output.previousOutputId !== null).map(output => output.outputId),
+      humanCorrections: null, auditorMisses: null, auditorFalseBlocks: null },
+    unsupported: { claimCount: firstLabels.some(label => label.findings.length) ? unsupported.length : null, claims: unsupported,
+      proposalProxy: new Set(firstLabels.filter(label => label.grounding === false).map(label => label.outputId)).size,
+      unit: 'distinct outputId/claimId with actual human unsupported findings; proposalProxy is not a claim count' },
+    critical: { forbiddenEffects: rows.reduce((n, row) => n + row.facts.critical.forbiddenOperations, 0),
+      approvalBypasses: rows.reduce((n, row) => n + row.facts.critical.approvalBypasses, 0) },
+    criticalFailures: rows.flatMap(row => row.checks.filter(check => check.status === 'failed').map(check => ({ evaluationAttemptId: row.evaluationAttemptId, ...check }))),
+    assessments: rows, attemptIds: ids, excluded, gaps,
+    watermark: digest(rows.map(row => [row.evaluationAttemptId, row.watermark, row.observedAtMs])),
+    inputObservations: input.assessments.length, retainedAssessments: rows.length,
+    supersededObservations: input.assessments.length - excluded.length - rows.length,
+  };
+}
