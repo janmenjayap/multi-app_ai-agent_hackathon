@@ -1,6 +1,6 @@
 # Branch plan: feat/slack-approval
 
-**Owner:** P1. **Status:** proposed branch work; this file creates no branch or commit.
+**Owner:** P1. **Status:** implemented and verified offline; live integration remains R01.
 **Canonical source:** [commit backlog](../04-commit-plan.md).
 **Base:** integration `main`, after the prerequisite commits below land.
 
@@ -58,8 +58,12 @@ Give B06 trusted decision references, source-freshness results, rejection/invali
 
 ## Branch completion receipt
 
-- [ ] Dependency SHAs and actual base SHA: `UNRECORDED`.
-- [ ] Every linked commit receipt completed; actual commit SHAs: `UNRECORDED`.
-- [ ] Combined verification commands/evidence and remaining gaps: `UNRECORDED`.
-- [ ] Reviewer and consumer handoff acceptance: `UNRECORDED`.
-- [ ] Actual merged branch/PR reference: `UNRECORDED`.
+- Implementation: `c6b8dcde61d7e997a22918730be2f396556a8268` on `feat/slack-approval`.
+- Dependency-complete base: `04a58b1f801ed53b0a2a0af07cf1f53a538c6981`.
+- All four prerequisites are merged; full SHAs, versions and exact commands are
+  recorded in the [B05 receipt](../commits/B05.md#completion-receipt).
+- 19 approval tests, 75 affected application regressions, 7 Slack adapter tests,
+  typecheck and server/web build pass. Evidence is synthetic with durable receipts.
+- P1/P2/P4 agent implementation and review joined; B06/R01 handoff is recorded.
+  Live Slack and the assembled workflow remain unrun.
+- Merge target: `main`; preserve the implementation SHA and both remote branches.
