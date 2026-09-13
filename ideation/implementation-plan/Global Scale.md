@@ -10,6 +10,8 @@ original scope.
 
 ## R01 execution update — September 14, 2026
 
+Implementation commit: `bacb8ea4e2c340f547fe2a081c6836b911fe24d3`.
+
 See the [R01 receipt](commits/R01.md#r01-implementation-receipt--september-14-2026)
 for prerequisite SHAs, integration corrections, commands, reviewers, and gaps.
 The focused walking skeleton passes **3/3 tests**, covering seven simulated
