@@ -148,6 +148,26 @@ commands, suite identity, handoff and gaps. Live model/provider evidence, actual
 human review, Q02 trusted collection, and R01/Q04 execution remain pending. This
 update does not mark any canonical scenario family as executed or live.
 
+## B02 execution update — September 14, 2026
+
+B02 is implemented at `a7a0fcb4d3b893595d1dc33c8afcf96926bc5cb6`, merged into
+main by `6e82b575ad69530cced50184f1143b31ce734d37`, using conventions **1.2**,
+schema **2**, policy **selection-v1**, and the unchanged Q01 fixtures. Its
+four-file implementation validates allowlisted incident identity, structured
+production/impact evidence, complete source receipts, exact service and ID
+mappings, and the inclusive 72-hour UTC horizon. Ambiguity and malformed rows
+block; incomplete reads fail; a valid empty selection remains a distinct
+`no_affected` disposition requiring B07 absence verification.
+
+The dependency-complete isolated checkout passes **44/44 focused synthetic
+selection tests**, `npm run typecheck`, and `npm run build` on Node **24.21.0**.
+P2/P4 and final delegated merge review accepted the implementation and B03/R01
+input/output handoff. See [B02's receipt](commits/B02.md#completion-receipt).
+These checks exercise frozen family 2/3/13/14 policy legs and additional boundary
+cases, not registered assembled-workflow attempts. Live provider retrieval,
+actual model calls, protected effects, full scenario execution, and human
+semantic review remain unrun; scenario-family completion boxes stay open.
+
 ## 1. Historical repository baseline
 
 - Git HEAD: `90a3793d1c1f9dea927372cbd055a0cd27c6ca2f` (`Add PromiseGuard ideation`).
@@ -364,15 +384,18 @@ driver scheduling and integrated provider execution remain B04/B06 work.
 
 **Expected:** complete bounded GitHub/HubSpot reads, exact service/environment/
 commitment mappings, one designated contact, and explicit reasons for exclusions.
-**Actual:** **PLANNED**; source records in JSON are supplied checker fixtures.
+**Actual:** **PARTIAL / VERIFIED OFFLINE policy subset**; B02 selects over
+complete normalized F02/Q01 inputs. Live I02/I03 source retrieval remains open.
 **Owner/commits:** backend/integration owners; I02, I03, B02. Proposed paths:
 `src/server/policy/`, `src/server/adapters/`.
 
 - [ ] Capture all required pages/associations with scope, time, version, and
   completeness; a failed page cannot become an empty eligible set.
-- [ ] Canonical Acme billing commitment is included; Beta analytics is protected.
+- [x] Canonical Acme billing commitment is included; Beta analytics is excluded
+  by offline policy (live protected-record evidence remains pending).
   Test active status, production/impact rules, and inclusive UTC horizon edges.
-- [ ] Missing, conflicting, ambiguous, and changed source identity stops safely;
+- [x] Missing, conflicting, ambiguous, and changed source identity stops safely
+  in the offline policy tests;
   the model cannot choose recipients or create a new namespace after an edit.
 - [ ] Live reads reproduce the typed fixture mapping without fuzzy identity joins.
 

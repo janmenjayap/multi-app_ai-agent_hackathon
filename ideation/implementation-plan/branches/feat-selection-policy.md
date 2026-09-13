@@ -1,6 +1,6 @@
 # Branch plan: feat/selection-policy
 
-**Owner:** P3. **Status:** proposed branch work; this file creates no branch or commit.
+**Owner:** P3. **Status:** implemented and merged locally; verified offline.
 **Canonical source:** [commit backlog](../04-commit-plan.md).
 **Base:** integration `main`, after the prerequisite commits below land.
 
@@ -58,8 +58,16 @@ Give B03 the exact selected IDs, excluded reasons, source-completeness behavior,
 
 ## Branch completion receipt
 
-- [ ] Dependency SHAs and actual base SHA: `UNRECORDED`.
-- [ ] Every linked commit receipt completed; actual commit SHAs: `UNRECORDED`.
-- [ ] Combined verification commands/evidence and remaining gaps: `UNRECORDED`.
-- [ ] Reviewer and consumer handoff acceptance: `UNRECORDED`.
-- [ ] Actual merged branch/PR reference: `UNRECORDED`.
+- [x] Base `80450301c0eee2173917c2670e36a006d0c53ab2` contains F02
+  `87d3c7d7bad17d54300e452e932c7f226fc74299` and Q01
+  `bcced55d61b90b2ce69e077ecc0475b814e27335`.
+- [x] B02 implementation: `a7a0fcb4d3b893595d1dc33c8afcf96926bc5cb6`.
+- [x] Node 24.21.0: 44 focused selection tests, typecheck, and both builds pass.
+  Conventions 1.2, schema 2, `selection-v1`, `promiseguard-demo-v1`.
+- [x] Delegated P2/P4 reviews and final `merge_review` accepted the B03/R01 seam.
+- [x] Local main merge: `6e82b575ad69530cced50184f1143b31ce734d37`.
+
+The [B02 receipt](../commits/B02.md#completion-receipt) records commands,
+evidence and limitations. User-authorized publication targets `main` and
+`feat/selection-policy`. No downstream workflow, live-provider, live-model, or
+human semantic review claim follows from these synthetic policy tests.
