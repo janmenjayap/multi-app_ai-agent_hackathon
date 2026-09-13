@@ -384,11 +384,19 @@ R01 waits for all required tracks.
 
 ### Parallel work while B06 is built
 
-- P1 owns B06 claim, reconciliation, ordering, and executor code.
-- P2 supplies provider-specific accepted-write timeout, duplicate-marker, and
-  conflicting-match fixtures.
-- P3 finishes role branches and B07 assertion coverage.
-- P4 finishes Q02/Q03/U02 evidence and projection work.
+The following tracks can proceed together. Carry-over work stays on its existing
+branch, keeps its own prerequisites, and is not folded into B06.
+
+| Owner | Branch or track | Commit(s) | Gate to start | Work that can run in parallel |
+| --- | --- | --- | --- | --- |
+| P1 | `feat/guarded-execution` | B06 | B01, B03, B05, I02, I03, I05 | Own effect claims, reconciliation, mutation ordering, approval/source rechecks, and executor code. |
+| P2 | B06 provider-fixture support; use a focused adapter fix branch only if a provider defect is found | B06 support; I02/I03/I05 fixes only when needed | B06 is open and the affected provider adapter is merged | Supply accepted-write timeout, duplicate-marker, conflicting-match, and incomplete-read fixtures without editing executor ownership paths. |
+| P3 or delegated role/verifier owners | Outstanding `feat/agent-analyst`, `feat/agent-drafter`, `feat/agent-auditor`, and `feat/readback-verifier` branches | A02, A03, A04, B07 | A02-A04 require A01; B07 requires B01 and I02-I05 | Finish role negative cases and B07 fresh-readback assertions while P1 builds B06. Merge each branch independently when ready. |
+| P4 or delegated UI/evaluation owners | Outstanding `feat/evidence-collector`, `feat/reliability-monitor`, and `feat/operator-console` branches | Q02, Q03, U02 | Q02 requires Q01, B01, and I02-I05; Q03 requires B01 and Q01; U02 requires U01 and B04 | Finish independent evidence, assessment projection, and live-console work. Q02/Q03 must land before R01; U02 may continue toward the R02 gate. |
+
+Parallelism is across staffed owners. If P3 or P4 has no delegate, that owner's
+grouped branches remain sequential within the lane even while the other lanes
+continue.
 
 B06 executes only approved payloads in this order for each selected commitment:
 HubSpot task, HubSpot note, Gmail draft, then the GitHub incident comment. Before
@@ -427,13 +435,19 @@ back to the owning branch/module and merge those focused fixes first.
 
 ### Parallel support during R01
 
-- P1 wires the graph and owns fake then controlled live executions.
-- P2 confirms provider account IDs, scopes, complete reads, and fault behavior;
-  assists Q02 with independent capture.
-- P3 reviews original model outputs against source evidence and diagnoses role or
-  policy defects. A generated auditor verdict is not the human label.
-- P4 captures independent S0/S1, verifies attempt registration, prepares Q04
-  manifests, and records failed/unverified evidence without editing worker truth.
+R01 remains the only planned feature branch in this round, but these support
+tracks can run at the same time:
+
+| Owner | Branch or track | Commit | Gate or status | Work that can run in parallel |
+| --- | --- | --- | --- | --- |
+| P1 | `feat/workflow-integration` | R01 | Complete Section 14 prerequisite set is merged | Wire the graph and own fake execution followed by controlled live execution. |
+| P2 | Provider validation using merged adapters; focused adapter fix branch only if R01 exposes a defect | I02-I05 fixes only when needed | R01 is open; affected provider smoke prerequisites are available | Confirm provider account IDs, scopes, complete reads, pagination, and fault behavior; assist P4 in running the merged Q02 collector for independent capture. |
+| P3 | Model/policy review using merged role and policy modules; focused owner-module fix branch only if needed | B02/B03/A02-A04 fixes only when needed | R01 is open and original source/model evidence is available | Review original model outputs against source evidence and diagnose role or policy defects. Never use the generated auditor verdict as the human label. |
+| P4 | Independent evidence capture and Q04 preparation; no mergeable Q04 branch yet | Q04 preparation only | Q01, Q02, and Q03 are merged; R01 is still in progress | Capture independent S0/S1, verify attempt registration, prepare Q04 manifests, and record failed or unverified evidence without editing worker truth. |
+
+Any defect found by a support track is fixed and merged in its owning module
+before R01 is revalidated. Q04 cannot merge, or be treated as executable scenario
+evidence, until R01 itself is merged.
 
 ### Required execution order inside R01
 
@@ -478,13 +492,15 @@ After R01, Q01, Q02, and Q03 are merged, P4 opens
 `feat/scenario-harness` / **Q04**. The branch has one owner, but implementation
 and review can be split by disjoint scenario files:
 
-- P2 supplies provider denial, pagination, timeout, ambiguous-write, duplicate,
-  and incomplete-read cases.
-- P3 supplies malformed model output, refusal, prompt injection, unsupported
-  claim, auditor miss, false block, and partial-role cases.
-- P1 supplies restart, concurrency, approval, ledger, and graph-dispatch faults.
-- P4 owns manifest registration, attempt identity, frozen expectation binding,
-  execution, census, and result classification.
+| Owner | Branch and commit | Hard prerequisites | Parallel scenario slice | Ownership and merge rule |
+| --- | --- | --- | --- | --- |
+| P4 | `feat/scenario-harness` / Q04 | R01, Q01, Q02, Q03 | Manifest registration, attempt identity, frozen expectation binding, execution, census, and result classification | Own the branch and all shared harness/manifest files; integrate helper slices and perform the single Q04 merge. |
+| P1 or backend helper | Q04 helper slice integrated by P4 | Q04 branch is open | Restart, concurrency, approval, ledger, and graph-dispatch faults | Edit only assigned backend scenario fixtures/tests; do not change shared graph or manifest ownership. |
+| P2 or provider helper | Q04 helper slice integrated by P4 | Q04 branch is open | Provider denial, pagination, timeout, ambiguous-write, duplicate, and incomplete-read cases | Edit only assigned provider scenario fixtures/tests; do not redefine expected outcomes. |
+| P3 or model helper | Q04 helper slice integrated by P4 | Q04 branch is open | Malformed model output, refusal, prompt injection, unsupported claim, auditor miss, false block, and partial-role cases | Edit only assigned model scenario fixtures/tests; keep deterministic policy and human-label authority separate. |
+
+These are parallel contributions to one P4-owned branch, not four independently
+mergeable Q04 branches.
 
 Register each attempt immediately before graph dispatch. Setup and S0 failures
 remain visible as `setup_failed`; every failure after registration remains an
