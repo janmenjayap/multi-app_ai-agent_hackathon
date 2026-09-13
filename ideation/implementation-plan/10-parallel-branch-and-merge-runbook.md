@@ -20,6 +20,17 @@ optional unless the release explicitly claims them.
 
 ## 1. Current starting point
 
+**Execution update, September 14:** P00 is preserved at
+`37e1aa029439d7cd509b237525f8b8e02553528e`. F01 implementation starts on
+`feat/foundation` from `dd37c38adc72c003f426b7b9e37c040f0a721485`; intervening
+changes are planning Markdown only. See the [P00 receipt](commits/P00.md) and
+[F01 receipt](commits/F01.md#completion-receipt) for fresh checks and pending
+review/merge gates. F02 is now implemented locally with six shared contract
+modules and 57 contract tests; its [receipt](commits/F02.md#completion-receipt)
+records 235 passing aggregate tests and the v1 compatibility boundary. F01/F02
+are still uncommitted and unmerged. F02's reviewed contract freeze and Round 1
+are not yet released.
+
 At the time this runbook was written:
 
 - `main` and `origin/main` pointed to `37e1aa0`.

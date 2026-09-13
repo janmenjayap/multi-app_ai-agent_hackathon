@@ -1,6 +1,8 @@
 # Branch plan: feat/foundation
 
-**Owner:** P1. **Status:** proposed branch work; this file creates no branch or commit.
+**Owner:** P1. **Status:** F01 and F02 implemented on local `feat/foundation`,
+pending commits, receiving-owner acceptance and sequential review/merge.
+See the individual receipts for validation; Round 1 is not yet released.
 **Canonical source:** [commit backlog](../04-commit-plan.md).
 **Base:** integration `main`, after the prerequisite commits below land.
 

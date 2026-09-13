@@ -1,8 +1,9 @@
 # Global Scale: implementation and completion verification
 
-**Current verdict — September 14, 2026 (IST): planning, the verified offline
-checker, and a partial standalone reliability monitor; the PromiseGuard
-application is not implemented.** This file compares the intended system with
+**Current verdict — September 14, 2026 (IST): an application scaffold, the
+verified offline checker, a standalone reliability monitor, and locally tested
+application contracts; product workflows
+remain unimplemented.** This file compares the intended system with
 observed repository evidence. It is the global completion checklist for the
 [commit plan](04-commit-plan.md), not a claim of production readiness or a
 percentage of work completed.
@@ -40,8 +41,52 @@ smokes plus B05 approval, B06 guarded effects and B07 independent reads. Q02/C13
 must collect its own provider evidence; C14 must preserve model/app mode and
 provenance in release receipts. Optional MCP stays unclaimed until a reviewed
 server/tool map, equivalent contract tests and live account evidence exist.
-All current capability statuses and historical measurement receipts remain as
-recorded below.
+Historical measurement receipts remain as recorded below. The F01 execution
+update records the subsequent application scaffold separately.
+
+## F01 execution update — September 14, 2026
+
+P00 is preserved at `37e1aa029439d7cd509b237525f8b8e02553528e` with a fresh
+129/129 regression pass on Node 24.21.0. All 23 historical hashes matched before
+foundation edits. Current branch `feat/foundation` starts from
+`dd37c38adc72c003f426b7b9e37c040f0a721485`, with planning-only changes since P00.
+No redundant baseline commit was created.
+
+F01 adds the Fastify/React scaffold, separate model/provider configuration,
+same-origin production assets, dependency compatibility smokes and test harnesses.
+Clean install, typecheck, both builds and **178/178** tests pass (129 baseline,
+46 application, 2 component/accessibility, 1 Chromium at 1440×900).
+See the [F01 receipt](commits/F01.md#completion-receipt) for versions, results,
+environment failures and remaining review/merge gates. F01's package/config edits
+do not rewrite the historical `monitor-v1`/`checker-v1` receipt. Monitor/checker
+source, tests, supplied schemas and example evidence remain unchanged.
+
+Implementation-ID register: **P00** is the existing SHA above; **F01** is a local
+working-tree implementation with no commit/merge SHA yet; **F02** is the local
+contract implementation recorded below, also without a commit/merge SHA.
+The local deterministic graph and SDK fetch fixture are compatibility tests,
+not an assembled PromiseGuard workflow. Product scenario attempts, actual model
+calls, live-provider workflows and actual semantic reviews remain **0**.
+
+## F02 execution update — September 14, 2026
+
+Six application contract modules now cover domain/plan/approval/effect state,
+roles, narrow adapters, canonical v2 events, evaluation evidence, and browser/API
+projections. Shared primitive schemas and canonical serialization moved to the
+browser-safe domain module and are re-exported by `reliability.ts`; monitor-v1
+wire formats and checker semantics remain unchanged.
+
+**57** new contract tests, typecheck, both builds and **235/235 aggregate tests**
+pass, including all 129 baseline regressions and the existing Chromium smoke.
+A separate Vite library build validates the browser contract import graph.
+See the [F02 receipt](commits/F02.md#completion-receipt) for exact boundaries,
+commands, helper review findings and the resolved sandbox subprocess failure.
+
+This is local synthetic contract evidence. It does not implement monitor-v2
+assessment, product workflows, provider/model clients, actual review/approval,
+independent collection, or a measured release. F01/F02 remain uncommitted on
+`feat/foundation`; named receiving-owner review and sequential merge gates remain
+pending. No Round 1 branch is released and no real SHA has been fabricated.
 
 ## 1. Historical repository baseline
 
@@ -210,21 +255,27 @@ integration work. Do not portray the utility as enforcing provider permissions.
 
 **Expected:** one reproducible Node/Fastify backend, React console, locked
 dependencies, validated shared contracts, and documented configuration.
-**Actual:** **PARTIAL**; package/lockfile, TypeScript configuration, shared monitor
-schemas, SQLite monitor storage, and CLI commands exist. Fastify/React, application
-contracts, authentication, health endpoints, and model frameworks remain absent.
+**Actual:** **PARTIAL**; F01 now supplies a locked Fastify/React scaffold,
+bootstrap health, separate model/provider modes, validated server settings,
+SQLite/checkpointer/SDK compatibility tests and browser/component harnesses.
+The monitor remains preserved. F02 application contracts, authentication and
+product workflows remain unimplemented.
 **Owner/commits:** integration owner; F01, F02. Proposed paths: root package files,
 `src/shared/`, `src/server/api/`, `src/web/`.
 
 - [x] Standalone monitor has a locked Node 24 toolchain, validated input contracts,
   local SQLite initialization, and documented build/test/demo commands.
 
-- [ ] Pin and smoke-test the chosen Node 24, SQLite, LangGraph, LangChain/model,
-  and structured-output combination; save the actual resolved versions.
-- [ ] Clean checkout installs, initializes storage, starts, and answers health.
+- [x] Pin and smoke-test Node 24, SQLite, LangGraph and LangChain/Responses SDK
+  wiring with local fixtures; resolved versions are in the F01 receipt. Live
+  model/schema compatibility remains an A01 gate.
+- [x] Clean dependency install, disposable storage reopen, application startup,
+  same-origin assets and bootstrap health pass in F01. Release-checkout and
+  actual application schema initialization remain B01/R02 gates.
 - [ ] Contract examples validate, incompatible versions fail explicitly, and
   frontend/backend/fake adapters share the same schemas.
-- [ ] Configuration is documented without credentials; app mode is explicit.
+- [x] Configuration is documented without credentials; model/provider modes and
+  synthetic fixture identity are explicit. Account/model live compatibility is unrun.
 
 ### C03 — Durable run ownership, effects, events, and restart
 

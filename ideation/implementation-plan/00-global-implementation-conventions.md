@@ -1,7 +1,7 @@
 # PromiseGuard global implementation conventions
 
 **Status:** normative implementation contract
-**Version:** 1.1
+**Version:** 1.2
 **Applies to:** every P00, F-series, B-series, I-series, A-series,
 U-series, Q-series, and R-series branch and commit
 **Owners:** P1 owns this document and shared-contract changes; P2, P3, and P4
@@ -50,6 +50,23 @@ When two sources still conflict, the branch MUST stop at the boundary, record
 the conflict in its handoff, and obtain the owning reviewers' decision. Safety
 uses the stricter interpretation in the meantime. No branch may resolve a
 contract conflict by adding a private duplicate type, alias, path, or status.
+
+### 1.1 F01/F02 freeze decision — September 14, 2026
+
+Version 1.2 reconciles the newly pulled planning conventions with the tested
+F01/F02 implementation before merge. P1 (Codex integrator) and delegated Codex
+P2/P3/P4 boundary reviewers accept the exact executable schemas and retained
+monitor-v1 compatibility. These are agent code reviews, not human semantic
+labels or live-provider evidence. The user authorized the sequential merge.
+
+The updated sections below adopt the implemented hash representation, explicit
+body normalization, result/error registries, stage/state vocabulary, and 3N+2
+artifact plan. Do not create aliases for the superseded 1.1 proposals. F01 keeps
+its tested configuration bootstrap in `src/server/index.ts` and React harness
+in `tests/web/bootstrap.test.tsx`; splitting configuration or relocating that
+harness requires a later reviewed foundation change. The target tree is not a
+requirement to create empty modules. Public command results additionally include
+server-owned `commandId`; this is the one additive schema correction at freeze.
 
 ## 2. Non-negotiable product invariants
 
@@ -118,7 +135,7 @@ Every implementation MUST preserve these invariants.
 - Collection names are plural; one-item entity names are singular.
 - Use `Id` in TypeScript names and `id` in JSON fields, never `ID` or `Uuid`:
   `claimId`, `sourceSnapshotIds`.
-- Acronyms are treated as words in symbols: `GithubAdapter`, `McpBinding`,
+- Acronyms are treated as words in symbols: `GitHubAdapter`, `McpOperationBinding`,
   `ApiError`. Provider display strings retain official capitalization.
 - Public contracts MUST use named fields. Positional tuples are not allowed at
   module, persistence, API, or evidence boundaries.
@@ -144,8 +161,8 @@ Every implementation MUST preserve these invariants.
 ### 3.4 Events, logs, and metrics
 
 - New v2 event names use lower-case dot notation: `<domain>.<action>`, for
-  example `stage.started`, `model.attempted`, `retry.scheduled`,
-  `effect.verified`, and `claim.emitted`.
+  example `stage.started`, `model.attempt.started`, `retry.scheduled`,
+  `effect.verified`, and `success.claimed`.
 - Event values MUST come from the F02 event registry. Producers MUST NOT scatter
   string literals or create synonyms such as both `run.finished` and
   `run.completed`.
@@ -181,15 +198,13 @@ owner's files.
 │   │   ├── api.ts
 │   │   ├── checker.d.ts
 │   │   ├── domain.ts
-│   │   ├── errors.ts
 │   │   ├── evaluation.ts
 │   │   ├── events.ts
 │   │   └── reliability.ts
 │   ├── server/
 │   │   ├── adapters/
 │   │   │   ├── common/
-│   │   │   │   ├── errors.ts
-│   │   │   │   ├── pagination.ts
+│   │   │   │   │   │   ├── pagination.ts
 │   │   │   │   └── transport.ts
 │   │   │   ├── github.ts
 │   │   │   ├── gmail-mime.ts
@@ -451,8 +466,10 @@ Hotspots include root manifests, `src/shared/*`, migrations,
 - JSON and TypeScript use `camelCase`; SQLite columns use `snake_case`.
 - Timestamps are UTC RFC 3339 strings and end in `At`. Persist the original
   provider timestamp separately from collection time when both matter.
-- Durations are non-negative integer milliseconds and end in `Ms`.
-- Digests use `sha256:<64 lowercase hexadecimal characters>`.
+- Durations are non-negative milliseconds and end in `Ms`. Counters/budgets
+  are integers; within-process monotonic clocks may retain fractional milliseconds.
+- SHA-256 digests use exactly 64 lowercase hexadecimal characters, without a
+  prefix, matching `DigestSchema` and the preserved monitor-v1 representation.
 - IDs are opaque branded strings. Never parse business meaning from an ID or
   substitute a display name/URL for an immutable provider ID.
 - Missing and `null` have different meanings. Omit a field only when the schema
@@ -493,13 +510,21 @@ ID.
 Plan, content, manifest, and effect hashes MUST use one shared canonicalizer
 owned by B03/F02:
 
-1. validate the typed object;
-2. normalize strings to UTF-8 NFC and line endings to LF;
-3. preserve `null` and reject `undefined` in hash-bearing data;
-4. sort object keys recursively;
-5. sort set-like arrays by stable ID while preserving order-sensitive arrays;
-6. serialize without insignificant whitespace; and
-7. hash the resulting bytes with SHA-256.
+1. validate the typed object and its schema version;
+2. normalize generated body content explicitly with `normalizeBody` (NFC/LF,
+   without trimming) before plan freeze;
+3. preserve exact remaining strings and `null`; hash-bearing schemas do not
+   admit `undefined`;
+4. sort object keys recursively and preserve every array's supplied order;
+5. serialize without insignificant whitespace; and
+6. hash UTF-8 bytes with SHA-256, using bare lowercase hexadecimal output.
+
+Set-like collections must be ordered by their owning producer before freeze;
+`canonical` never silently reorders them or edits readback text. Content digests
+hash exact normalized text bytes. `requestHashMaterial` omits `requestDigest`,
+expands approved content from the frozen plan and retains logical ID references.
+`planHashMaterial` omits only `planHash`. `verifyPlanIntegrity` checks all three.
+The shared canonicalizer retains monitor-v1's existing behavior.
 
 Never build security- or idempotency-sensitive hashes by concatenating fields
 with a delimiter. Hash inputs MUST carry a schema/policy version so a
@@ -512,12 +537,12 @@ incidentFingerprint + app + stableBusinessTargetId + actionType
 ```
 
 It excludes plan revision, runtime/model/provider attempts, and destination IDs
-created by the provider. `approvalHash` covers the complete immutable plan,
+created by the provider. `planHash` covers the complete immutable plan,
 including source versions, selected IDs, policy version, exact recipients,
 subject/body bytes, owners, due dates, and all effect payloads.
 
-The canonical stored plan digest is `planHash`. `approvalHash` MUST equal that
-same full `planHash`; it is not a second derivation. Slack may display the first
+The canonical stored plan and approval digest is `planHash`; no separate
+`approvalHash` field or derivation is introduced. Slack may display the first
 eight hexadecimal digest characters only when they uniquely identify one active
 plan in the configured approval scope. Storage, approval validation, and
 execution always compare the full digest.
@@ -527,81 +552,27 @@ execution always compare the full digest.
 Network, model, and collection results use discriminated unions. Do not return
 `null`, an empty array, or `ok: true` for multiple meanings.
 
-```typescript
-type CompleteResult<T> = {
-  status: "complete";
-  value: T;
-  receipt: ObservationReceipt;
-};
+The executable contracts are:
 
-type IncompleteResult<T> = {
-  status: "incomplete";
-  partialValue?: T;
-  reason: IncompleteReason;
-  receipt: ObservationReceipt;
-};
+- `readResultSchema`: `{ status: "complete", data, receipt }` or
+  `{ status: "incomplete", reason, partialData?, receipt }`.
+- `MutationOutcomeSchema`: `applied` with provider ID and receipt,
+  `not_applied` with reason/receipt, or `unknown` with reason/receipt.
+  Call context and provider-attempt receipt retain logical/dispatch identity.
+- `agentCallResultSchema`: `success` with validated output and artifact/attempt
+  references, or `failure` with a typed reason and available artifact references.
 
-type FailedResult = {
-  status: "failed";
-  error: NormalizedError;
-  receipt?: ObservationReceipt;
-};
+Denied, malformed, failed, or over-budget pages normalize to `incomplete`,
+never an empty success. An unknown write retains its durable claim and requires
+reconciliation or a partial stop; it does not authorize another dispatch.
 
-type UnknownWriteResult = {
-  status: "unknown";
-  logicalCallId: LogicalCallId;
-  providerAttemptId: ProviderAttemptId;
-  reconciliationRequired: true;
-};
-```
-
-A page-limit, time-limit, denied page, malformed response, or missing required
-scope is `incomplete` or `failed`, never a complete empty result.
-
-F02 owns one `NormalizedErrorCode` registry in `src/shared/errors.ts`. New
-producers MUST use these lower-snake-case codes and MUST NOT expose provider
-messages as public codes:
-
-```typescript
-type NormalizedErrorCode =
-  | "invalid_input"
-  | "unsupported_schema_version"
-  | "invalid_configuration"
-  | "auth_denied"
-  | "permission_denied"
-  | "rate_limited"
-  | "timed_out"
-  | "budget_exhausted"
-  | "incomplete_read"
-  | "malformed_response"
-  | "not_found"
-  | "conflict"
-  | "provider_rejected"
-  | "unknown_write_outcome"
-  | "persistence_failed"
-  | "lease_lost"
-  | "stale_source"
-  | "approval_invalid"
-  | "approval_expired"
-  | "verification_failed"
-  | "unsupported_transport"
-  | "internal_error";
-
-type NormalizedError = {
-  schemaVersion: string;
-  code: NormalizedErrorCode;
-  message: string;
-  retryable: boolean;
-  retryOwner: "none" | "transport" | "workflow" | "operator";
-  providerCode?: string;
-  retryAfterMs?: number;
-  restrictedReceiptRef?: string;
-};
-```
-
-`message` is sanitized for operators. Raw provider bodies, stack traces, and
-causes remain in restricted receipts. Adding or changing a code requires an F02
-schema-version change and consumer tests.
+Use the boundary-specific frozen error registries: `ReadFailureReasonSchema`
+(domain), `AgentFailureCodeSchema` (agents), `EventErrorCodeSchema` (events),
+and `ApiErrorSchema` (API). I01 maps provider errors into these existing schemas;
+it must not introduce a competing `src/shared/errors.ts` wire vocabulary.
+API errors contain schema version, stable code, retryability and correlation ID.
+Raw provider messages, bodies, stack traces and causes stay in restricted
+receipts. A changed wire code requires reviewed compatibility and consumer tests.
 
 ## 8. Domain vocabulary and state machines
 
@@ -613,7 +584,7 @@ The three role names, exported functions, and outputs are fixed:
 | --- | --- | --- |
 | `analyst` | `analyzeIncident(...)` | `AgentCallResult<IncidentAssessment>` |
 | `drafter` | `draftCustomerUpdate(...)` | `AgentCallResult<DraftProposal>` |
-| `auditor` | `auditSemantics(...)` | `AgentCallResult<AuditFindings>` |
+| `auditor` | `auditSemantics(...)` | `AgentCallResult<AuditVerdict>` |
 
 - A01 owns `createModelClient(...)` and `invokeRole(...)`.
 - Only R01 workflow nodes invoke the three role functions.
@@ -630,13 +601,13 @@ The three role names, exported functions, and outputs are fixed:
 Stable stage IDs are:
 
 ```text
-ingest -> select -> analyze -> draft -> audit -> approve -> execute -> verify -> assess
+ingest -> select -> analyst -> drafter -> auditor -> approval -> execute -> verify -> assess
 ```
 
 Deterministic checks and plan freezing occur at their documented boundaries but
 are not presented as extra agents. A complete empty selection branches after
-`select` to absence verification and assessment; it skips analyze, draft, audit,
-approve, execute, and final Slack summary.
+`select` to absence verification and assessment; it skips analyst, drafter, auditor,
+approval, execute, and final Slack summary.
 
 That branch is legal only when the source read is `complete`, its account/query/
 horizon scope matches the frozen policy, deterministic selection returns zero
@@ -651,82 +622,43 @@ blocks completion.
 Do not reuse one generic `status` union across unrelated entities.
 
 ```typescript
-type RunStatus =
-  | "pending"
-  | "running"
-  | "awaiting_approval"
-  | "executing"
-  | "safely_blocked"
-  | "failed"
-  | "failed_partial"
-  | "completed"
-  | "completed_no_affected_commitments";
-
-type StageStatus =
-  | "pending"
-  | "running"
-  | "waiting"
-  | "completed"
-  | "blocked"
-  | "failed"
-  | "skipped";
-
-type EffectStatus =
-  | "planned"
-  | "intent_persisted"
-  | "dispatching"
-  | "unknown"
-  | "applied"
-  | "verified"
-  | "failed";
-
+type RunStatus = "queued" | "running" | "awaiting_approval" | "safely_blocked"
+  | "failed" | "failed_partial" | "completed" | "completed_no_affected_commitments";
+type StageState = "not_started" | "queued" | "running" | "waiting" | "succeeded"
+  | "failed" | "blocked" | "skipped" | "unknown";
+type EffectState = "planned" | "inflight" | "applied" | "verified";
 type ClaimVerdict = "confirmed" | "contradicted" | "unverified";
-type ReportAvailability = "pending" | "available" | "unavailable";
+type ReportAvailability = "pending" | "available" | "unavailable" | "unauthorized";
 ```
 
-`waiting`, `paused`, `partial`, `blocked`, `stalled`, `exhausted`, and
-`verified_completed` are not alternate `RunStatus` values. Represent their
-meaning through the appropriate stage/effect status, durable retry metadata,
-or the canonical run value. Compatibility readers may map old values, but new
-producers use only the canonical vocabulary above.
-
-`completed` means all required artifact readbacks and the final Slack summary
-readback succeeded. A run with unresolved, missing, stale, or contradicted
-evidence cannot be `completed`.
+Attempt outcome is separate from durable effect state. Assessment and field
+comparison are separate from product status. A completed product may later have
+pending, missing or contradicted independent assessment; preserve both facts.
+Do not invent synonymous statuses or use stage success as evidence of grounding.
 
 ### 8.4 Effect state transitions
 
-The legal forward transitions are:
-
-```text
-planned -> intent_persisted -> dispatching -> applied -> verified
-                                |            `-> failed (readback mismatch)
-                                |-> failed (definitive provider rejection)
-                                `-> unknown -> applied (conclusive reconciliation)
-                                            `-> failed (conclusive nonapplication)
-```
-
-`unknown` remains unresolved when bounded reconciliation cannot prove exactly
-one approved effect or definitive nonapplication. It MUST retain its claim,
-block later writes, and make the run `failed_partial`; it MUST NOT transition
-back to `planned` or `dispatching`. `verified` is terminal. State history is
-append-only, so a later verification failure does not erase evidence that the
-provider previously acknowledged or applied an effect.
+The frozen forward progression is `planned -> inflight -> applied -> verified`.
+B01 persists the fenced claim/dispatch intent before B06 calls a provider.
+An unknown outcome remains `inflight` with its claim and recorded `unknown`
+attempt outcome; it blocks further creates until conclusive reconciliation.
+Unresolved work stops `failed_partial`. Definitive rejection remains a distinct
+`not_applied` outcome and cannot be represented as applied or verified.
+Reconciliation may adopt exactly one independently identified approved effect.
+B01 owns transaction/claim history and must retain all attempt outcomes. A later
+independent mismatch does not erase the previous product readback record.
 
 ### 8.5 Protected artifact order
 
-For each selected commitment, execute and verify in this order:
+For each selected commitment, create/read back the HubSpot task, then note,
+then Gmail draft. After all selected commitments, create/read back one marked
+incident GitHub comment, then publish/read back one final Slack summary. Thus
+N selected commitments yield 3N+2 logical artifacts, not a success summary for
+each customer before later customers finish.
 
-1. create and read back the HubSpot task;
-2. create and read back the HubSpot note;
-3. create and read back the Gmail draft;
-4. create and read back the marked GitHub comment; and
-5. after required effects are verified, publish and read back the final Slack
-   thread summary.
-
-Before every remaining mutation, B06 revalidates the approval reference,
-expiry, source freshness, immutable plan hash, and effect state. Provider
-operations for one run MUST NOT be parallelized.
+Before every remaining mutation, B06 revalidates approval, expiry, source
+freshness, immutable plan hash and effect state. Provider operations for one
+run MUST NOT be parallelized.
 
 ### 8.6 Approval grammar
 
@@ -769,7 +701,8 @@ page as a complete empty result.
 ### 9.2 Provider capability allowlist
 
 - GitHub: read incident evidence and marked comments; create/read the exact
-  approved marked impact comment. No issue closure, merge, code write, or
+  approved marked impact comment, including a guarded update of that exact
+  marked comment. No issue closure, merge, code write, or
   arbitrary URL crawl.
 - HubSpot: read commitments, companies, owners, designated contacts, tasks,
   notes, and typed associations; create/read approved tasks and notes. No
@@ -822,7 +755,7 @@ to a separate monitor database does not satisfy durability. A failure before
 intent persistence prevents dispatch; a crash after dispatch leaves an explicit
 unknown outcome for reconciliation.
 
-Measurement jobs use states `ready`, `leased`, `completed`, and `exhausted`.
+Measurement jobs use states `pending`, `leased`, `completed`, and `exhausted`.
 Lease duration, retry limit, and bounded backoff are validated configuration and
 are copied into the run/evaluation receipt; implementations MUST NOT hide
 different local constants. A lease has an opaque token and expiry. Only the
@@ -932,7 +865,8 @@ describe. Do not compress them into a single misleading `live: true` flag.
 
 ## 13. Configuration and secrets
 
-- F01 owns environment parsing in `src/server/config.ts`. Other modules receive
+- F01 owns environment parsing in `src/server/index.ts` at this freeze. A later
+  foundation-owned extraction may create `src/server/config.ts`. Other modules receive
   validated configuration through dependency injection and MUST NOT call
   `process.env` directly.
 - `PG_MODEL_MODE=mock|live` and `PG_ADAPTER_MODE=fake|rest` are independent.
@@ -1001,7 +935,7 @@ Every planned commit supplies this record before merge:
 
 ```yaml
 implementationId: F02
-conventionsVersion: "1.1"
+conventionsVersion: "1.2"
 branch: feat/foundation
 owner: P1
 baseSha: <full-sha>

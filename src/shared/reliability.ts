@@ -1,14 +1,12 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
+import { AppSchema, ModeSchema, StatusSchema, RoleSchema, canonical } from './domain.js';
+export { AppSchema, ModeSchema, StatusSchema, RoleSchema, canonical } from './domain.js';
 
 export const EVALUATOR_VERSION = 'monitor-v1';
 const id = z.string().regex(/^[a-zA-Z0-9_.:-]{1,160}$/);
 const hash = z.string().regex(/^[a-f0-9]{64}$/);
 const time = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
-export const AppSchema = z.enum(['github', 'hubspot', 'slack', 'gmail']);
-export const ModeSchema = z.enum(['synthetic_fixture', 'model_with_fake_providers', 'imported_provider_snapshot']);
-export const StatusSchema = z.enum(['completed', 'completed_no_affected_commitments', 'awaiting_approval', 'safely_blocked', 'failed_partial', 'failed']);
-export const RoleSchema = z.enum(['analyst', 'drafter', 'auditor']);
 export const EffectSchema = z.object({
   app: AppSchema, effectKey: id,
   kind: z.enum(['task', 'note', 'draft', 'comment', 'thread']),
@@ -128,11 +126,6 @@ export interface Assessment {
   checks:Check[];facts:AttemptFacts;
 }
 
-export function canonical(value:unknown):string {
-  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
-  if (value!==null && typeof value==='object') return `{${Object.keys(value).sort().map(k=>`${JSON.stringify(k)}:${canonical((value as Record<string,unknown>)[k])}`).join(',')}}`;
-  return JSON.stringify(value);
-}
 export function digest(value:unknown):string {return createHash('sha256').update(canonical(value)).digest('hex');}
 export function parseManifest(value:unknown):Manifest {
   const parsed=ManifestSchema.safeParse(value);if(!parsed.success)throw new Error('invalid_manifest');return parsed.data;

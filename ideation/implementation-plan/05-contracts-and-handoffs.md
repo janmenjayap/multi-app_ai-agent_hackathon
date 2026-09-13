@@ -1,5 +1,12 @@
 # Contracts and handoffs
 
+**F02 execution update, September 14, 2026:** the six shared application modules
+below now have local schema-2 implementations and executable accepted/rejected
+examples. See the [F02 receipt](commits/F02.md#completion-receipt) for the exact
+draft interface, compatibility rules and passing checks. F01/F02 commits and
+receiving-owner review/merge remain pending; the historical baseline and proposed
+runtime/evaluator behavior below must not be read as completed implementation.
+
 **Historical baseline: September 13, 2026.** The application contracts below
 were proposed before `src/` existed. **September 14 update (IST):** the Node 24
 [standalone monitor](../../tools/monitoring/README.md) now has executable schemas
