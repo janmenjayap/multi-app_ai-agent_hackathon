@@ -4,8 +4,9 @@
 **Owner:** P4 — scenario harness owner, with P2/P3 fixture reviewers.
 **Priority:** P0 application delivery.
 
-This guide proposes future work. No branch, commit, or provider action is created
-by this document. Preserve the existing monitor through [P00](../commits/P00.md)
+The Q04 harness is implemented; its [execution receipt](../commits/Q04.md#implementation-receipt--september-14-2026)
+records five passing focused tests and the adverse/unrun scenario results.
+Preserve the existing monitor through [P00](../commits/P00.md)
 and follow the [canonical commit plan](../04-commit-plan.md).
 
 ## Exact commit order
@@ -78,4 +79,3 @@ refine planned work and do not establish live integration.
 The current offline monitor baseline is reusable implementation, not proof of the
 future app. Claim live behavior only when the commit-specific independent evidence
 exists; otherwise leave its completion gate open.
-
