@@ -4,6 +4,10 @@
 **Owner:** P4 — frontend/evaluation owner.
 **Priority:** P1 optional; defer explicitly if P0 evidence or recording would be delayed.
 
+Use the [frontend pipeline and reliability guide](../09-frontend-pipeline-and-reliability.md)
+for the required U02 boundary, drilldown hierarchy, saved-report rendering rules,
+responsive/accessibility checks, and parallel file ownership.
+
 This guide proposes future work. No branch, commit, or provider action is created
 by this document. Preserve the existing monitor through [P00](../commits/P00.md)
 and follow the [canonical commit plan](../04-commit-plan.md).
@@ -40,7 +44,14 @@ isolated fixtures can run independently.
 
 ## Reliability implementation and proof
 
-U03 renders saved Q05 counts and drilldowns without recomputing metrics. Preserve the full census, version/mode boundaries, original-versus-corrected proposals, expected/observed differences and claim-time versus later-drift evidence. Proof compares displayed values to the exact saved report, including zero labels, N/A, repeated claim IDs and failed/unrun slots. Defer this branch if it delays P0 evidence; U02 still supplies the required basic report surface.
+U03 renders saved Q05 counts and drills from M1-M7/critical counts to exact suite
+entries, attempts, claims, labels, expected/observed fields and evidence references
+without recomputing metrics. Preserve the full census, version/mode boundaries,
+original-versus-corrected proposals and claim-time versus later-drift evidence.
+Proof compares displayed values and authorized navigation to the exact saved
+report, including zero labels, N/A, repeated claim IDs and failed/unrun slots.
+Defer this branch if it delays P0 evidence; U02 still supplies the required basic
+report surface.
 
 See the [detailed reliability completion plan](../06-agent-reliability-implementation.md) and the linked commit brief for exact steps, file ownership and acceptance. These additions describe future implementation; no live gate is closed by this documentation update.
 

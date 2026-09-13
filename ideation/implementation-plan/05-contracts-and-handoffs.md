@@ -330,6 +330,11 @@ require reconciliation, and separate read receipts establish actual results.
 
 **Producer:** backend API owner. **Consumer:** U01/U02/U03 frontend.
 
+Use the [frontend pipeline and reliability guide](09-frontend-pipeline-and-reliability.md)
+for the minimum DTO fields, fixed pipeline semantics, browser lifecycle, complete
+state matrix, responsive/accessibility behavior, and release browser checks. F02
+owns the final names and schemas; frontend branches do not fork this contract.
+
 Freeze these existing architecture routes in F02:
 
 - `POST /api/runs`: validated incident URL; return persisted run ID and current
@@ -351,12 +356,15 @@ CSRF on commands. Use authenticated same-origin polling for the MVP, approximate
 every two seconds while active, with overlap prevention and backoff on failure.
 Closing the UI does not cancel a persisted run.
 
-Separate `productStatus`, `traceCoverage`, `outcomeAssessment`, and
-`semanticAssessment`. Show waiting, pending, incomplete, failure and N/A explicitly.
-The v2 read projection additionally includes `firstProposalAssessment`, evaluator
-and manifest versions, evidence watermark/provenance, required-field comparison
-verdicts, completion-claim classifications, missing-evidence reasons, and suite
-census entries. The browser renders server facts; it does not recompute metrics.
+Separate `productStatus`, `traceAssessment` (including trace coverage),
+`outcomeAssessment`, and `firstProposalAssessment`. If selected-plan semantic
+quality is also exposed, name it separately; never substitute it for first-proposal
+quality. Show waiting, pending, incomplete, unverified, failure and N/A explicitly.
+The v2 read projection additionally includes evaluator and manifest versions,
+evidence watermark/provenance, required-field comparison verdicts, completion-
+claim classifications, missing-evidence reasons, raw metric numerators/
+denominators, and suite census entries. The browser renders server facts; it does
+not recompute metrics.
 The public success outcomes are `completed` and
 `completed_no_affected_commitments`; `safely_blocked`, `failed`, and
 `failed_partial` describe stopped runs. `awaiting_approval` is resumable waiting.

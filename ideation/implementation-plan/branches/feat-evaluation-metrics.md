@@ -39,6 +39,12 @@ merges or run conflicting live tests. See each commit's file assignments and
 sequential join. Shared test-account namespaces and resets must be serialized;
 isolated fixtures can run independently.
 
+Follow the [frontend pipeline and reliability guide](../09-frontend-pipeline-and-reliability.md)
+for the Q05/U02/U03 handoff. U02 may already be merged with an explicitly
+unavailable report while Q05 is built. Q05 owns saved arithmetic and authorized
+summary/detail projections; U02/U03 own rendering and may prepare tests against
+F02 examples without editing metric code.
+
 ## Reliability implementation and proof
 
 Q05 extends R01's minimal F02/B01 trusted human-review receipt input with richer label intake plus aggregation/reporting; it does not own claim verdict logic. Mandatory pre-registration S0/preflight failures remain setup-failed census gaps, while post-registration faults stay attempted. Reviewers label original source/output digests with claim-level reasons and preserve corrections/superseded labels. Join the complete census, retain failures and unrun cases, report raw M1–M7 denominators and null rates, and separate v1/v2 cohorts. Consume Q03's distinct premature, outcome-contradicted, deduplicated false-completion and unverified sets. Proof: hand-computed overlap/zero-label/correction/censored cohorts and report reproducibility. A first fixed draft may complete M1 while remaining an M7 failure.
@@ -54,6 +60,12 @@ Review immutable original model outputs and aggregate independently observed app
 [guide 08: MCP/API and apps](../08-mcp-api-and-external-app-integration.md).
 Preserve this branch's existing merge gates and allowed paths; these obligations
 refine planned work and do not establish live integration.
+
+Provide U02/U03 exact saved report examples containing raw M1-M7 units,
+numerators/denominators or N/A, critical counts, census/gaps, modes, versions,
+cutoff and watermark. An independent reviewer checks the projection field by
+field before R02 uses the displayed values. U03 still waits for Q05; U02's
+earlier merge and unavailable state do not change.
 
 ## Shared-file exclusions
 

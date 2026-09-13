@@ -39,6 +39,12 @@ merges or run conflicting live tests. See each commit's file assignments and
 sequential join. Shared test-account namespaces and resets must be serialized;
 isolated fixtures can run independently.
 
+Follow the [frontend pipeline and reliability guide](../09-frontend-pipeline-and-reliability.md)
+for the Q01/U01 boundary. After F02, Q01 and U01 are siblings: Q01 owns canonical
+scenario/oracle identities and stateful model/provider fakes; U01 owns browser-
+only state fixtures. They may progress in parallel and reconcile IDs through a
+reviewed handoff without importing unmerged files or adding a U01 merge gate.
+
 ## Reliability implementation and proof
 
 Q01 freezes the full planned census and logical manifest before execution, using `EffectIdRef` for objects whose provider IDs do not exist yet. `ApprovedContentRef` separately binds generated exact bytes from B03's immutable approved plan before dispatch; pre-run source facts and semantic invariants remain fixed and independently reviewed. Unique observed bindings later resolve object references without deriving expected content from provider output. Include `no_affected` manifests that require complete source/selection and zero writes, with no plan/approval/Slack requirements. Source facts and expected claims are independently reviewed; model/provider fakes expose real state and named faults rather than copying expectations into observed fields. Proof: reject mutable oracles, incomplete artifacts, omitted slots and ambiguous bindings; do not report 42 planned slots as attempts.
@@ -54,6 +60,11 @@ Provide the injected model fake and independent stateful app fakes; freeze separ
 [guide 08: MCP/API and apps](../08-mcp-api-and-external-app-integration.md).
 Preserve this branch's existing merge gates and allowed paths; these obligations
 refine planned work and do not establish live integration.
+
+Hand U01 reviewed S1 golden-path, S2 replay, S3 safe-block and named-fault
+scenario/evidence identities with explicit synthetic mode. This handoff may
+replace identifiers in browser fixtures, but it cannot rewrite UI state semantics
+or make a rendered fixture into executed scenario evidence.
 
 ## Shared-file exclusions
 

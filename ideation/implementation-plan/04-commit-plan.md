@@ -12,6 +12,12 @@ commands now exist, as recorded in [Global Scale](Global%20Scale.md).
 No branches or commits are created by this document. The [canonical demo
 contract](../demo-scenarios-and-reliability.md) controls expected outcomes.
 
+**September 14 working-tree review for this frontend update:** no unstaged or
+untracked frontend, HTTP API, browser-test, application-contract, or related
+configuration implementation was present. Only implementation-plan Markdown was
+dirty. F01 remains the first application/frontend implementation commit; `dist/`
+and `node_modules/` do not count as authored implementation or completed gates.
+
 Use the [parallel delivery plan](03-parallel-delivery.md) for staffing and
 the [contracts and handoffs](05-contracts-and-handoffs.md) for shared interfaces.
 GitHub, HubSpot, Slack, and Gmail all remain required. Gmail is draft-only.
@@ -19,6 +25,9 @@ The [detailed reliability implementation](06-agent-reliability-implementation.md
 expands each existing brief with concrete steps, negative tests, and handoffs for
 the audit findings. Trace/process correctness, independently verified outcomes,
 and original AI quality are separate P0 obligations throughout this backlog.
+The [frontend pipeline and reliability guide](09-frontend-pipeline-and-reliability.md)
+is the canonical screen, browser-contract, state, accessibility, E2E, and UI
+parallel-work specification for F01/F02/B04/Q01/U01-U03/Q05/R02.
 
 **Dedicated execution files:** [one plan per branch](branches/README.md) and
 [one plan per commit](commits/README.md). Each entry below links its detailed
@@ -640,15 +649,19 @@ guard, label a simulation live, or fill a missed measurement with a target.
   `src/web/components/PlanPanel.tsx`, `src/web/components/RunTimeline.tsx`,
   `src/web/fixtures/demo.ts`, `tests/app/console.test.tsx`.
 - **Do:** show incident input, evidence/selection/exclusions, exact planned draft,
-  three role stages, and explicit run states. Build against the frozen API objects
-  and mark all local examples simulated.
+  three named role stages, deterministic control stages, effects/readbacks, and
+  separate product/process/outcome/first-proposal states. Build the stable
+  one-screen hierarchy against frozen API objects and mark all local examples
+  synthetic.
 - **Do not:** add general chat, a fake approval button, fabricated success
   percentages, or credential-bearing browser configuration.
-- **Parallel inside this chunk:** nonoverlapping components and state fixtures
-  can be assigned separately; the owner integrates styling and data wiring.
+- **Parallel inside this chunk:** evidence/plan, pipeline/effects, and state/
+  accessibility tests can be assigned to disjoint files; P4 alone joins root
+  layout, status semantics, and styles.
 - **Verify / handoff:** render waiting/blocked/partial/failed/completed states;
   exact text and required IDs are legible; missing data is pending/unknown rather
-  than green. Check the operator screen at the intended recording resolution.
+  than green. Check keyboard/accessibility behavior and 375x812, 768x1024, and
+  1440x900 views, including completed-but-unverified and failed-partial states.
 
 ### U02 — Connect durable status, Slack review, and partial-run controls
 
@@ -661,14 +674,19 @@ guard, label a simulation live, or fill a missed measurement with a target.
 - **Do:** use authenticated same-origin API commands and cursor polling; show
   actual backend approval state and link to the Slack thread; explain partial
   stops and expose the guarded reconcile request. Render saved raw evaluation
-  counts/mode/report link when available and show pending assessments explicitly.
+  counts, M1-M7 numerator/denominator or N/A, census/gaps, mode/version/cutoff,
+  and report link when available. Show pending assessments explicitly and never
+  use U01 fixtures as a live fallback.
 - **Do not:** authorize from browser state, restart work just because polling
   reconnects, or claim a run is complete before the server verdict.
-- **Parallel inside this chunk:** API/polling and state presentation; P1 checks
-  command semantics while P4 owns browser code.
+- **Parallel inside this chunk:** API/polling, result presentation, and browser
+  contract tests use disjoint files; P1 checks command/revision semantics while
+  P4 owns browser integration and final joins.
 - **Verify / handoff:** reload/reconnect preserves the same run; duplicate clicks
   do not create new work; stale/out-of-order poll responses cannot overwrite a
   newer revision; link/status states remain useful during API errors and waits.
+  Exercise S1/S2/S3 through controllable HTTP fixtures and compare every displayed
+  report number with the saved server projection.
 
 ### U03 — Add richer inspection of the measured scorecard [P1]
 
@@ -680,13 +698,17 @@ guard, label a simulation live, or fill a missed measurement with a target.
   `src/web/components/EvidenceDetails.tsx`, `tests/app/scorecard.test.tsx`.
 - **Do:** show live/simulated/checker cohorts separately, raw numerators and
   denominators, failed/unrun cases, first-proposal defects/corrections, and
-  product status separately from assessment status.
+  product status separately from assessment status. Drill from M1-M7 and critical
+  counts to exact attempts, claims, field comparisons, labels, and evidence gaps.
 - **Do not:** average incomparable modes, display targets as observations, or
   convert `0/0` into 100%. Retain U02's minimal result/report view if this is cut.
-- **Parallel inside this chunk:** scorecard layout and fixture-based rendering
-  checks; no evaluation formulas are reimplemented in the browser.
+- **Parallel inside this chunk:** scorecard, evidence details, and fixture-based
+  rendering checks use disjoint files; P4 alone joins `EvaluationSummary.tsx`.
+  No evaluation formulas are reimplemented in the browser.
 - **Verify / handoff:** pending, no-attempts, failed and version-mismatch reports
-  render truthfully. Demo numbers exactly match the saved Q05 report.
+  render truthfully. Cover no labels, absent S1, v1/v2 separation, overlapping
+  claim violations, later drift, 0/0, unrun slots, and censored latency. Demo
+  numbers exactly match the saved Q05 report.
 
 ## Independent fixtures, evaluation, and observability
 

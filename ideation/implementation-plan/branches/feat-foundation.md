@@ -24,7 +24,20 @@ unvalidated placeholder behavior.
 
 ## Work that can overlap
 
-P2 can check provider access/API requirements and P4 can review initial fixture expectations during foundation work. Those reviews do not mutate provider business data. Product feature branches may prepare designs, but they must consume F02 before merging implementations.
+P2 can check provider access/API requirements while P4 prepares F02 browser DTO
+examples and F01 bootstrap/component/browser tests in the commit-owned test files.
+Those reviews do not mutate provider business data or root configuration. Product
+feature branches may prepare designs, but they must consume F02 before merging
+implementations.
+
+## Frontend contract handoff
+
+Follow the [frontend pipeline and reliability guide](../09-frontend-pipeline-and-reliability.md).
+F01 owns the tested React/Vite, component/accessibility, Playwright, static-serving
+and no-secret browser toolchain. F02 owns the versioned run/event/command/error,
+assessment/report and redacted-reference contracts plus stable state vocabulary,
+revision/cursor rules and accepted/rejected examples. U01 and Q01 then proceed as
+sibling branches: U01 owns browser display fixtures, Q01 owns scenario truth.
 
 ## Reliability merge handoff
 
@@ -57,7 +70,11 @@ the corresponding implementation commit is reviewed.
 3. Review the complete diff with a teammate; preserve existing unrelated work.
    Merge only after acceptance, then publish the real SHA to consumers.
 
-Publish actual package/schema versions, accepted/rejected payloads, script names, and both commit SHAs. B01/B02, I01, A01, Q01, and U01 then use these contracts. F01 includes the deliberate P00 preservation gate; do not start from the earlier planning-only HEAD.
+Publish actual package/schema versions, accepted/rejected payloads, browser test
+and build script names, redaction/revision/cursor rules, and both commit SHAs.
+B01/B02, I01, A01, Q01, B04, Q05, and U01/U02 then use these contracts. F01
+includes the deliberate P00 preservation gate; do not start from the earlier
+planning-only HEAD.
 
 ## Branch completion receipt
 

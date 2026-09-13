@@ -15,6 +15,12 @@ Each owns concrete producer, guard, evidence, label, measurement, or delivery
 obligations with negative tests and a receiving consumer. This expands acceptance
 inside the existing IDs; it does not add commits or claim implementation progress.
 
+Frontend-producing and frontend-consuming commits also follow the
+[canonical frontend guide](../09-frontend-pipeline-and-reliability.md). It assigns
+the screen hierarchy, pipeline semantics, minimum DTOs, state matrix, responsive
+and accessibility checks, browser tests, demo path, and conflict-free handoffs to
+the existing F01/F02/B04/Q01/U01-U03/Q05/R02 IDs; it adds no new commit.
+
 For the audit gaps, begin with F02's v2 contracts, B01's atomic app/event/job seam,
 A01/I01/B04's actual attempt telemetry, B07's inline readback, Q02's independent
 collection, Q03's temporal completion-claim assessment, Q04's full census, and
@@ -94,6 +100,10 @@ boundary throughout the application build.
 - [A04 — Add the Blind Semantic Auditor](A04.md) · [`feat/agent-auditor`](../branches/feat-agent-auditor.md).
 
 ## Frontend
+
+Read the [frontend pipeline and reliability guide](../09-frontend-pipeline-and-reliability.md)
+before implementing any entry in this section. U02 is the required compact
+pipeline/reliability surface; U03 is an optional deeper inspection layer.
 
 - [U01 — Build one fixture-backed operator screen](U01.md) · [`feat/operator-console`](../branches/feat-operator-console.md).
 - [U02 — Connect durable status, Slack review, and partial-run controls](U02.md) · [`feat/operator-console`](../branches/feat-operator-console.md).

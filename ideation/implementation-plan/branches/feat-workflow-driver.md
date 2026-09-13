@@ -21,7 +21,11 @@ unvalidated placeholder behavior.
 
 ## Work that can overlap
 
-Overlap with B02/B03 policy work, provider adapters, agent modules, Q02/Q03 evaluation integration, and U01 fixtures as their own gates permit. P4 may own API tests while P1 owns driver/state/checkpoint code.
+Overlap with B02/B03 policy work, provider adapters, agent modules, Q02/Q03
+evaluation integration, and U01 fixtures as their own gates permit. Follow the
+[frontend pipeline and reliability guide](../09-frontend-pipeline-and-reliability.md):
+P4 may own API projection/revision/cursor/redaction tests while P1 owns driver,
+state, checkpoint and route code. U01 and B04 work concurrently, then join at U02.
 
 ## Reliability merge handoff
 
@@ -54,7 +58,11 @@ the corresponding implementation commit is reviewed.
 3. Review the complete diff with a teammate; preserve existing unrelated work.
    Merge only after acceptance, then publish the real SHA to consumers.
 
-Give B05 the persisted wait/resume seam; U02 receives authenticated routes, cursors, redacted projections and pending/unverified measurements; R01 receives dependency-injected graph composition hooks. Include concurrent-command, restart, and CSRF/access results.
+Give B05 the persisted wait/resume seam; U02 receives authenticated routes,
+monotonic revisions, reconnect-safe cursors, stable errors, redacted projections
+and pending/unverified/unavailable measurements matching F02 examples. R01
+receives dependency-injected graph composition hooks. Include concurrent-command,
+restart, stale-response, session-expiry, monitor-outage and CSRF/access results.
 
 ## Branch completion receipt
 

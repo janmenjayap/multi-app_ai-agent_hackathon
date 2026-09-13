@@ -58,6 +58,10 @@ performed or an increase in claimed application completion.
 9. [MCP, API and external-app integration](08-mcp-api-and-external-app-integration.md):
    GitHub/HubSpot/Slack/Gmail operations, REST endpoints/access, optional MCP
    transport binding, dependency injection, smoke checks and per-commit delivery.
+10. [Frontend pipeline and reliability](09-frontend-pipeline-and-reliability.md):
+  canonical one-screen hierarchy, pipeline and agent semantics, minimum browser
+  DTOs, complete UI state matrix, responsive/accessibility rules, browser tests,
+  demo framing, and exact U01-U03 parallel handoffs.
 
 ## Decisions this plan makes
 
@@ -85,6 +89,9 @@ performed or an increase in claimed application completion.
   copies. Collect actual model outputs and human labels before claiming AI quality.
 - Treat local execution and evidence as the core release. Hosted deployment,
   richer dashboards, optional telemetry, and production scaling are later work.
+- Require U02's compact pipeline and reliability surface for release. Keep U03's
+  cohort/claim drilldowns optional, but do not defer product, trace, outcome,
+  first-proposal, census, or evidence-gap visibility from the basic console.
 
 The plan assumes four contributor roles, not four full-time people already
 available. Its 30 implementation tasks plus one baseline commit are a dependency breakdown, not a promise that

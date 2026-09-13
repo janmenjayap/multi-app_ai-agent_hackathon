@@ -4,6 +4,10 @@
 **Owner:** P4 — frontend/evaluation owner.
 **Priority:** P0 application delivery.
 
+Use the [frontend pipeline and reliability guide](../09-frontend-pipeline-and-reliability.md)
+as this branch's canonical screen hierarchy, pipeline semantics, state matrix,
+responsive/accessibility contract, browser-test plan, and file-conflict review.
+
 This guide proposes future work. No branch, commit, or provider action is created
 by this document. Preserve the existing monitor through [P00](../commits/P00.md)
 and follow the [canonical commit plan](../04-commit-plan.md).
@@ -45,9 +49,23 @@ merges or run conflicting live tests. See each commit's file assignments and
 sequential join. Shared test-account namespaces and resets must be serialized;
 isolated fixtures can run independently.
 
+Inside U01, evidence/plan components, pipeline/effect components, and state/
+accessibility tests may proceed in disjoint files after F02 shapes freeze; P4
+alone joins `App.tsx` and shared styles. Q01 may supply canonical scenario
+snapshots in parallel but is not a U01 merge gate. Inside U02, the API client,
+run hook, controls/summary, and browser contract tests may overlap after B04
+semantics freeze; P4 joins them without changing server truth or report arithmetic.
+
 ## Reliability implementation and proof
 
-U01 first establishes synthetic display cases; U02 later binds B04 transport. Show product state, trace/process assessment, independent expected/actual state and original proposal quality separately, including completed-but-unverified and zero-label cases. U02 consumes an optional F02 report projection and may merge before Q05; missing reports are unavailable, not invented. Q05 joins by R02 for actual basic scorecard evidence. No client approval/provenance authority is added, and U03 remains optional.
+U01 first establishes the complete synthetic state/error matrix; U02 later binds
+B04 transport and must expose the compact saved reliability summary. Show product
+state, trace/process assessment, independent expected/actual state and original
+proposal quality separately, including completed-but-unverified, failed-partial,
+zero-label, 0/0, stale, offline and unavailable-report cases. U02 consumes an
+optional F02 report projection and may merge before Q05; missing reports are
+unavailable, not invented. Q05 joins by R02 for actual basic scorecard evidence.
+No client approval/provenance authority is added, and U03 remains optional.
 
 See the [detailed reliability completion plan](../06-agent-reliability-implementation.md) and the linked commit brief for exact steps, file ownership and acceptance. These additions describe future implementation; no live gate is closed by this documentation update.
 

@@ -20,6 +20,16 @@ The [detailed reliability plan](06-agent-reliability-implementation.md) now adds
 the audit's concrete work inside the existing commit/branch graph. Reliability is
 one required delivery track spanning original AI outputs, actual execution, and
 independent app state; it is not postponed until an optional dashboard is built.
+The [frontend pipeline and reliability guide](09-frontend-pipeline-and-reliability.md)
+defines the browser work breakdown, minimum DTOs, state matrix, tests, release
+surface, and file-level joins used by this parallel plan.
+
+**Reviewed working-tree input, September 14, 2026:** no unstaged or untracked
+frontend, HTTP API, application-contract, browser-test, or related configuration
+implementation was available to assign. The only dirty paths were this planning
+update. Treat F01 as the first frontend implementation gate; generated `dist/`
+and installed dependencies are not a partial UI. Re-inventory before kickoff and
+map any subsequently appearing code to an owner/commit before editing it.
 
 ## LLM and external-app implementation joins
 
@@ -68,8 +78,11 @@ flowchart TD
     I01 --> Providers["I02-I05: four independent adapter branches"]
     Storage --> A01["A01: bounded model wrapper"]
     A01 --> Models["A02 / A03 / A04:<br/>independent role branches"]
-    F02 --> UI["U01-U02: fixture UI then real API"]
+    F02 --> UIFixture["U01: browser-owned fixture console"]
     F02 --> Q01["Q01: independent fixtures and oracles"]
+    UIFixture --> UILive["U02: durable API console"]
+    Core --> UILive
+    Q01 -.->|"Align scenario IDs; no U01 merge gate"| UIFixture
     Storage --> Approval
     Core --> Approval["B05: trusted Slack approval and freshness"]
     Providers --> Approval
@@ -86,7 +99,7 @@ flowchart TD
     Evidence --> R01
     R01 --> Q04["Q04-Q05: scenario suite, labels, metrics"]
     Q04 --> R02["R02: freeze, clean verification, demo, brief"]
-    UI --> R02
+    UILive --> R02
     Q04 -.-> Extra["Optional B08 / U03 / Q06:<br/>automatic recovery, richer UI, LangSmith"]
     Extra -.->|"If included, retest before release"| R02
 ```
@@ -111,9 +124,12 @@ a time; a finished author can help a different directory while waiting for revie
   role in a separate directory/PR. An available teammate can take one role
   branch or the verifier; owning a track does not require serial authorship.
 - **P4 — interface and evaluation owner:** Q01, U01/U02, Q02-Q05, demo evidence
-  and first-proposal labels. Build only the small UI before evidence is ready;
-  delegate isolated collector/tests to P2 after adapters finish. Reserve time
-  for independent review instead of leaving all evaluation until the end.
+  and first-proposal labels. After F02, freeze Q01's canonical scenario IDs and
+  oracle boundary, then move P4's active implementation slot to U01 while P2/P3
+  can contribute Q01 provider/model fakes in its disjoint files. Build only the
+  small required UI before evidence is ready; delegate isolated collector/tests
+  after adapters finish. Reserve time for independent review instead of leaving
+  all evaluation until the end.
 
 Review across boundaries: P4 reviews selection and recipient assertions, P1
 reviews provider write/retry behavior, P2 reviews collection coverage, and P3
@@ -144,11 +160,15 @@ workflow. Treat access as unverified until actual write/read-back proof exists.
 - P1: B01 storage/events, then B04 driver/checkpoints and API shell.
 - P2: I01 transport, then I04 Slack and I05 Gmail to retire approval/OAuth risk.
 - P3: B02/B03 selection and plan freeze as soon as Q01 merges; then A01 wrapper.
-- P4: Q01 fixtures/fakes first, then U01 console against those fixtures.
+- P4: freeze Q01 canonical scenario/oracle identities, then build U01 against F02
+  browser DTOs and U01-owned fixtures. Q01's provider/model fakes may continue in
+  parallel under delegated P2/P3 file ownership; U01 does not wait for Q01 merge.
 
-**Overlap inside this wave:** after Q01, P4 can review B02 boundary tests while
-P3 codes; an available contributor can own I02 GitHub independently of I04.
-Give HubSpot enough early time to validate associations and ticket schema access.
+**Overlap inside this wave:** after the Q01 identity/oracle review, P4 can build
+U01 while delegated Q01 fake files continue; P4 later reconciles scenario IDs
+without importing an unmerged fixture file. P4 can review B02 boundary tests while
+P3 codes; an available contributor can own I02 GitHub independently of I04. Give
+HubSpot enough early time to validate associations and ticket schema access.
 
 **Exit:** stores persist, interfaces compile, fake console renders, and each
 adapter has a tracked conformance/access result. A fake UI is still labeled fake.
@@ -176,7 +196,8 @@ its live run waits for these gates.
 - P3: review first proposals, diagnose semantic defects, and assist Q04 with
   malformed-model, injection, and partial-progress cases.
 - P4: Q04 scenario automation and Q05 labels/metrics; present actual counts in
-  U02 and assemble the recording/brief evidence.
+  U02's already-versioned summary, verify saved-versus-rendered values, and
+  assemble the recording/brief evidence. U03 starts only after this P0 proof.
 
 **Exit:** [Global Scale.md](Global%20Scale.md) links actual evidence for each
 claimed capability. Failed, incomplete, unavailable, and unrun cases remain
@@ -258,8 +279,13 @@ shared branch or discard a teammate's dirty files to resolve a conflict.
 ## 6. Parallelize within each chunk
 
 - **Frontend:** fixture-driven evidence view, plan view, and timeline can be
-  separate component tasks. One owner handles API client/root layout; keep live
-  wiring and stage semantics centralized.
+  separate component tasks after F02. U01 owns browser display fixtures while
+  Q01 owns scenario truth; align IDs before U02/R01 without adding a U01 merge
+  gate. One owner handles API client/root layout/status semantics; separate
+  helpers own evidence/plan, pipeline/effects, and state/accessibility tests.
+  B04 API projections and U01 can proceed concurrently, then join at U02. Q05
+  report production and U02's unavailable-state support can be prepared in
+  parallel; actual saved-value verification waits for Q05/R02.
 - **Backend:** source-selection policy, storage, and authenticated API handlers
   are separate files. Migration numbering and graph composition have one owner.
   Storage must merge before durability claims or protected dispatch.
@@ -279,17 +305,21 @@ shared branch or discard a teammate's dirty files to resolve a conflict.
 ## 7. Smaller teams and time pressure
 
 **Three people:** P1 keeps backend; P2 combines adapters with agent modules after
-access is established; P3 combines UI/evaluation. P1 takes deterministic policy,
-and P3 reviews verifier assertions. Prioritize a basic console over U03/Q06.
+access is established; P3 combines UI/evaluation. P3 freezes Q01 identities,
+builds U01, then returns to evaluation while P2 can contribute provider fakes.
+P1 takes deterministic policy, and P3 reviews verifier assertions. Prioritize a
+basic U02 console over U03/Q06.
 
 **Two people:** one owns F/B/A integration; the other owns I/Q/U. The second person
-starts with contracts/fixtures and adapter access, then evidence and the minimal
-UI. Exchange reviews on approval, recipients, and expected outcomes. This is a
-longer critical path; parallel branch count does not manufacture extra capacity.
+freezes Q01 scenario identities, builds U01 from F02, then returns to adapter/
+evidence work before U02. Exchange reviews on approval, recipients, and expected
+outcomes. This is a longer critical path; parallel branch count does not
+manufacture extra capacity.
 
-**One person:** follow hard dependencies: F01/F02; Q01/B01/I01; provider access,
-policy and driver; agent modules; approval/executor/verifier; Q02/Q03 and R01;
-U02/Q04/Q05; R02. Use a minimal operator surface and omit optional enhancements.
+**One person:** follow hard dependencies: F01/F02; freeze Q01 identities; U01;
+B01/I01; provider access, policy and driver; agent modules; approval/executor/
+verifier; B04/U02; Q02/Q03 and R01; Q04/Q05; R02. Use the required compact
+operator surface and omit U03 and other optional enhancements.
 
 At kickoff record the actual deadline, usable time, and evidence/recording reserve
 from the [existing remaining-time plan](../demo-scenarios-and-reliability.md#12-remaining-build-decisions-and-prioritized-checklist).

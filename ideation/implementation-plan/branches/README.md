@@ -11,6 +11,15 @@ now defines the audit-driven acceptance work for these same branches. Read its
 contracts, temporal completion cases, and evidence handoffs with the detailed
 commit brief. Original AI quality, trace/process correctness, and independent
 app outcomes all remain P0 evidence; optional trace hosting does not replace them.
+The [frontend pipeline and reliability guide](../09-frontend-pipeline-and-reliability.md)
+defines the one-screen surface, DTO/state contract, component/browser tests, and
+file-level joins for foundation, API, fixture, UI, report, and release branches.
+
+The September 14 working-tree review found no uncommitted frontend/API/browser
+implementation to assign. Frontend work therefore begins with F01. Q01 and U01
+are sibling layer-3 branches after F02: Q01 owns canonical scenario truth, U01
+owns browser display fixtures, and P4 aligns their IDs before U02/R01 rather than
+making either branch import the other's unmerged files.
 
 ```text
 implementation-plan/
@@ -21,6 +30,7 @@ implementation-plan/
   commits/README.md                  every commit, grouped by workstream
   commits/F01.md                     one concrete commit brief
   commits/A02.md                     one concrete commit brief
+   09-frontend-pipeline-and-reliability.md  canonical browser execution plan
   Global Scale.md                    real completion and evidence
 ```
 
@@ -114,8 +124,11 @@ flowchart TD
     F01 --> F02["F02: frozen interfaces"]
     F02 --> Core["B01/B02/B03/B04: storage, policy, driver"]
     F02 --> Adapter["I01 then I02-I05: provider branches"]
-    F02 --> Fixture["Q01: independent fixtures"]
-    F02 --> UI["U01 then U02: operator console"]
+   F02 --> Fixture["Q01: canonical scenarios and fakes"]
+   F02 --> UI1["U01: browser fixture console"]
+   Core --> UI2["U02: durable API console"]
+   UI1 --> UI2
+   Fixture -.->|"Align identities"| UI1
     Core --> Roles["A01 then A02/A03/A04: role branches"]
     Core --> Guard["B05 then B06: approval and executor"]
     Adapter --> Guard
@@ -129,8 +142,8 @@ flowchart TD
     Measure --> R01
     R01 --> Q04["Q04: scenario automation"]
     Q04 --> Q05["Q05: measured results and human labels"]
-    Q05 --> R02["R02: verified release and demo"]
-    UI --> R02
+   Q05 --> R02["R02: verified release and demo"]
+   UI2 --> R02
 ```
 
 The diagram groups modules for readability; commit files and the exact layers
@@ -148,9 +161,11 @@ start early against contracts, but its hard merge gate still follows Q04.
   are assigned to available contributors. Help Q02 collection after provider handoff.
 - **P3:** B02/B03 and A01, then assign A02/A03/A04 and B07 as separate ready tasks.
   Their folders are independent; their live model order remains sequential.
-- **P4:** Q01 → U01, then Q03/U02/Q02 as gates open, followed by Q04/Q05 and demo
-  evidence. Delegate a ready collector or UI component to a freed teammate;
-  preserve independent expectations and labels rather than self-approving them.
+- **P4:** freeze Q01 scenario/oracle identities, then move to U01 while delegated
+   P2/P3 contributors can finish disjoint provider/model fake files. Align IDs
+   before U02/R01, then take Q03/U02/Q02 as gates open, followed by Q04/Q05 and
+   demo evidence. Delegate a ready collector or UI component to a freed teammate;
+   preserve independent expectations and labels rather than self-approving them.
 
 One contributor owns one active implementation PR at a time. A waiting owner can
 review another branch or prepare fixtures in disjoint files. With two people,

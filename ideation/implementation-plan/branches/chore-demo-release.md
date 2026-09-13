@@ -38,6 +38,11 @@ sequential join. Shared test-account namespaces and resets must be serialized;
 isolated fixtures can run independently.
 Optional B08/U03/Q06 work must finish and be retested before its capabilities enter the frozen release. If omitted, preserve the simpler release and disclose the omission.
 
+Follow the [frontend pipeline and reliability guide](../09-frontend-pipeline-and-reliability.md)
+for clean-session, redaction, saved-versus-rendered report, accessibility,
+responsive viewport, authorized-link and two-minute browser checks. U02 is a hard
+release gate; U03 is a gate only when its richer inspection capability is claimed.
+
 ## Reliability implementation and proof
 
 R02 packages a reviewed claim-to-evidence map across original AI quality, runtime/traces and expected-versus-actual provider state. Include source/evaluator versions, census/attempt IDs, M1–M7 denominators, human reasons, claim-time coverage and failed/unrun cases. A zero v1 premature counter or zero labels cannot close the reliability gate. Close G1–G6 individually only with actual receipts; a narrower first demo leaves full-suite G5 visibly open. Optional exporter/richer UI/recovery claims wait for their own tests.
@@ -72,6 +77,8 @@ refine planned work and do not establish live integration.
 - [ ] Allowed-file ownership and any prerequisite shared changes are reviewed.
 - [ ] Tests, build checks, evidence mode, and failed/unrun cases are attached.
 - [ ] The next consuming commit can use the documented contract unchanged.
+- [ ] Clean authenticated browser, three viewports, accessibility, redaction,
+      authorized links and saved-versus-rendered report checks are attached.
 - [ ] P1 records only demonstrated scope in [Global Scale](../Global%20Scale.md).
 - [ ] Branch merge SHA / reviewer / evidence references: **pending**.
 
