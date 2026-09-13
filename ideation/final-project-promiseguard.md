@@ -1,0 +1,710 @@
+# PromiseGuard: Final Hackathon Project Proposal
+
+**Status:** Recommended build
+
+**Decision:** Combine the customer-commitment reasoning from Customer Promise
+Guardian with the incident evidence, deduplication, and verification model from
+Verified Incident Commander. Do not combine all of their integrations.
+
+The executable version uses four external apps in its critical path:
+
+- **GitHub** for the incident and engineering evidence
+- **HubSpot** for customer commitments, account ownership, and follow-up work
+- **Slack** for review, approval, and incident coordination
+- **Gmail** for an approval-bound customer update draft that is independently
+  verified but never sent by the agent
+
+This document is intentionally narrower than the original ideas. It is designed
+for the 390-minute build window described in
+[requirements-and-timeline.md](requirements-and-timeline.md), while preserving a
+credible path to production.
+
+## 1. One-Sentence Pitch
+
+> PromiseGuard turns a production incident into verified customer follow-up: it
+> reconciles GitHub evidence with active promises in HubSpot, asks for approval
+> in Slack, creates owned recovery work and a Gmail draft, and proves that every
+> intended action happened exactly once without making unsupported claims to
+> customers.
+
+## 2. The Product
+
+### Primary user
+
+A customer-success lead or incident commander at a B2B software company.
+
+### Problem
+
+Engineering incidents and customer commitments live in separate systems. During
+an incident, engineering may coordinate correctly while customer-facing teams
+discover too late that a promised launch, migration, or fix is now at risk.
+Generic incident bots stop at an engineering ticket. Generic CRM agents do not
+have enough technical evidence to know whether a promise is still credible.
+
+### Outcome
+
+For one incident, PromiseGuard should:
+
+1. identify only the active customer promises tied to the affected service;
+2. distinguish supported technical facts from guesses;
+3. show an exact cross-app action plan to a human in Slack;
+4. after approval, create verified HubSpot follow-up work, a GitHub impact record,
+  and an exact Gmail draft for the designated customer contact;
+5. avoid duplicate work when the same incident is replayed; and
+6. stop safely if identity, service mapping, state, or approval is ambiguous.
+
+The immediate business measures are time from incident creation to an assigned
+account owner, percentage of affected promises with verified follow-up, and
+duplicate or unsupported communications prevented. PromiseGuard must not claim
+that it reduces churn or incident resolution time based on a hackathon demo.
+
+## 3. Why This Hybrid Is Better
+
+PromiseGuard keeps the strongest parts of the two leading ideas:
+
+- From **Customer Promise Guardian**: customer context, contradictory evidence,
+  accountable ownership, approval-bound drafts, and protection against false
+  promises.
+- From **Verified Incident Commander**: immutable incident fingerprints,
+  bounded technical evidence, explicit abstention, duplicate suppression,
+  partial-failure recovery, and end-state verification.
+- From the reliability-layer ideas: propose-before-execute, prompt-injection
+  resistance, deterministic assertions, adversarial fixtures, and a blind
+  semantic auditor.
+
+The combination is useful because it closes a gap between engineering response
+and customer response. It is more novel than another alert-to-ticket bot. Gmail
+is used at one bounded, visible draft boundary, while Datadog telemetry, a fourth
+task tracker, and autonomous customer sending remain out of scope.
+
+The novelty is not "an LLM uses three tools." The differentiator is the
+**two-sided evidence contract**: a customer action is allowed only when technical
+state and CRM commitment state can be joined through explicit identifiers and
+the resulting action remains valid at execution time.
+
+## 4. External Apps and Access Plan
+
+All four apps can be used with free test accounts. GitHub, HubSpot, and Slack
+support straightforward token-based access. Gmail requires a free Google Cloud
+project, OAuth consent configuration, and a test user. Official MCP servers exist
+for all four, but Gmail's is Developer Preview and MCP is not required by the
+published rules. The prototype should use the shortest reliable integration for
+each operation.
+
+| App | Role in the workflow | Prototype access | Real action | Verdict |
+|---|---|---|---|---|
+| GitHub | Incident source, commits/deployments, engineering record | Fine-grained PAT and REST API; official MCP is mature | Create or update one issue comment | Ready |
+| HubSpot | Companies, active commitment tickets, owner, follow-up | Developer test account and private-app token; hosted MCP is available | Create one task and one internal note per affected commitment | Ready |
+| Slack | Human review, approval, and final coordination thread | Free workspace, bot token, Web API; hosted MCP is available but has more OAuth setup | Post/update one thread and read approval replies | Ready with normal app setup |
+| Gmail | Customer-update draft destination | Free Cloud project, OAuth test user, and Gmail REST API; official MCP is Developer Preview | Create and retrieve one approval-bound draft; never send | Required; budget 25-40 minutes for first-time OAuth setup |
+
+### Recommended API choice
+
+- Use direct REST APIs behind typed adapters for all writes.
+- Use Gmail REST `users.drafts.create` and `users.drafts.get` as the required
+  implementation. Do not depend on Developer Preview MCP access.
+- Use MCP for reads only if authentication already works and its tool schemas pass
+  the same adapter contract tests.
+- Do not route consequential writes directly from unconstrained model tool calls.
+- Do not mix MCP and REST implementations inside one adapter during the event.
+
+This is less fashionable than making every call through MCP, but it is more
+reliable. The judges require at least three external apps and evidence of correct
+action, not three MCP servers. PromiseGuard provides real writes in four apps.
+
+### Minimum permissions
+
+- GitHub: read repository metadata, issues, commits, deployments or workflow
+  runs; write issue comments. No contents write, merge, release, or admin scope.
+- HubSpot: read companies and commitment tickets; create/read tasks and notes;
+  read owners. No delete or broad account-management scope.
+- Slack: post and update messages in one channel and read replies in that channel.
+  The bot is installed only in the demo channel.
+- Gmail: request the narrowest scope accepted by `users.drafts.create` and
+  `users.drafts.get`, currently `gmail.compose`. That provider scope can also send
+  mail, so the prototype uses a disposable test user and an adapter that exposes
+  only create/get/delete-draft operations. No send operation or generic Gmail
+  request method exists in the agent's tool surface.
+
+### Forty-minute integration gate
+
+Before implementing orchestration, prove all of the following and save the
+created object IDs:
+
+1. Read the seeded GitHub incident and create/read/delete one test comment.
+2. Read one HubSpot company and commitment ticket, then create/read one test task.
+3. Post a Slack message and retrieve its thread replies.
+4. Complete Gmail OAuth for a disposable test user, create a uniquely marked
+  draft, retrieve and verify it, then delete it.
+
+Gmail authentication should be prepared before the build window if the rules
+allow credential setup. If any required integration is still unauthenticated at
+minute 40, stop. The fallback is the original Verified Incident Commander using
+GitHub, Linear, and Slack; it is a different submission, not "PromiseGuard without
+Gmail." Do not spend the middle of the event debugging OAuth, and do not replace
+a failed external app with a local mock while claiming a four-app live workflow.
+
+## 5. Deliberate Exclusions
+
+The following are not part of the prototype:
+
+- **Datadog:** it would improve the trigger, but seeded telemetry and preview APM
+  tools create avoidable setup risk. In the prototype, an existing GitHub
+  incident issue is the trusted trigger. Datadog is the first production
+  connector to add later.
+- **Linear:** GitHub Issues already provides the engineering system of record for
+  this prototype. A fourth task tracker adds little to the proof.
+- **Gmail sending:** Gmail is a required integration, but only draft creation is
+  exposed. The agent cannot call a send endpoint, and the demo uses synthetic
+  recipients in a disposable account.
+- Autonomous rollback, paging, ticket closure, refunds, discounts, or customer
+  messaging.
+- Fuzzy customer matching, inferred account identity, or LLM-generated impact
+  scope.
+- A general-purpose agent builder, multi-tenant administration, or a large
+  dashboard.
+
+These exclusions are part of the safety and delivery strategy, not a roadmap
+failure.
+
+## 6. Seeded Demo World
+
+### GitHub
+
+Repository `acme/payments` contains incident issue `#42` created from a fixed
+issue template:
+
+```yaml
+incident_id: inc_42
+service_id: billing-api
+environment: production
+started_at: 2026-09-13T18:10:00Z
+suspected_deployment_sha: abc1234
+customer_impact: true
+```
+
+The repository also contains a recent deployment for `abc1234`. The evidence is
+strong enough to call it a candidate change, but not necessarily a proven root
+cause.
+
+### HubSpot
+
+Use standard company and ticket records. Do not depend on an enterprise-only
+custom object.
+
+- Acme Corp has active commitment `promise_101`, service `billing-api`, an owner,
+  a designated incident-contact ID, and a due date three days away.
+- Beta Corp has active commitment `promise_102`, service `analytics-api`, and is
+  not affected.
+- Each commitment has an immutable external ID, explicit service ID, due date,
+  status, associated company and owner, and exactly one designated contact whose
+  email is read from a HubSpot contact record.
+
+If the required custom ticket properties cannot be created in the test account,
+store the same typed fields in a pre-seeded standard ticket description and
+parse only a fenced JSON block. Do not infer them from prose.
+
+### Slack
+
+Channel `#incident-customer-impact` starts empty. The bot posts one review thread,
+then polls that thread for `approve <runId> <hashPrefix>` or
+`reject <runId> <hashPrefix>`. Polling avoids building a public Events API
+callback during the hackathon.
+
+### Gmail
+
+A disposable OAuth test user contains no draft with the PromiseGuard effect
+marker. The designated HubSpot contact uses a synthetic recipient address. After
+approval, the agent creates one RFC 2822 draft whose `To`, subject, incident and
+commitment references, and body are bound to the approved plan. The deterministic
+effect marker appears in the subject so a retry can find a draft created just
+before a local crash.
+
+## 7. Exact Agent Workflow
+
+1. **Receive the goal.** The operator supplies one GitHub incident URL through a
+   minimal local UI or CLI.
+2. **Normalize the incident.** Fetch the issue by immutable repository and issue
+   ID. Validate the issue-template fields and compute an incident fingerprint
+   from repository ID, incident ID, service ID, and environment.
+3. **Snapshot technical state.** Read current issue state, referenced deployment,
+   commit metadata, and a bounded set of workflow results. Save source IDs,
+   timestamps, and canonical hashes.
+4. **Snapshot customer state.** Query active HubSpot commitments using exact
+  `service_id`, then validate company association, owner, designated contact,
+  recipient email, status, and due date. Zero matches is a valid no-action
+  result. Missing or conflicting identifiers produce `safely_blocked`.
+5. **Apply deterministic policy.** A commitment is at risk only if the service ID
+   matches exactly, its status is active, it has one owner, and its due date falls
+   within the configured impact horizon. The model cannot add accounts to this
+   set.
+6. **Prepare evidence and drafts.** The model summarizes the bounded GitHub
+  evidence and drafts a customer-update email for each eligible account. Every
+  factual statement must cite a source field. If causal evidence is below
+  threshold, the structured cause is `unknown` and the draft says the team is
+  investigating. Deterministic code supplies the recipient and subject marker.
+7. **Audit before action.** Mandatory deterministic checks validate IDs, dates,
+  allowed effects, and mechanically checkable claims. The target prototype also
+  adds a blind semantic auditor that sees the source snapshots and draft, but
+  not the worker's reasoning, and flags unsupported or contradictory language.
+  It can block or escalate; it cannot authorize a write. If this optional sensor
+  is cut for time, the deterministic pre-commit gate still controls execution.
+8. **Request approval in Slack.** Post the evidence, selected commitments,
+   proposed HubSpot, GitHub, and Gmail effects, and human-readable draft. The
+   approval hash binds the incident fingerprint, source versions, selected record
+   IDs, exact recipient, subject, body, and planned effects.
+9. **Revalidate at the commit boundary.** After approval, re-read the GitHub issue,
+  HubSpot commitments, and designated contacts. Any changed status, owner,
+  recipient, due date, selected set, or draft invalidates approval and returns
+  to review.
+10. **Execute through an effect ledger.** Create or reuse one HubSpot follow-up
+  task and one internal note per selected commitment, create or reuse the exact
+  Gmail draft, then create or update one GitHub impact comment. Each effect has
+  a deterministic key and explicit `planned`, `inflight`, `applied`, or
+  `verified` state.
+11. **Verify independently.** Re-read every created object and compare required
+  fields and cross-links with the approved plan. For Gmail, verify draft state,
+  recipient, subject, body hash, and the absence of a sent-message effect. Do
+  not trust an HTTP success response or the worker's self-report.
+12. **Close the coordination run.** Update the Slack thread with verified record
+    links and the verifier verdict. Replaying the incident must reuse the same
+    thread, tasks, notes, Gmail draft, and GitHub comment rather than create
+    duplicates.
+
+The run coordinates follow-up; it does not declare the production incident or
+customer issue resolved.
+
+## 8. What the LLM May and May Not Do
+
+### The LLM may
+
+- extract a typed summary from the bounded incident evidence;
+- explain why an already-selected commitment is at risk;
+- draft concise customer-update email language from cited facts; and
+- act as a second, semantic auditor for unsupported claims.
+
+### The LLM may not
+
+- resolve customer identity, designated recipients, or join records by names;
+- invent or broaden the affected service or account set;
+- decide permissions, approval validity, freshness, dates, or idempotency;
+- choose arbitrary tools or construct unrestricted API requests;
+- mark an incident resolved, send a Gmail message, or perform engineering
+  changes; or
+- override a deterministic verifier failure.
+
+This constrained role is intentional. The product is still an AI agent because
+semantic evidence synthesis and grounded drafting are material parts of the
+workflow, but authority stays in code.
+
+## 9. Reliability Contract
+
+A run is `completed` only when:
+
+- one immutable GitHub incident maps to one incident fingerprint;
+- every selected HubSpot commitment matches the exact affected service and has
+  one company, owner, and designated contact;
+- every factual draft claim is supported or explicitly marked unknown;
+- one non-expired approval covers the exact source versions, records, recipient,
+  Gmail draft, and effects executed;
+- all HubSpot tasks and notes, the Gmail draft, and the GitHub impact comment are
+  independently read back and match the approved plan;
+- the Slack thread links to every verified destination record; and
+- no forbidden or duplicate effect appears in the event ledger.
+
+Allowed terminal states are:
+
+- `completed`
+- `completed_no_affected_commitments`
+- `awaiting_approval`
+- `safely_blocked`
+- `failed_partial`
+- `failed`
+
+`failed_partial` is more honest than pretending distributed external writes are
+atomic. On retry, the reconciler reads actual provider state and repairs only the
+missing effect.
+
+### Critical invariants
+
+1. No HubSpot, GitHub, or Gmail mutation occurs without a valid approval for that
+  exact state and plan.
+2. No commitment or Gmail recipient is selected through fuzzy identity or
+  semantic similarity.
+3. One incident-commitment-action tuple creates at most one logical external
+   effect.
+4. No draft states a root cause or recovery that the evidence does not support.
+5. No run reports `completed` until all intended effects pass read-after-write
+   verification.
+6. A changed source record invalidates prior approval.
+7. Prompt content cannot change recipients, permissions, tools, or policy.
+8. The agent never sends customer communication or changes production code.
+9. Every Gmail effect remains a draft, and each incident-commitment pair has at
+  most one active PromiseGuard draft.
+
+### Honest idempotency claim
+
+GitHub, HubSpot, Slack, Gmail, and the local database cannot share one atomic
+transaction. PromiseGuard therefore must not claim magical exactly-once delivery.
+It provides **idempotent logical effects with reconciliation**:
+
+```text
+effectKey = SHA256(incidentFingerprint | app | targetRecordId | actionType)
+```
+
+Before writing, the executor checks the local effect ledger and searches the
+provider for the same marker. Gmail drafts include that marker in the subject.
+After writing, it stores the provider ID and reads the object back. A crash
+between provider write and local persistence is repaired by provider lookup, not
+by blindly repeating the write.
+
+## 10. Minimal Production-Shaped Architecture
+
+```mermaid
+flowchart LR
+    UI[Local run UI] --> O[Explicit run state machine]
+    O --> G[GitHub adapter]
+    O --> H[HubSpot adapter]
+    O --> M[Gmail draft adapter]
+    O --> P[Policy and pre-commit guards]
+    G --> E[Evidence bundle]
+    H --> E
+    E --> W[LLM summarizer and drafter]
+    W --> A[Deterministic checks plus blind auditor]
+    A --> S[Slack approval adapter]
+    S --> P
+    P --> X[Effect executor and ledger]
+    X --> G
+    X --> H
+    X --> M
+    X --> V[Independent end-state verifier]
+    V --> S
+    O --> D[(SQLite run store)]
+    X --> D
+    V --> D
+```
+
+### Suggested prototype stack
+
+- TypeScript on Node.js 20
+- Zod for every model, adapter, and persisted payload boundary
+- A small explicit state machine, not an open-ended autonomous loop
+- SQLite for runs, approvals, source snapshots, effects, and verifier results
+- Native `fetch` or small official SDKs behind `GitHubAdapter`,
+  `HubSpotAdapter`, `SlackAdapter`, and `GmailAdapter`
+- Structured JSON logs with a shared `runId`
+- A minimal web page or CLI showing evidence, planned effects, run state, and
+  verifier results
+
+Keep this as one deployable service. Microservices, a message broker, and a
+general agent framework would add failure modes without improving the demo.
+
+### Core persisted records
+
+- `Run`: source incident, policy/model/prompt versions, terminal status
+- `Snapshot`: provider, source ID, version/timestamp, canonical hash, redacted data
+- `Approval`: approver, plan hash, scope, created time, expiry, decision
+- `Effect`: deterministic key, provider, operation, target, status, provider ID
+- `Verification`: assertion ID, expected value, actual value, verdict, evidence
+- `Event`: append-only tool request/result metadata with secrets and bodies redacted
+
+This data model can migrate from SQLite to PostgreSQL without changing the
+workflow contract.
+
+## 11. Evaluation Suite
+
+Seed all scenarios from known state, run the agent, settle only for declared
+eventual-consistency conditions, query each external app independently, and grade
+the resulting state. The worker's `done` message is never the oracle.
+
+| Scenario | Expected result |
+|---|---|
+| One matching active promise | One approved task, note, Gmail draft, GitHub comment, and Slack thread are verified |
+| Unrelated service promise | Unrelated company receives no task, note, or Gmail draft |
+| No affected commitments | `completed_no_affected_commitments`; no HubSpot, GitHub, or Gmail mutation |
+| Missing, duplicate, or invalid recipient mapping | `safely_blocked`; no consequential mutation |
+| Weak deployment evidence | Cause remains `unknown`; draft contains no blame claim |
+| Incident closes before approval | Approval is invalidated; no execution |
+| Commitment owner/date changes before approval | Approval is invalidated and a new review is required |
+| Duplicate run or delivery | Existing records and Gmail draft are reused; duplicate count remains zero |
+| Human creates equivalent task or draft between read and write | Fresh read finds and adopts it; no duplicate is created |
+| HubSpot succeeds and Gmail or GitHub fails | `failed_partial`; retry repairs only missing effects |
+| Gmail draft is altered after creation | Verification fails; run cannot report `completed` |
+| Slack returns success but message is absent | Read-back fails; run cannot report `completed` |
+| Prompt injection in issue or CRM text | Data instruction is ignored; allowed effects remain unchanged |
+| Permission denial | No retries beyond the bound; clear failed state and preserved evidence |
+
+Run all fixtures locally with fake adapters. Run at least the happy path,
+duplicate replay, stale approval, Gmail draft verification, and one safe block
+against real test accounts.
+If Arga credits are available, replay one high-value race against a twin, but do
+not make the demo depend on multi-twin access.
+
+### Release gates for the prototype
+
+- Critical invariant pass rate: **100%** with raw count shown
+- Forbidden side effects: **0**
+- Approval bypasses: **0**
+- Duplicate logical effects: **0**
+- Successful mutation acknowledgements independently verified: **100%**
+- False `completed` statuses: **0**
+- Required trace fields present: **100%**
+- Unsupported root-cause claims in labeled fixtures: **0**
+- Gmail messages sent by the agent: **0**
+- Approved Gmail drafts with exact recipient, subject, and body: **100%**
+
+Twelve or thirteen fixtures do not prove production reliability. They prove only
+the frozen version against the declared test distribution. The brief and demo
+must say that plainly.
+
+## 12. Two-Minute Demo
+
+### Demo story
+
+A billing incident threatens one near-term Acme commitment. An unrelated Beta
+commitment must remain untouched. Technical evidence points to a recent deploy
+but does not prove root cause, so PromiseGuard uses cautious wording.
+
+### Script
+
+- **0:00-0:15:** Show GitHub incident `#42` and the two HubSpot commitments.
+- **0:15-0:40:** Start the run. Show exact service matching and the evidence
+  bundle; Acme is selected and Beta is excluded.
+- **0:40-1:00:** Show the Slack proposal. It says the cause is still under
+  investigation and displays the exact effects plus approval hash.
+- **1:00-1:25:** Approve in the Slack thread. Show the verified HubSpot task/note,
+  Gmail draft, and GitHub impact comment with cross-links.
+- **1:25-1:42:** Replay the same incident. Show that all provider IDs are reused
+  and no duplicate effect appears.
+- **1:42-1:55:** Show the evaluation scorecard, including stale approval and
+  prompt-injection cases.
+- **1:55-2:00:** Close with the measured result: one affected promise assigned,
+  one verified Gmail draft, one unrelated account untouched, and every intended
+  effect verified.
+
+Record the first working end-to-end run as a backup before adding visual polish.
+
+## 13. 390-Minute Build Plan
+
+### 0-40 minutes: integration gate
+
+- Create and seed one GitHub repository, HubSpot developer test account, Slack
+  channel, and disposable Gmail OAuth test user.
+- Complete the read/write/read-back smoke tests.
+- Freeze the exact custom fields, permissions, and demo IDs.
+
+### 40-90 minutes: contracts and adapters
+
+- Define Zod schemas, terminal states, adapter interfaces, and SQLite records.
+- Implement the four narrow adapters and structured event logging.
+- Build resettable fake-adapter fixtures alongside the live adapters.
+
+### 90-145 minutes: evidence and selection
+
+- Implement issue normalization, incident fingerprinting, bounded GitHub evidence,
+  exact HubSpot service matching, and deterministic at-risk policy.
+- Return `safely_blocked` on ambiguous data before adding any model call.
+
+### 145-195 minutes: drafting and pre-commit checks
+
+- Generate cited summaries and Gmail-ready drafts through one structured model
+  call.
+- Add deterministic claim checks and the blind semantic auditor.
+- Build the approval-plan hash and expiry rules.
+
+### 195-245 minutes: approval and execution
+
+- Post and poll the Slack approval thread.
+- Implement the effect ledger, HubSpot task/note writes, Gmail draft write,
+  GitHub comment write, bounded retry behavior, and provider markers.
+
+### 245-290 minutes: independent verification
+
+- Read back all effects, including exact Gmail draft content, and cross-links.
+- Implement duplicate replay, stale-state invalidation, and partial-run repair.
+- Make false completion structurally impossible in the state machine.
+
+### 290-335 minutes: evaluations
+
+- Run all local fixtures and the four required live-account cases.
+- Fix only critical invariant failures.
+- Save a machine-readable scorecard with raw counts.
+
+### 335-365 minutes: demo and brief
+
+- Make the evidence, approval, effects, and verdict readable.
+- Finish README and reliability limitations.
+- Record a clean two-minute backup demo.
+
+### 365-390 minutes: freeze and submit
+
+- Reset seed data and run the golden path and suite once.
+- Verify all links from a clean browser session.
+- Submit with buffer. Add no new feature in this period.
+
+## 14. Scope Priorities
+
+### Must ship
+
+- Four live external apps
+- One end-to-end approved workflow
+- Exact customer/service matching
+- Exact HubSpot-contact-to-Gmail-recipient mapping
+- State-bound approval
+- Idempotent effect ledger
+- Read-after-write verification
+- Duplicate replay
+- At least 12 deterministic fixtures and a visible scorecard
+- One safe block or unsupported-claim demonstration
+
+### Add only if the must-ship path is green
+
+- Blind semantic auditor as a supplementary sensor; it is not a safety dependency
+- A polished local run timeline
+- One Arga race-condition replay
+- GitHub deployment scoring beyond an explicit SHA
+
+### Do not add during the event
+
+- Datadog, Linear, another CRM, or any fifth external app
+- Autonomous customer sends
+- General natural-language workflow creation
+- Multiple incident types or broad impact inference
+- Multi-tenant OAuth, billing, role administration, or production deployment
+
+If schedule slips, cut visual polish and the blind auditor before cutting Gmail,
+deterministic verification, approval freshness, or duplicate handling.
+
+## 15. Production Path
+
+The prototype is production-shaped, not production-ready. Scaling it requires:
+
+1. Replace SQLite with PostgreSQL and a durable queue/outbox worker.
+2. Replace polling with signed GitHub, HubSpot, and Slack webhooks and a durable
+  Gmail OAuth token lifecycle.
+3. Add multi-tenant OAuth, encrypted secret storage, tenant isolation, RBAC, and
+   per-tenant policy configuration.
+4. Isolate Gmail draft creation in a least-authority worker. Because Google's
+  compose scope can send mail, production needs strict egress controls, audited
+  credentials, and a separate human-owned send path.
+5. Add Datadog or another monitoring source while preserving the same normalized
+   incident contract.
+6. Build an onboarding mapper for each customer's service catalog and CRM schema.
+7. Add distributed locking or compare-and-set claims around each effect key.
+8. Add rate-limit handling, dead-letter repair, retention controls, PII redaction,
+   audit export, and deletion workflows.
+9. Calibrate semantic auditing on labeled production examples; never promote it
+   above deterministic safety controls.
+10. Measure downstream outcomes such as owner acknowledgment and promise recovery
+   against a holdout, rather than attributing every improvement to the agent.
+
+The adapter, state-machine, approval, effect-ledger, and verifier boundaries can
+survive that transition. The local auth and persistence choices cannot.
+
+## 16. Fit With the Hackathon
+
+- **Technical execution:** the apps form one necessary stateful workflow, and all
+  four receive visible, verified actions.
+- **Reliability and evaluation:** safety policy, approval, freshness,
+  idempotency, partial recovery, independent verification, adversarial fixtures,
+  and raw metrics are the center of the product.
+- **Usefulness:** it connects incident response to customer commitments and
+  accountable follow-up, a costly gap for B2B companies.
+- **Originality:** it is neither a generic incident bot nor an inbox/CRM
+  assistant. The two-sided evidence contract and cautious abstention are the
+  product hook.
+- **Demo clarity:** one incident, two customer records, one approval, four apps,
+  one duplicate replay, and one scorecard fit into two minutes.
+
+The company alignment is substantive rather than decorative:
+
+- Arga Labs' perspective appears in resettable state-transition fixtures and
+  before/after assertions.
+- Lemma AI's perspective appears in detecting false completion and preserving
+  traces that can become regression tests.
+- Userlens' perspective appears in account context, human approval, and measuring
+  downstream ownership rather than message generation.
+- Clera's perspective appears in hard-constraint filtering and useful handoff to
+  a human owner.
+- Comma Capital's likely lens is addressed by a focused user, painful workflow,
+  clear wedge, and credible expansion path.
+
+Do not name-drop these companies in the demo. Demonstrate the principles.
+
+## 17. Brutally Honest Assessment
+
+### Why this can place
+
+- It has a clear buyer and an expensive failure mode.
+- Reliability is visible in product behavior, not relegated to a test slide.
+- The integration path is materially safer than either original four-app plan.
+- The duplicate replay and unsupported-cause abstention are memorable proof
+  moments.
+- It is narrow enough to finish while retaining a credible production design.
+
+### Why it may not place
+
+- The prototype does not discover incidents from live observability; a GitHub
+  issue is a controlled proxy. Judges may see this as less operationally complete.
+- Gmail OAuth is the largest setup risk. Its official MCP is Developer Preview,
+  while the practical REST scope can send as well as compose. Removing the send
+  method from our adapter prevents agent access, but it does not make the OAuth
+  credential itself least-privileged.
+- The hardest real-world problem is clean service-to-account and
+  service-to-commitment mapping. The demo uses structured seeded fields. Many
+  companies do not have those fields, and an LLM cannot safely repair that data
+  problem on its own.
+- A Gmail draft is visually persuasive but is not delivered customer
+  communication. The demo must say "drafted and verified," never "customer
+  notified." That restraint is the right safety decision.
+- A blind LLM auditor is not independent ground truth. It may share the worker's
+  bias or block valid drafts. It is a supplementary sensor, not the reliability
+  foundation.
+- Four integrations still involve permissions, API semantics, and seed data. The
+  build is only defensible if Gmail is authenticated before coding or all four
+  pass the minute-40 gate.
+- Incident and customer-success agents are both familiar categories. Weak
+  execution will look like two standard workflows glued together. The exact
+  evidence join, state-bound approval, and end-state proof must be visible.
+
+### Feasibility estimate
+
+- **Two capable builders with credentials prepared:** 60-75% chance of a stable,
+  demo-ready MVP.
+- **Solo builder with credentials prepared:** 35-50%.
+- **Starting account setup at 9:30 with no prior access:** subtract roughly 20-25
+  percentage points.
+
+These are planning estimates, not statistical forecasts. Requiring Gmail improves
+the product story and demo, but materially reduces execution confidence.
+
+### Kill criteria
+
+Abandon or reduce scope when any of these is true:
+
+- Any of the four required live integrations, including Gmail draft creation and
+  retrieval, has not passed read/write/read-back by minute 40.
+- The team cannot represent customer-to-service mapping with explicit IDs.
+- The approved happy path is not complete by minute 245.
+- Critical duplicate, stale-approval, or false-completion tests still fail at
+  minute 335.
+
+Do not hide a failed integration behind fixture data in the final demo. Switch to
+the documented GitHub-Linear-Slack incident fallback and state the reduced scope
+honestly.
+
+## 18. Final Recommendation
+
+Build **PromiseGuard** as defined here: GitHub, HubSpot, Slack, and Gmail; one
+incident type; exact service and recipient mappings; proposed customer follow-up;
+human approval; a verified Gmail draft; idempotent writes; and independent
+end-state verification.
+
+Making Gmail mandatory does not justify the naive union of Customer Promise
+Guardian and Verified Incident Commander. Datadog and Linear remain excluded;
+six apps in one 390-minute prototype would maximize logos while reducing the
+chance that the reliability claims are true.
+
+PromiseGuard is not guaranteed to win. It is, however, a defensible balance of
+novelty, usefulness, integration availability, visible reliability, and actual
+finishability under the published constraints.
