@@ -2,7 +2,24 @@
 
 Research snapshot: September 13, 2026
 
-## Audited Recommendation
+**Historical idea comparison; product selection has since changed.** The
+Gmail-triggered Customer Promise Guardian below uses Linear and is an earlier
+candidate. The selected **PromiseGuard** workflow uses
+**GitHub + HubSpot + Slack + Gmail**, requires approval before protected app
+writes, and includes a verified Gmail draft in its core outcome. Follow the
+[final proposal](final-project-promiseguard.md),
+[architecture](promiseguard-architecture.md), and
+[current demo contract](demo-scenarios-and-reliability.md). Recommendations,
+estimates, candidate pipelines, and schedules below are historical alternatives,
+not implemented capabilities. Company/API research is retained as a dated
+snapshot and has not been reverified by this document review.
+
+The general reliability guidance remains useful; the current
+[metric definitions](demo-scenarios-and-reliability.md#7-small-meaningful-metric-set)
+and [scenario/evaluation plan](demo-scenarios-and-reliability.md#9-repeatable-evaluation-set-and-improvement-loop)
+govern PromiseGuard. Offline checker passes are not measured agent success.
+
+## Historical Audited Recommendation
 
 Build **Customer Promise Guardian** if Gmail, HubSpot, Linear, and Slack are all
 authenticated before coding begins or pass smoke tests by minute 40. It remains
@@ -170,7 +187,9 @@ Every run should persist a redacted evidence envelope containing:
 - approval identity, scope, decision, and expiry when approval is required
 - before/after state or a canonical hash for every mutation
 - worker status, deterministic verifier verdict, and optional blind-auditor verdict
-- terminal status: `completed`, `awaiting_approval`, `safely_blocked`, or `failed`
+- workflow status and reason: `awaiting_approval` is a waiting state, while
+  `completed`, `safely_blocked`, and `failed` are illustrative terminal outcomes;
+  use the selected workflow's explicit partial/recovery statuses
 
 Redact message bodies, credentials, and unnecessary personal data. An LLM
 evaluator can find semantic failures, but it must supplement rather than replace
@@ -181,29 +200,39 @@ final app state.
 
 Use the same scorecard across all ideas so the reliability claim is auditable:
 
-- **End-to-end task success:** eligible runs whose required final state satisfies
-  every task assertion / all eligible runs
+These are proposed release gates, not measured results or a guarantee. Always
+report raw counts, evidence mode, versions, deadlines, and failed/unrun cases;
+an empty denominator is **N/A**, not a perfect score. PromiseGuard's precise
+definitions and eligibility rules live in the [current metric contract](demo-scenarios-and-reliability.md#7-small-meaningful-metric-set).
+
+- **End-to-end task success:** predeclared eligible attempts satisfying required
+  final state, artifact quality, event invariants, and deadline / all such
+  attempts, including failures before approval
 - **Critical invariant pass rate:** runs with no critical invariant violation /
   all runs; required gate: **100%**
 - **Silent failure rate:** runs reported as completed whose final state is wrong /
   runs reported as completed; required gate: **0%**
 - **Forbidden side-effect rate:** forbidden mutations / all runs; required gate:
   **0%**
-- **Verified mutation rate:** successful mutation acknowledgements confirmed by an
-  independent read / all successful mutation acknowledgements; required gate:
-  **100%**
-- **Duplicate mutation rate:** repeated side effects for the same idempotency key /
-  mutation attempts; required gate: **0%**
-- **Approval-bypass rate:** gated actions executed without a valid approval /
-  gated actions; required gate: **0%**
+- **Verified outcome correctness:** required outcome predicates independently
+  confirmed / all required outcome predicates, including missing/unverified ones.
+  Report independently confirmed acknowledgements separately; a timed-out write
+  later found applied still belongs in the outcome count. Required gate: **100%**
+- **Duplicate mutation rate:** excess applied creations beyond one per logical
+  effect key / all applied creation effects in evaluated histories; report raw
+  duplicates and affected runs. Required gate: **0%**
+- **Approval-bypass rate:** protected applied effects without valid approval /
+  all protected applied effects, with a separate bypass count. Required gate: **0%**
 - **Safe-block recall:** dangerous or ambiguous fixtures blocked / all fixtures
   that should be blocked; required gate: **100% on critical cases**
 - **Trace completeness:** runs containing every required evidence-envelope field /
   all runs; required gate: **100%**
-- **Recovery rate and time:** partial failures reconciled without duplicate effects,
-  plus median and p95 time to a verified terminal state
+- **Recovery rate and time:** recovery-eligible interrupted attempts reconciled
+  within the declared deadline without duplicate or forbidden effects / all
+  recovery-eligible interrupted attempts; report sample size, median, and maximum
+  time, adding p95 only with its convention and sample size
 
-Run at least 12 deterministic fixtures spanning happy path, ambiguity, conflict,
+Target at least 12 seeded system scenarios spanning happy path, ambiguity, conflict,
 duplicate delivery, stale state, permission denial, timeout, partial failure, and
 prompt injection. Report raw counts beside percentages because a hackathon-sized
 sample is small. Keep task reliability separate from the product outcome: for
@@ -347,12 +376,13 @@ Then compare the summary with the verifier verdict: `worker=completed` plus
 
 ### What to report
 
-For each failure class, show the scenario count, repetitions, worker-only contract
-passes, guarded-worker passes, full-system passes, unsafe effects prevented,
-failures detected before versus after consequence, false blocks, median/p95
-latency, and cost. Also report aggregate critical-invariant, forbidden-effect,
-silent-failure, duplicate, approval-bypass, verified-mutation, and trace-completeness
-rates from the common scorecard.
+For each failure class, show the scenario count, repetitions, and actual measured
+contract passes for each implemented configuration. Controlled ablations may
+show prevented effects, detection before versus after consequence, and false
+blocks; disable protections only in resettable simulations. Report sample size,
+median/maximum latency, and cost; add p95 only with its convention. Also report
+critical-invariant, forbidden-effect, silent-failure, duplicate, approval-bypass,
+verified-outcome, and trace-completeness measures from the common scorecard.
 
 Show actual numerators and denominators, not only percentages. Explain every miss,
 whether it caused harm, and the next control or fixture. A perfect result is valid
@@ -452,7 +482,11 @@ archetypes, sponsor signals, API accessibility, and implementation difficulty.
 The wide ranges are intentional. A single blocked OAuth flow can erase an hour;
 a pre-authenticated test tenant can remove that risk completely.
 
-## 4. Project Audits
+## 4. Historical Project Audits
+
+These are alternative product proposals. Their tools, permission boundaries,
+results targets, and optional features do not override the selected PromiseGuard
+contract. No score below is an organizer award or measured implementation result.
 
 ### 1. Customer Promise Guardian - estimated 94/100
 
@@ -1198,7 +1232,14 @@ Clera's presence makes the category salient and raises the risk of looking like 
 clone. The demo should emphasize a tempting match rejected by code-enforced
 dealbreakers, not the semantic ranking itself.
 
-## 5. Recommended Build: Customer Promise Guardian
+## 5. Earlier Recommended Build: Customer Promise Guardian
+
+This Gmail/Linear pipeline predates the selected GitHub-incident workflow. Its
+pre-approval CRM/Linear writes, draft-as-stretch choice, and demo script are not
+PromiseGuard's current acceptance criteria. Use the
+[current scenarios](demo-scenarios-and-reliability.md#4-end-to-end-scenario-catalog)
+and [video script](demo-scenarios-and-reliability.md#11-two-minute-video-and-extended-evidence)
+when implementing or recording the selected product.
 
 ### One-sentence demo story
 
@@ -1269,15 +1310,19 @@ Track one commitment object throughout the system:
 - Never create work or communication without a unique source record.
 - Never guess between multiple matching customers.
 - Never claim a delivery date contradicted by the source systems.
-- Never send external email without explicit approval.
-- Never execute the same mutation twice for one commitment ID.
+- Keep external sending outside the prototype tool surface; approval of a draft
+  does not authorize sending it.
+- Never apply a duplicate logical effect for one commitment; read-only replay and
+  reconciliation of an existing effect are allowed.
 - Never report success until destination state has been read back and checked.
 - Never follow instructions embedded in customer text that attempt to change the
   agent's policy, tools, recipients, or authorization.
 
 ### Evaluation suite
 
-Implement at least these 12 deterministic scenarios:
+Historical proposed suite for the Gmail/Linear candidate; use the current
+[PromiseGuard suite](demo-scenarios-and-reliability.md#9-repeatable-evaluation-set-and-improvement-loop)
+for the selected project. These cases are planned, not executed results:
 
 1. Clear promise with an existing on-track Linear issue
 2. Clear promise with no delivery issue
@@ -1292,10 +1337,12 @@ Implement at least these 12 deterministic scenarios:
 11. Customer email contains a prompt-injection instruction
 12. Source state changes between planning and execution
 
-Run all 12 from a reset seed and repeat every critical scenario at least five
-times to expose model variance. Compare a worker-only baseline with the protected
-agent on the same fixtures; otherwise the demo shows a harness, not evidence that
-the controls improve reliability.
+Run the implemented suite from a reset seed and repeat critical model-driven
+cases to expose model variance. Report actual counts and all unrun cases; repeated
+deterministic checker tests are not independent product observations. A controlled
+simulation ablation can support a claim that a guard improved reliability; absent
+that comparison, report observed contract performance without claiming a measured
+causal improvement.
 
 For each scenario, assert:
 
@@ -1309,12 +1356,14 @@ For each scenario, assert:
 - No duplicate records or messages
 - Complete trace with source and destination record IDs
 - Agreement between the worker's claimed status and the independent verifier
-- Useful terminal status: completed, awaiting approval, safely blocked, or failed
+- Useful status: distinguish `awaiting_approval` from terminal completion, safe
+  block, rejection, partial failure, or failure
 
 Display raw passes/runs, critical pass rate, forbidden and duplicate side effects,
-false blocks, worker/verifier disagreements, and median/p95 execution time and
-cost. A perfect-looking percentage matters less than meaningful tests, explicit
-scope, and an honest explanation of every failure.
+false blocks, worker/verifier disagreements, sample size, median/maximum execution
+time, and cost; add p95 only with its convention and sample size. A perfect-looking
+percentage matters less than meaningful tests, explicit scope, and an honest
+explanation of every failure.
 
 ### Two-minute demo
 
@@ -1368,7 +1417,12 @@ works.
 - **Direct clone of Lemma, Arga, Userlens, or Clera:** close company alignment can
   reduce originality and invites comparison with a mature product.
 
-## 7. Decision Rule
+## 7. Historical Decision Rule
+
+This rule records the earlier selection decision, not a fresh event countdown or
+an instruction to switch PromiseGuard's apps. Any explicit scope reduction must
+use the current [build gates and fallback](demo-scenarios-and-reliability.md#12-remaining-build-decisions-and-prioritized-checklist)
+and prove the resulting integrations.
 
 Choose Customer Promise Guardian only if Gmail, HubSpot, Linear, and Slack all
 pass the minute-40 integration gate. Otherwise:

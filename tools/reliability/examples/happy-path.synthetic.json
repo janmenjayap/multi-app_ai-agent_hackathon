@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "evidenceKind": "synthetic_fixture",
+  "scenarioId": "synthetic-approved-happy-path",
+  "observedTerminalStatus": "completed",
+  "expected": {
+    "terminalStatus": "completed",
+    "effects": [
+      {"app": "github", "effectKey": "demo:inc42:impact", "required": true, "requiredFields": {"incidentId": "inc_42", "commitmentId": "promise_101", "hubspotTaskId": "task-1", "gmailDraftId": "draft-1"}},
+      {"app": "hubspot", "effectKey": "demo:inc42:promise101:task", "required": true, "requiredFields": {"kind": "task", "commitmentId": "promise_101", "ownerId": "owner-7", "status": "NOT_STARTED"}},
+      {"app": "hubspot", "effectKey": "demo:inc42:promise101:note", "required": true, "requiredFields": {"kind": "note", "commitmentId": "promise_101", "taskId": "task-1"}},
+      {"app": "slack", "effectKey": "demo:inc42:thread", "required": true, "requiredFields": {"channelId": "demo-channel", "githubCommentId": "comment-1", "hubspotTaskId": "task-1", "hubspotNoteId": "note-1", "gmailDraftId": "draft-1", "verdict": "verified"}},
+      {"app": "gmail", "effectKey": "demo:inc42:promise101:draft", "required": true, "requiredFields": {"to": "incident-contact@example.invalid", "cc": [], "bcc": [], "subject": "Billing incident update [demo:inc42:promise101:draft]", "bodySha256": "b46a9c8187983461fff4508b2546b93feba821191eb248753094b32ad5f88c8f", "isDraft": true}}
+    ],
+    "protectedRecords": [
+      {"app": "github", "id": "incident-42"},
+      {"app": "hubspot", "id": "commitment-101"},
+      {"app": "hubspot", "id": "commitment-102"}
+    ]
+  },
+  "snapshots": [
+    {
+      "app": "github", "complete": true,
+      "before": [{"id": "incident-42", "effectKey": null, "fields": {"serviceId": "billing-api", "state": "open", "cause": "unknown"}}],
+      "after": [
+        {"id": "incident-42", "effectKey": null, "fields": {"serviceId": "billing-api", "state": "open", "cause": "unknown"}},
+        {"id": "comment-1", "effectKey": "demo:inc42:impact", "fields": {"incidentId": "inc_42", "commitmentId": "promise_101", "hubspotTaskId": "task-1", "gmailDraftId": "draft-1"}}
+      ]
+    },
+    {
+      "app": "hubspot", "complete": true,
+      "before": [
+        {"id": "commitment-101", "effectKey": null, "fields": {"serviceId": "billing-api", "companyId": "company-acme", "ownerId": "owner-7", "status": "active"}},
+        {"id": "commitment-102", "effectKey": null, "fields": {"serviceId": "analytics-api", "companyId": "company-beta", "ownerId": "owner-8", "status": "active"}}
+      ],
+      "after": [
+        {"id": "commitment-101", "effectKey": null, "fields": {"serviceId": "billing-api", "companyId": "company-acme", "ownerId": "owner-7", "status": "active"}},
+        {"id": "commitment-102", "effectKey": null, "fields": {"serviceId": "analytics-api", "companyId": "company-beta", "ownerId": "owner-8", "status": "active"}},
+        {"id": "task-1", "effectKey": "demo:inc42:promise101:task", "fields": {"kind": "task", "commitmentId": "promise_101", "ownerId": "owner-7", "status": "NOT_STARTED"}},
+        {"id": "note-1", "effectKey": "demo:inc42:promise101:note", "fields": {"kind": "note", "commitmentId": "promise_101", "taskId": "task-1"}}
+      ]
+    },
+    {
+      "app": "slack", "complete": true, "before": [],
+      "after": [{"id": "thread-1", "effectKey": "demo:inc42:thread", "fields": {"channelId": "demo-channel", "githubCommentId": "comment-1", "hubspotTaskId": "task-1", "hubspotNoteId": "note-1", "gmailDraftId": "draft-1", "verdict": "verified"}}]
+    },
+    {
+      "app": "gmail", "complete": true, "before": [],
+      "after": [{"id": "draft-1", "effectKey": "demo:inc42:promise101:draft", "fields": {"to": "incident-contact@example.invalid", "cc": [], "bcc": [], "subject": "Billing incident update [demo:inc42:promise101:draft]", "bodySha256": "b46a9c8187983461fff4508b2546b93feba821191eb248753094b32ad5f88c8f", "isDraft": true}}]
+    }
+  ],
+  "ledger": {
+    "complete": true,
+    "events": [
+      {"operation": "create", "actor": "executor", "app": "slack", "effectKey": "demo:inc42:thread", "outcome": "applied", "providerId": "thread-1"},
+      {"operation": "create", "actor": "executor", "app": "hubspot", "effectKey": "demo:inc42:promise101:task", "outcome": "applied", "providerId": "task-1"},
+      {"operation": "create", "actor": "executor", "app": "hubspot", "effectKey": "demo:inc42:promise101:note", "outcome": "applied", "providerId": "note-1"},
+      {"operation": "create", "actor": "executor", "app": "gmail", "effectKey": "demo:inc42:promise101:draft", "outcome": "applied", "providerId": "draft-1"},
+      {"operation": "create", "actor": "executor", "app": "github", "effectKey": "demo:inc42:impact", "outcome": "applied", "providerId": "comment-1"},
+      {"operation": "read", "actor": "verifier", "app": "hubspot", "effectKey": "demo:inc42:promise101:task", "outcome": "verified", "providerId": "task-1"},
+      {"operation": "read", "actor": "verifier", "app": "hubspot", "effectKey": "demo:inc42:promise101:note", "outcome": "verified", "providerId": "note-1"},
+      {"operation": "read", "actor": "verifier", "app": "gmail", "effectKey": "demo:inc42:promise101:draft", "outcome": "verified", "providerId": "draft-1"},
+      {"operation": "read", "actor": "verifier", "app": "github", "effectKey": "demo:inc42:impact", "outcome": "verified", "providerId": "comment-1"},
+      {"operation": "read", "actor": "verifier", "app": "slack", "effectKey": "demo:inc42:thread", "outcome": "verified", "providerId": "thread-1"}
+    ]
+  }
+}

@@ -2,6 +2,14 @@
 
 Research snapshot: September 13, 2026
 
+**Using this document for PromiseGuard:** the official requirements below are
+the event baseline. The selected project uses **GitHub + HubSpot + Slack + Gmail**;
+its [demo and reliability contract](demo-scenarios-and-reliability.md) supplies
+the canonical scenarios, metrics, evidence requirements, and remaining-time plan.
+The application is not implemented; existing checker tests are synthetic evidence
+checks, not working-app results. The full-day schedule here is a planning template,
+not a fresh 390-minute budget. Older refund/Linear ideas are historical alternatives.
+
 > Important status: the event site still shows **Register Now**, but the linked
 > Google Form currently says it is no longer accepting responses. If the team is
 > not already registered, confirm admission with the organizers immediately.
@@ -87,8 +95,13 @@ Keep the brief to roughly one page unless the organizers specify otherwise:
 1. **System:** trigger, planner/orchestrator, tools, state store, and user surface
 2. **External apps:** what is read and what is changed in each app
 3. **Reliability controls:** schema validation, permissions, approvals,
-   idempotency, retries, timeouts, and rollback/compensation
-4. **Evaluation:** scenarios, assertions, metrics, and results
+   idempotency, bounded retries/timeouts, and partial-failure reconciliation.
+   State which effects can be repaired or compensated; PromiseGuard preserves
+   applied work and escalates incompatible changes rather than promising rollback.
+4. **Evaluation:** frozen release/fixtures, expected outcomes, raw passed/attempted
+   counts by live/simulated/checker mode, first-proposal semantic quality, and
+   failed/unrun cases. Approval or a corrected final draft does not establish
+   correctness of the model's original output.
 5. **Known limits:** unsupported requests and what safely happens on ambiguity
 
 ## 4. Judging Rubric
@@ -110,6 +123,13 @@ Show repeatable tests and failure handling. Strong evidence includes:
 - Explicit handling of partial failure, timeout, and ambiguous identity
 - Human approval before high-impact or external-facing actions
 - A visible scorecard: pass rate, forbidden side effects, and latency
+
+These are evidence recommendations, not claims that a demo automatically proves
+them. Show source-grounded model decisions as well as system controls. Freeze
+expected artifacts independently of the worker; test missing/incorrect outcomes,
+invalid approvals, incomplete reads, concurrent replay, and safe partial stops.
+An LLM auditor is a supplementary check; independently labeled drafts and actual
+provider state remain necessary. Report targets separately from observations.
 
 ### Usefulness: 20%
 
@@ -191,8 +211,10 @@ definition of done.
 - Require approval for irreversible, financial, or customer-facing actions.
 - Stop safely when identity, authorization, or source data is ambiguous.
 
-**Exit condition:** retries cannot duplicate the main side effect, and an
-ambiguous request causes no external mutation.
+**Exit condition:** replay/concurrency fixtures show no duplicate main effect,
+unknown write outcomes reconcile or stop safely, and ambiguity causes no
+protected mutation. PromiseGuard may post an allowlisted Slack clarification;
+that is a coordination write and must still be logged.
 
 ### 12:10-1:00 PM: Build the evaluation harness
 
@@ -208,7 +230,8 @@ ambiguous request causes no external mutation.
 - Fix the failures with the greatest user impact first.
 - Ensure the workflow clearly saves time, prevents loss, or improves an outcome.
 - Add one technically interesting behavior, such as evidence reconciliation or
-  compensation after a partial failure.
+  verified resumption after a partial failure. Demonstrate compensation only if
+  explicitly supported; never imply every remote effect can be undone.
 - Remove any feature that does not strengthen the two-minute story.
 
 **Exit condition:** all critical scenarios pass and the value proposition is
@@ -279,6 +302,9 @@ For a four-person team:
 For a solo or two-person team, keep the same responsibilities but reduce the
 workflow to three apps and one golden path. Do not reduce evaluation coverage to
 make room for a broad interface.
+For the selected PromiseGuard submission, four apps are part of the promised
+outcome. Reducing to three requires an explicit scope change, revised acceptance
+criteria, and reevaluation; simply dropping Gmail does not pass its golden path.
 
 ## 9. Publicly Unspecified Items to Confirm
 
@@ -316,7 +342,11 @@ they differ from this document.
 - [ ] Final state is verified in each destination app
 - [ ] Happy path succeeds from a clean start
 - [ ] Duplicate, ambiguous, denied, and partial-failure cases are tested
+- [ ] Model grounding, incomplete reads, approval bypass, and concurrent replay
+      are evaluated against fixed expectations
 - [ ] Evaluation results and traces are visible
+- [ ] Actual counts, first-proposal quality, failed/unrun cases, and evidence mode
+      are disclosed; synthetic checker passes are not labeled agent success
 - [ ] Working project/repository link opens for a logged-out reviewer
 - [ ] Two-minute demo plays and stays under the limit
 - [ ] Short system and reliability brief is included

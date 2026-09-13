@@ -1,12 +1,16 @@
 # PromiseGuard: Final Hackathon Project Proposal
 
-**Status:** Recommended build
+**Status:** Proposed build. The repository currently contains planning documents
+and an offline evidence checker with synthetic examples/tests. The app, agents,
+adapters, approval flow, and durable recovery are not implemented or demonstrated.
+See the [demo and reliability plan](demo-scenarios-and-reliability.md) for current
+evidence, acceptance criteria, and the canonical evaluation suite.
 
 **Decision:** Combine the customer-commitment reasoning from Customer Promise
 Guardian with the incident evidence, deduplication, and verification model from
 Verified Incident Commander. Do not combine all of their integrations.
 
-The executable version uses four external apps in its critical path:
+The planned executable version uses four external apps in its critical path:
 
 - **GitHub** for the incident and engineering evidence
 - **HubSpot** for customer commitments, account ownership, and follow-up work
@@ -23,9 +27,8 @@ credible path to production.
 
 > PromiseGuard turns a production incident into verified customer follow-up: it
 > reconciles GitHub evidence with active promises in HubSpot, asks for approval
-> in Slack, creates owned recovery work and a Gmail draft, and proves that every
-> intended action happened exactly once without making unsupported claims to
-> customers.
+> in Slack, creates owned recovery work and a Gmail draft, and verifies the
+> intended records while checking for duplicates and unsupported customer claims.
 
 ## 2. The Product
 
@@ -110,7 +113,8 @@ each operation.
 
 This is less fashionable than making every call through MCP, but it is more
 reliable. The judges require at least three external apps and evidence of correct
-action, not three MCP servers. PromiseGuard provides real writes in four apps.
+action, not three MCP servers. The planned PromiseGuard workflow requires real
+writes in four apps; those integrations still need implementation and live proof.
 
 ### Minimum permissions
 
@@ -123,8 +127,9 @@ action, not three MCP servers. PromiseGuard provides real writes in four apps.
 - Gmail: request the narrowest scope accepted by `users.drafts.create` and
   `users.drafts.get`, currently `gmail.compose`. That provider scope can also send
   mail, so the prototype uses a disposable test user and an adapter that exposes
-  only create/get/delete-draft operations. No send operation or generic Gmail
-  request method exists in the agent's tool surface.
+  only find/list/create/get-draft operations. Draft deletion belongs to a separate
+  operator-only fixture cleanup utility. The planned agent tool surface must have
+  no send, delete, or generic Gmail request method.
 
 ### Forty-minute integration gate
 
@@ -168,6 +173,11 @@ These exclusions are part of the safety and delivery strategy, not a roadmap
 failure.
 
 ## 6. Seeded Demo World
+
+The [demo plan's shared fixture](demo-scenarios-and-reliability.md#3-shared-demo-world-and-input-conventions)
+defines the canonical seed and policy clock. The examples below are illustrative;
+no listed account, issue, deployment, or contact is claimed to exist. Map logical
+IDs to real test-account IDs and use current valid timestamps for live runs.
 
 ### GitHub
 
@@ -225,19 +235,28 @@ before a local crash.
 1. **Receive the goal.** The operator supplies one GitHub incident URL through a
    minimal local UI or CLI.
 2. **Normalize the incident.** Fetch the issue by immutable repository and issue
-   ID. Validate the issue-template fields and compute an incident fingerprint
-   from repository ID, incident ID, service ID, and environment.
+   ID in an allowlisted repository. Validate the issue-template fields and pin
+   incident ID, service ID, and environment to that immutable source identity.
+   Reject malformed, closed, unsupported-environment, future-dated, or explicitly
+   non-customer-impacting incidents before consequential writes. Replays look up
+   the original source identity first; edited identity fields must block rather
+   than create a new run or effect namespace.
 3. **Snapshot technical state.** Read current issue state, referenced deployment,
    commit metadata, and a bounded set of workflow results. Save source IDs,
    timestamps, and canonical hashes.
 4. **Snapshot customer state.** Query active HubSpot commitments using exact
   `service_id`, then validate company association, owner, designated contact,
   recipient email, status, and due date. Zero matches is a valid no-action
-  result. Missing or conflicting identifiers produce `safely_blocked`.
+  result only after complete paginated retrieval. Missing or conflicting
+  identifiers produce `safely_blocked`; an incomplete query or failed page is
+  `failed` before protected writes, or `failed_partial` when effects are already
+  applied or uncertain, never evidence that no commitments are affected.
 5. **Apply deterministic policy.** A commitment is at risk only if the service ID
    matches exactly, its status is active, it has one owner, and its due date falls
-   within the configured impact horizon. The model cannot add accounts to this
-   set.
+   within the configured impact horizon, with boundary/timezone behavior defined
+   by the versioned policy. Validate every candidate before excluding it; do not
+   silently drop malformed billing commitments to produce a clean selected set.
+   The model cannot add accounts to this set.
 6. **Prepare evidence and drafts.** The model summarizes the bounded GitHub
   evidence and drafts a customer-update email for each eligible account. Every
   factual statement must cite a source field. If causal evidence is below
@@ -252,11 +271,19 @@ before a local crash.
 8. **Request approval in Slack.** Post the evidence, selected commitments,
    proposed HubSpot, GitHub, and Gmail effects, and human-readable draft. The
    approval hash binds the incident fingerprint, source versions, selected record
-   IDs, exact recipient, subject, body, and planned effects.
+   IDs, policy version, exact recipient, subject, body, and planned effects. Read
+   back the proposal before accepting a decision. Accept only an authorized human
+   in the configured workspace/channel/thread, with a unique prefix resolving to
+   the current full hash. Ignore bot, unrelated, superseded, and malformed replies.
+   An explicit rejection invalidates that revision; a later approval of the same
+   revision cannot revive it.
 9. **Revalidate at the commit boundary.** After approval, re-read the GitHub issue,
-  HubSpot commitments, and designated contacts. Any changed status, owner,
-  recipient, due date, selected set, or draft invalidates approval and returns
-  to review.
+  full eligible HubSpot commitment set, owners, and designated contacts. Any
+  changed status, owner, recipient, due date, selected set, or draft invalidates
+  approval and returns to review. Check approval expiry and rejection before
+  every remaining mutation;
+  refresh source reads when the configured freshness window expires. Retain
+  already-applied effects and follow the partial-replan rule below.
 10. **Execute through an effect ledger.** Create or reuse one HubSpot follow-up
   task and one internal note per selected commitment, create or reuse the exact
   Gmail draft, then create or update one GitHub impact comment. Each effect has
@@ -305,25 +332,34 @@ A run is `completed` only when:
 - every selected HubSpot commitment matches the exact affected service and has
   one company, owner, and designated contact;
 - every factual draft claim is supported or explicitly marked unknown;
-- one non-expired approval covers the exact source versions, records, recipient,
-  Gmail draft, and effects executed;
+- each HubSpot/GitHub/Gmail mutation was covered at dispatch by a valid approval for its exact plan
+  revision, source versions, records, recipient, and Gmail draft;
 - all HubSpot tasks and notes, the Gmail draft, and the GitHub impact comment are
   independently read back and match the approved plan;
 - the Slack thread links to every verified destination record; and
 - no forbidden or duplicate effect appears in the event ledger.
 
-Allowed terminal states are:
+Allowed terminal outcomes are:
 
 - `completed`
 - `completed_no_affected_commitments`
-- `awaiting_approval`
 - `safely_blocked`
 - `failed_partial`
 - `failed`
 
+`awaiting_approval` is a persisted, resumable checkpoint, not a completed task or
+terminal success. A run can remain there until its human-response deadline;
+expiry/rejection must produce an explicit outcome without further consequential
+writes; preserve and report any effects already applied in a partial run.
+
 `failed_partial` is more honest than pretending distributed external writes are
 atomic. On retry, the reconciler reads actual provider state and repairs only the
-missing effect.
+missing effect under a valid current approval. If source drift changes the
+required payload of an already-applied task, note, or draft, preserve it and
+report `failed_partial` for manual review. A new approval alone must not silently
+overwrite or duplicate old work. Retain each effect's original plan revision;
+completion must validate the selected active plan and any compatible adopted
+effects, without presenting superseded effects as current-plan success.
 
 ### Critical invariants
 
@@ -336,7 +372,7 @@ missing effect.
 4. No draft states a root cause or recovery that the evidence does not support.
 5. No run reports `completed` until all intended effects pass read-after-write
    verification.
-6. A changed source record invalidates prior approval.
+6. A changed relevant source field or eligible set invalidates prior approval.
 7. Prompt content cannot change recipients, permissions, tools, or policy.
 8. The agent never sends customer communication or changes production code.
 9. Every Gmail effect remains a draft, and each incident-commitment pair has at
@@ -345,8 +381,8 @@ missing effect.
 ### Honest idempotency claim
 
 GitHub, HubSpot, Slack, Gmail, and the local database cannot share one atomic
-transaction. PromiseGuard therefore must not claim magical exactly-once delivery.
-It provides **idempotent logical effects with reconciliation**:
+transaction. PromiseGuard therefore must not claim exactly-once delivery.
+Its intended contract is **idempotent logical effects with reconciliation**:
 
 ```text
 effectKey = SHA256(incidentFingerprint | app | targetRecordId | actionType)
@@ -356,7 +392,13 @@ Before writing, the executor checks the local effect ledger and searches the
 provider for the same marker. Gmail drafts include that marker in the subject.
 After writing, it stores the provider ID and reads the object back. A crash
 between provider write and local persistence is repaired by provider lookup, not
-by blindly repeating the write.
+by blindly repeating the write. An empty search after an uncertain write is not
+proof of absence: perform bounded settling reads and require manual review if
+the outcome remains unknown. Adopt only one exact field/association match; block
+on multiple or conflicting candidates. Local serialization prevents competing
+local executors, but cannot eliminate races with external humans or other apps.
+Describe observed duplicate-free runs with their evidence scope, not universal
+exactly-once delivery.
 
 ## 10. Minimal Production-Shaped Architecture
 
@@ -386,18 +428,23 @@ flowchart LR
 
 ### Suggested prototype stack
 
-- TypeScript on Node.js 20
+- TypeScript on Node.js 24, matching the [architecture](promiseguard-architecture.md)
 - Zod for every model, adapter, and persisted payload boundary
-- A small explicit state machine, not an open-ended autonomous loop
+- LangGraph `StateGraph` for the same bounded workflow, with LangChain structured
+  calls for the analyst, drafter, and auditor; see the
+  [fine-grained architecture](promiseguard-architecture.md)
 - SQLite for runs, approvals, source snapshots, effects, and verifier results
 - Native `fetch` or small official SDKs behind `GitHubAdapter`,
   `HubSpotAdapter`, `SlackAdapter`, and `GmailAdapter`
-- Structured JSON logs with a shared `runId`
+- Durable local events with a shared `runId`, masked LangSmith trace inspection,
+  and a separate read-only reliability monitor joining traces with app evidence
 - A minimal web page or CLI showing evidence, planned effects, run state, and
   verifier results
 
-Keep this as one deployable service. Microservices, a message broker, and a
-general agent framework would add failure modes without improving the demo.
+Keep this as one deployable service. LangGraph expresses the existing state
+machine; LangChain supplies the scoped model interfaces. A message broker,
+microservices, or additional orchestration frameworks remain outside the demo.
+These framework and monitoring choices are proposed, not implemented features.
 
 ### Core persisted records
 
@@ -413,6 +460,11 @@ workflow contract.
 
 ## 11. Evaluation Suite
 
+The [canonical suite and scoring rules](demo-scenarios-and-reliability.md#9-repeatable-evaluation-set-and-improvement-loop)
+define named case families, variants, repetitions, modes, and denominators. Keep
+that suite authoritative instead of treating the overview below as a second test
+count. No product evaluation result is available yet.
+
 Seed all scenarios from known state, run the agent, settle only for declared
 eventual-consistency conditions, query each external app independently, and grade
 the resulting state. The worker's `done` message is never the oracle.
@@ -427,7 +479,7 @@ the resulting state. The worker's `done` message is never the oracle.
 | Incident closes before approval | Approval is invalidated; no execution |
 | Commitment owner/date changes before approval | Approval is invalidated and a new review is required |
 | Duplicate run or delivery | Existing records and Gmail draft are reused; duplicate count remains zero |
-| Human creates equivalent task or draft between read and write | Fresh read finds and adopts it; no duplicate is created |
+| Human creates equivalent task or draft before reconciliation | Adopt one exact match; block conflicting/multiple matches; disclose the remaining read/write race |
 | HubSpot succeeds and Gmail or GitHub fails | `failed_partial`; retry repairs only missing effects |
 | Gmail draft is altered after creation | Verification fails; run cannot report `completed` |
 | Slack returns success but message is absent | Read-back fails; run cannot report `completed` |
@@ -447,17 +499,23 @@ not make the demo depend on multi-twin access.
 - Approval bypasses: **0**
 - Duplicate logical effects: **0**
 - Successful mutation acknowledgements independently verified: **100%**
-- False `completed` statuses: **0**
+- False completion statuses or premature success messages: **0**
 - Required trace fields present: **100%**
-- Unsupported root-cause claims in labeled fixtures: **0**
+- Unsupported factual claims in labeled first proposals: **0**
+- First proposals pass required grounding/completeness/handoff labels; human
+  corrections and regenerations are recorded separately from eventual success
 - Gmail messages sent by the agent: **0**
 - Approved Gmail drafts with exact recipient, subject, and body: **100%**
 
-Twelve or thirteen fixtures do not prove production reliability. They prove only
-the frozen version against the declared test distribution. The brief and demo
-must say that plainly.
+Passing the declared fixtures does not prove production reliability. Results
+apply only to the frozen version, actual attempts, and declared test distribution.
+The brief and demo must say that plainly.
 
 ## 12. Two-Minute Demo
+
+Use the [canonical recording script](demo-scenarios-and-reliability.md#11-two-minute-video-and-extended-evidence)
+for the final cut. The outline below is the product story; show only behavior
+actually executed, and label live, prerecorded real, and synthetic evidence.
 
 ### Demo story
 
@@ -486,6 +544,10 @@ Record the first working end-to-end run as a backup before adding visual polish.
 
 ## 13. 390-Minute Build Plan
 
+This is the original full-window estimate, not a fresh allocation of time. Use
+the [current demo-plan priorities](demo-scenarios-and-reliability.md#12-remaining-build-decisions-and-prioritized-checklist)
+and actual remaining time. Recording and submission time are reserved.
+
 ### 0-40 minutes: integration gate
 
 - Create and seed one GitHub repository, HubSpot developer test account, Slack
@@ -507,8 +569,8 @@ Record the first working end-to-end run as a backup before adding visual polish.
 
 ### 145-195 minutes: drafting and pre-commit checks
 
-- Generate cited summaries and Gmail-ready drafts through one structured model
-  call.
+- Generate cited summaries and Gmail-ready drafts through the architecture's
+  separate bounded analyst and drafter calls.
 - Add deterministic claim checks and the blind semantic auditor.
 - Build the approval-plan hash and expiry rules.
 
@@ -526,7 +588,8 @@ Record the first working end-to-end run as a backup before adding visual polish.
 
 ### 290-335 minutes: evaluations
 
-- Run all local fixtures and the four required live-account cases.
+- Run the canonical local suite and five required live-account cases: golden
+  path, replay, stale approval, draft verification, and a safe block.
 - Fix only critical invariant failures.
 - Save a machine-readable scorecard with raw counts.
 
@@ -554,7 +617,8 @@ Record the first working end-to-end run as a backup before adding visual polish.
 - Idempotent effect ledger
 - Read-after-write verification
 - Duplicate replay
-- At least 12 deterministic fixtures and a visible scorecard
+- The canonical evaluation suite and an actual-results scorecard with failed and
+  unrun cases visible
 - One safe block or unsupported-claim demonstration
 
 ### Add only if the must-ship path is green

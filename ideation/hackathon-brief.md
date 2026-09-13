@@ -1,5 +1,16 @@
 # Multi-App AI Agent Hackathon — Working Brief
 
+**Historical planning brief, superseded for implementation.** The refund/Stripe
+plans below record early ideation, not the selected product or verified results.
+PromiseGuard now uses **GitHub + HubSpot + Slack + Gmail**; use the
+[final proposal](final-project-promiseguard.md),
+[architecture](promiseguard-architecture.md), and
+[demo and reliability contract](demo-scenarios-and-reliability.md) for current
+scope. Event, company, and vendor details below are retained as dated research;
+they are not newly verified by this document review. Current implementation and
+measured-checker status are in the demo plan; no live agent reliability result
+is established by this brief.
+
 Virtual · Sunday, September 13, 2026 · 9:00 AM–5:00 PM Pacific
 Build window: 9:30 AM–4:00 PM Pacific (6.5 hours). Submission closes at 4:00 PM.
 
@@ -57,35 +68,47 @@ Arga and Lemma are the same problem from opposite ends: test before production v
 
 ---
 
-## 5. Core architecture (the reusable spine)
+## 5. Historical architecture and reliability corrections
 
 Only two of the four components are LLMs.
 
 | Component | What it is | LLM? |
 |---|---|---|
 | **Worker** | Ordinary tool-calling agent doing the real task. Ends with a structured self-report. | Yes |
-| **Adversary** | Seeded script that mutates service state at fixed step boundaries. Perturbations are data files. | No |
-| **Verifier** | Hard invariants in code, checked against end state. | No |
-| **Auditor** | Receives instruction + S0 + S1 (raw service state). No trace, no self-report. Judges whether the end state is consistent with the task being done correctly. | Yes |
+| **Adversary** | Seeded script that mutates service state at named synchronization boundaries. Perturbations are data files. | No |
+| **Verifier** | Hard invariants in code, checked against S0, S1, and attributed event history. | No |
+| **Auditor** | Optional semantic review of the instruction and independent evidence, without the worker's self-report. Its verdict can be wrong. | Yes |
 
-**The adapter layer is the trick.** Every tool call goes through one wrapper: execute → log to trace → `step++` → `adversary.maybe_fire(step)` → return. Without it you cannot inject a reproducible race condition.
+**Adapter boundary:** validate authorization and fresh state before protected
+effects; persist intent, execute, and record outcomes. Inject faults at named
+boundaries such as `after_source_snapshot`, with fixed fixtures and a declared
+clock. A tool-step counter alone does not establish reproducibility or safety.
 
 **Run loop:**
 ```
-seed world → snapshot S0 → worker runs (adversary fires at step N)
-→ snapshot S1 → verifier(S1) + auditor(instruction, S0, S1)
-→ worker said "done" vs auditor finding → disagreement = silent failure
+seed world → snapshot S0 → worker proposes → deterministic commit guards
+→ approved execution with attributed event history → independent snapshot S1
+→ verifier(S0, S1, events, expected contract) + optional semantic review
+→ completed claim with failed outcome contract = false completion
 ```
 
-**Why the auditor is blind:** a trace-reader can be fooled by an agent whose trace looks clean. An end-state auditor never sees the agent's story about what it did. This is the honest originality claim. State it plainly; don't name Lemma.
+**Why separate evidence from self-report:** assess source facts, artifacts, and
+provider state independently of the worker's story. An auditor disagreement is
+a review signal, not proof of failure; agreement is not proof of correctness.
+Final state alone can conceal an earlier forbidden effect. Pre-execution guards
+prevent effects; post-run checks detect failures and cannot undo harm.
 
 **Perturbation classes (pick 6):** stale read · phantom write · silent 200 · partial failure · duplicate approval · out-of-order arrival · ambiguous match · vanishing record
 
-**Scoreboard:** same seed run twice, baseline worker alone vs. worker + verifier + auditor. Table of caught vs. missed per class.
+**Scoreboard:** use controlled ablations with the same model, prompt, tools,
+execution mode, fixtures, and budgets. Distinguish prevention, detection before
+effect, detection after effect, and false blocks. Remove safety layers only in
+resettable simulations. Use the current [metric definitions](demo-scenarios-and-reliability.md#7-small-meaningful-metric-set)
+and [evaluation plan](demo-scenarios-and-reliability.md#9-repeatable-evaluation-set-and-improvement-loop).
 
 ---
 
-## 6. Three primary plans
+## 6. Historical candidate plans — not the selected PromiseGuard scope
 
 ### Plan A — Prove the agent is right *(Arga + Lemma)*
 Worker does a real task; adversary + verifier + blind auditor around it.
@@ -101,18 +124,24 @@ Agent watches a customer base across billing, comms, support; surfaces accounts 
 - Hits: usefulness, demo clarity, reliability via evals
 - Risk: close to a judge's own product.
 
-### Plan C — Approval-gated action agent with proof harness *(all three)* ← recommended
-Worker does refund reconciliation across Slack approvals, Stripe refunds/disputes, GitHub issues — but only ever **proposes**. Verifier + auditor check the proposal before a human sees it. Clean → Slack routine approval. Flagged → Slack escalation with auditor's finding. Rejected findings persist as rules. Same adversary + scoreboard underneath.
-- Apps: Slack, GitHub, Stripe (twin)
-- Proof: baseline double-refunds silently; yours proposes the same double refund, auditor catches it, Slack escalation explains why, you reject on camera, then scoreboard
-- Hits: every criterion and every company's stated thesis
-- Risk: widest scope. Cut perturbations first, then memory. Never cut auditor or approval flow.
+### Plan C — Approval-gated action agent with proof harness *(original recommendation)*
+Worker proposes refund reconciliation across Slack, Stripe, and GitHub.
+Deterministic policy checks precede review and any approved execution; an optional
+auditor flags semantic concerns. Rejected findings require reviewed corrections
+and must not silently weaken policy.
 
-**Verifier invariants for refund reconciliation:**
-1. Every Slack-approved refund has exactly one Stripe refund
-2. No Stripe refund exists without a Slack approval
-3. Refund amount equals approved amount
-4. Every dispute has a linked GitHub issue
+- Apps: Slack, GitHub, Stripe (twin)
+- Proposed proof: a resettable fixture exposes a duplicate-effect risk; the guarded workflow blocks it, explains the evidence, and verifies the effect ledger. Results must be measured, with the same execution mode in both comparison arms.
+- Hits: every criterion and every company's stated thesis
+- Risk: widest scope. Cut optional memory and semantic auditing before deterministic policy, approval, and outcome verification.
+
+**Illustrative refund contract:** predeclare eligible approvals, fixture scope,
+required effects, and allowed pre-existing refunds. In propose-only mode, assert
+the correct proposal and zero protected mutations. In approved execution mode,
+assert one authorized effect per eligible intent, exact approved amount/currency,
+no duplicate or forbidden agent effect in event history, and required issue links
+for in-scope disputes. Do not require unrelated historical refunds to have a new
+Slack approval or compare a proposing worker with an executing baseline.
 
 ---
 
@@ -164,12 +193,14 @@ Chief-of-staff whose headline output is: "47 things reviewed, acted on 3, escala
 ### 7b. Reliability layers (bolt onto any worker)
 
 **R1. Chaos adversary + blind auditor** ★★★ *(Plan A / Plan C core)*
-Seeded state mutations at fixed steps; LLM auditor sees only instruction + S0 + S1, no trace. Disagreement = silent failure.
-· any 3 apps · caught vs baseline per perturbation class · reliability, originality · the auditor is the last thing to cut
+Seeded mutations at named boundaries; deterministic outcome and event checks,
+with optional independent semantic review. Disagreement prompts review.
+· any 3 apps · prevention/detection/false blocks per class · reliability, originality · preserve hard guards and verification before the optional auditor
 
 **R2. Live eval run** ★★★
-20 scripted tasks, run in the demo, 18/20 pass, name the 2 that don't and why.
-· any · the results table itself · reliability, credibility · none; do this regardless of everything else
+Run a predeclared suite and display actual passes/attempts with each miss and
+reason. Label live, simulated-agent, and checker-only evidence separately.
+· any · actual measured results · reliability, credibility · use the current evaluation plan; no success count is assumed
 
 **R3. Dry-run / propose-only mode** ★★★
 Agent builds a proposed action list and stops. Nothing writes without approval. Foundation for the Userlens-style human gate.
@@ -180,24 +211,31 @@ Feed the agent a Slack message or email containing "ignore previous instructions
 · any app where tool output can contain text · injection suite pass rate · reliability; 20-second memorable beat · none; very cheap
 
 **R5. Undo agent / compensating transactions** ★★
-Takes a completed run's trace and reverses every side effect: refund reversed, issue reopened, message deleted. Verified by snapshot diff returning to S0.
-· Stripe (twin), GitHub, Slack, Calendar · empty diff after undo; flag the one non-invertible action before executing · reliability, originality · must be honest about non-invertible actions in the brief
+Uses supported compensating actions for explicitly reversible effects and
+verifies the resulting state. Irreversible refunds, delivered notifications, and
+other observed consequences cannot be erased by resetting a fixture or deleting
+a record; preserve event history and report residual effects.
+· app-specific · verified compensation plus residual effects · reliability · never claim general rollback
 
 **R6. Differential execution** ★★
-Same task with two models (or two prompts); diff the end states, not the outputs. Disagreement = failure detector with no ground truth.
+Same task with two models (or two prompts); compare outcomes and artifacts.
+Disagreement is a review signal requiring independent adjudication.
 · any · agreement rate per task type; disagreement on exactly the adversary-corrupted case · reliability, originality · both models can be wrong the same way; brief must say so. ~45 min once adapter exists
 
 **R7. Trace replay** ★★★
-Record every tool call; replay a run deterministically. Doubles as demo insurance.
-· any · replayed run matches recorded run · execution · none
+Replay recorded responses against frozen state and clock to test orchestration.
+A playback is not a new model-driven or real-app run; do not reissue recorded
+mutations against live accounts as a recording fallback.
+· any · replay matches the recorded fixture · execution · distinguish playback, simulation, and new live execution
 
 **R8. Calibrated agent** ★★
 Ledger of every proposal and human decision. Reports precision per category and self-adjusts escalation thresholds ("90% right on refunds, 40% on churn → escalate churn").
 · any with a Slack approval channel · precision chart improving as corrections accumulate · reliability, "correct it once" for Userlens · needs enough seeded decisions to show a trend
 
 **R9. Correction memory** ★★★
-When a human rejects an auditor finding or edits a proposal, persist it as a rule and apply next run. Small file write.
-· any · one correction changing the next run's output on camera · Userlens's stated principle · none
+Record a rejected finding or edited proposal as a candidate correction; require
+authorized review, explicit scope, and a regression check before applying it.
+· any · one reviewed correction changing the next run · customer usefulness · never silently alter authority or hard policy
 
 **R10. Same task, two roles** ★★
 Scoped permissions. Identical instruction as "support rep" vs "finance admin" produces different behavior. Combine with R4 injection suite.
@@ -227,18 +265,22 @@ Two agents negotiate a calendar slot or a refund amount over Slack/email on beha
 
 **Safest strong build:** W1 + R1 + R2 + R3 + R4 + D2
 **If ahead:** add R9, then R6, then R5
-**If behind:** keep W1 + R3 + D2 + auditor from R1; drop the adversary
+**If behind:** retain the useful worker, deterministic policy/approval gates, and independent outcome verification; defer optional auditor, memory, and extra perturbations
 **Most distinctive if you have a team:** W5 + R1 + R3 + D2
 
 ---
 
-## 8. Two-minute demo
+## 8. Historical refund demo outline
+
+Use the current [PromiseGuard video script](demo-scenarios-and-reliability.md#11-two-minute-video-and-extended-evidence)
+for the submission. This archived refund outline is illustrative, not footage or
+an observed result; keep any unsafe comparison in resettable simulations.
 
 | Time | Beat |
 |---|---|
 | 0:00–0:15 | Instruction and world state on screen as text. One sentence. |
-| 0:15–0:50 | Baseline. Adversary mutates a refund between read and write. Agent double-refunds. Reports done. Nothing crashed. |
-| 0:50–1:35 | Yours, same seed. Worker proposes. Auditor disagrees. Slack escalation appears with the finding. Reject on camera. |
+| 0:15–0:50 | Show an actually observed simulated baseline failure and its independent evidence, if available. |
+| 0:50–1:35 | Same fixture and execution mode with guards enabled. Show the observed block or completion, attributed effects, and reviewer explanation. |
 | 1:35–1:50 | Scoreboard. |
 | 1:50–2:00 | One line on generalising. Stop. |
 
@@ -251,10 +293,10 @@ Screen capture with voiceover, one take, no slides. Make the Slack escalation re
 ## 9. Reliability brief (≈2 pages)
 
 1. **Threat model** — silent success, stale read then blind write, tool returns 200 with wrong body, ambiguous instruction, partial completion
-2. **Verifier contract** — what it asserts about end state, why end-state beats trace inspection
-3. **Why the auditor is blind** — one paragraph, stated plainly
+2. **Verifier contract** — expected effects, S0/S1 and attributed event assertions, plus independent artifact review
+3. **Optional semantic auditor** — independent evidence, limitations, and disagreement adjudication
 4. **Where the human sits** — what the agent never does without approval, escalation vs routine approval, how a rejection changes future runs
-5. **Results** — caught vs baseline per perturbation class, as a table. Real numbers. Name what you missed.
+5. **Results** — actual counts by evidence mode and perturbation class; prevention, detection timing, false blocks, and misses
 6. **What this does not catch** — non-invertible actions, adversary corrupting the fixture, auditor and worker sharing model bias, cost of the double run
 7. **Future work** — differential execution across models, one paragraph
 
@@ -262,7 +304,7 @@ Section 6 is what makes an infra engineer trust you.
 
 ---
 
-## 10. Repo layout
+## 10. Historical proposed repo layout — not implemented inventory
 
 ```
 README.md          # one command, one screenshot, runs seeded demo with zero credentials
@@ -279,12 +321,12 @@ Commit incrementally. One command, no auth, is the single most underrated thing 
 
 ---
 
-## 11. Form answers
+## 11. Historical draft form answers — do not submit as current scope
 
 **What will you build?**
 > A reconciliation agent for refunds. It reads refund requests in Slack, refund and dispute state in Stripe, and linked bug issues in GitHub, then reports only the cases where the three disagree — approved in Slack but never issued, issued with no approval, a recurring dispute with no tracking issue.
 >
-> The failure I'm designing against is silent success: a human issues a refund between the agent's read and its write, the agent issues a second one, reports "done," and nothing crashes. So it ships with a seeded adversary that mutates service state mid-run, and a blind auditor that reconstructs the expected end state from raw service state alone, with no access to the agent's trace. Disagreement between them is the failure signal.
+> The failure to test is silent success: a concurrent action creates a duplicate risk while the agent still reports completion. The proposed test plan uses seeded faults, pre-execution guards, independent state reads, attributed event history, and expected outcomes. An optional semantic auditor adds review; its disagreement alone does not establish failure.
 
 **Which 3+ external apps?**
 > Slack, Stripe, GitHub. Chosen because the failure mode needs writes with real blast radius rather than three read-only feeds. Refunds are irreversible and cost money, which makes silent double-execution the worst case worth engineering against. Slack carries the human approval the agent reconciles against, and GitHub is where the underlying cause should already be tracked.
@@ -297,5 +339,5 @@ Don't name Arga's product in the form; mention twins in README and brief as a te
 
 - Team registration doesn't dilute the interview (goes to top-3 *teams*).
 - Name it something a person would say aloud. "Mismatch" or "Loose Ends" beats "AgentFlow AI."
-- Kill checkpoint: if the worker isn't proposing correctly end to end by midway, drop the adversary and ship worker + auditor + approval flow. Still a complete submission.
+- Historical kill checkpoint: if time is short, narrow the supported workflow while preserving deterministic authorization and outcome verification. A proposal and auditor alone do not establish a working multi-app submission.
 - The work should look like convergence with the judges' theses, not courtship. Never name their products in the demo.
