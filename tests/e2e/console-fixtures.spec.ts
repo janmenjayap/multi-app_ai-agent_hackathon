@@ -15,7 +15,7 @@ for (const viewport of VIEWPORTS) {
     await page.setViewportSize(viewport);
     const pageErrors: string[] = [];
     page.on('pageerror', error => pageErrors.push(error.message));
-    await page.goto('/');
+    await page.goto('/?preview=1');
 
     for (const scenario of REVIEW_SCENARIOS) {
       await page.getByRole('combobox', { name: 'Preview scenario' }).selectOption(scenario);
@@ -74,7 +74,8 @@ test('keyboard validation, local reopen, and disclosures preserve focus without 
   page.on('request', request => {
     if (request.method() !== 'GET' || /\/api\/runs(?:\/|$)/.test(request.url())) commands.push(request.url());
   });
-  await page.goto('/');
+  await page.goto('/?preview=1');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(WAITING.run!.incident.title);
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Skip to incident' })).toBeFocused();
 

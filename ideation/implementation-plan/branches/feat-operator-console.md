@@ -104,3 +104,19 @@ The current offline monitor baseline is reusable implementation, not proof of th
 future app. Claim live behavior only when the commit-specific independent evidence
 exists; otherwise leave its completion gate open.
 
+
+
+## U02 reviewed handoff — September 14, 2026
+
+U02 implementation is `93a6cdfe16eb9692dc683879fcba88520e18f9c9`, following U01
+`8e151ac42e5471849e4719afd96af247a1bb36d7` and B04
+`7b13aa0b15c558526bfe9a25c15cf1649f101f14`, under conventions **1.2** and API
+schema **2**. Codex root/P4 owns the joined change; delegated `u02_components`
+accepted frontend behavior and `u02_contract_review` reviewed API/lifecycle
+integration. The user authorized the main merge and both remote branch pushes.
+
+See the [U02 receipt](../commits/U02.md#reviewed-implementation-and-verification-receipt)
+for exact commands, synthetic evidence, preview-test path exceptions, and open
+R01/Q05 production session, assembled workflow and collected report gates.
+U02 renders saved measurements when supplied and unavailable otherwise. It does
+not establish live provider/model execution or human semantic review.
