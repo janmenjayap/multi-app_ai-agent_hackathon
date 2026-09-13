@@ -566,9 +566,12 @@ claims; displaying an auditor stage that never ran is unacceptable.
 
 **Expected:** a human authorizes exact content and business state; expiry,
 rejection, revision changes, or source drift prevent protected dispatch.
-**Actual:** **PLANNED**; the checker compares declarations, not authentic approval.
+**Actual:** **IMPLEMENTED / VERIFIED OFFLINE** for B03/B05/I04 module boundaries.
+B05 `c6b8dcde61d7e997a22918730be2f396556a8268` authenticates durable provider
+observations, exact decisions and fresh sources. R01 live wiring and B06 protected
+execution remain separate gates; see the [B05 receipt](commits/B05.md#completion-receipt).
 **Owner/commits:** backend/integration owners; B03, B05, I04.
-Proposed paths: `src/server/policy/`, `src/server/adapters/slack*`.
+Implemented paths: `src/server/policy/`, `src/server/adapters/slack*`.
 
 - [ ] Canonical plan/body hash vectors cover changed recipient/body/owner/
   association and normalization; the displayed prefix uniquely names a full hash.
@@ -580,6 +583,11 @@ Proposed paths: `src/server/policy/`, `src/server/adapters/slack*`.
   protected write, including midway through a batch and after restart.
 - [ ] Pre-write drift requests a new review; incompatible partial effects remain
   visible as `failed_partial` and require operator remediation.
+
+Offline B05 evidence: 19 approval/S3/restart/dispatch tests, 75 affected app
+regressions and 7 Slack adapter tests pass, as do typecheck and both builds. The
+checklist above remains the integrated/live acceptance gate; synthetic passes do
+not establish an actual human Slack approval or completed four-app execution.
 
 ### C09 — Four provider adapters and approved effects
 
