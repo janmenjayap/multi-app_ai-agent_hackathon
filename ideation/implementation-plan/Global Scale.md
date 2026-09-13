@@ -94,6 +94,23 @@ was added with a rejection case. Round 1 can use the reviewed local F02 base.
 Remote publication is not performed; origin/main still points to the pulled
 planning commit. No live or downstream capability is advanced by this merge.
 
+## U01 execution update — September 14, 2026
+
+The fixture-backed operator console is merged into local main at
+`8e151ac42e5471849e4719afd96af247a1bb36d7` under conventions 1.2 and F02 API
+schema 2. It renders **35 explicitly synthetic examples** with exact drafts,
+Slack review status, stable stages, effects/readbacks and separate reliability
+assessments. U02 live transport remains pending.
+
+Fresh isolated verification passed **12 component tests**, **5 browser tests**,
+typecheck and both builds. Browser checks include all three required viewports,
+keyboard focus and automated accessibility; nine state/viewport screenshots and
+an overview are generated locally. See the
+[U01 completion receipt](commits/U01.md#completion-receipt) for exact commands,
+reviewed foundation wiring exceptions, evidence paths, props and remaining gaps.
+The user authorized this local merge. Concurrent backend/evaluation work was
+excluded. No remote push, live workflow or actual human review is claimed.
+
 ## 1. Historical repository baseline
 
 - Git HEAD: `90a3793d1c1f9dea927372cbd055a0cd27c6ca2f` (`Add PromiseGuard ideation`).
@@ -455,14 +472,16 @@ exact plan, all three named model roles plus deterministic control stages, Slack
 review status, persisted effects/readbacks, provider links, and reliability
 coverage in the fixed hierarchy from the
 [frontend pipeline and reliability guide](09-frontend-pipeline-and-reliability.md).
-**Actual:** **PLANNED**; no frontend or backend HTTP implementation.
+**Actual:** **PARTIAL / VERIFIED SYNTHETIC U01**; F01/F02 scaffold/contracts and
+the fixture console are merged. Durable authenticated API wiring and live
+workflow observation remain U02 work.
 **Owner/commits:** product owner; U01/U02, optional U03, with F02/B04/Q05 handoffs.
 Proposed paths: `src/web/`, `src/server/api/`.
 
-- [ ] F01 supplies the tested React/Vite, component/accessibility, browser and
+- [x] F01 supplies the tested React/Vite, component/accessibility, browser and
   same-origin static-serving toolchain; F02 supplies versioned run/event/report
   DTOs, stable state vocabulary, redaction and revision/cursor semantics.
-- [ ] U01's fixture-driven one-screen console uses the frozen API before live
+- [x] U01's fixture-driven one-screen console uses the frozen API before live
   integration. Waiting, approval wait, safe block, failure, failed partial,
   completed-but-unverified, no affected commitments, offline, expired session,
   unavailable report, zero labels and N/A are visibly distinct and synthetic
