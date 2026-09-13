@@ -34,7 +34,14 @@ export interface WorkflowNodeContext {
   transaction<T>(action: (writer: ApplicationWriter) => T): T;
 }
 export type WorkflowNode = (context: WorkflowNodeContext) => Promise<WorkflowNodeResult>;
+export interface PreparedWorkflowIdentity {
+  runId: WorkflowState['runId'];
+  evaluationAttemptId: WorkflowState['evaluationAttemptId'];
+  runtimeAttemptId: WorkflowState['runtimeAttemptId'];
+}
 export interface PreparedWorkflow {
+  /** Allocated by the driver before preflight; cannot be supplied by an API caller. */
+  identity?: PreparedWorkflowIdentity;
   incident: IncidentIdentity;
   title: string;
   /** Prepared preflight/S0 receipts are persisted here; this callback cannot perform I/O. */
@@ -48,7 +55,7 @@ export interface WorkflowDriverOptions {
   checkpoints: WorkflowCheckpoints;
   configuration: ExecutionMode;
   /** Resolve provider-owned immutable IDs and prepare real receipts outside the transaction. */
-  prepare(incidentUrl: string, operatorId: string): Promise<PreparedWorkflow>;
+  prepare(incidentUrl: string, operatorId: string, identity: PreparedWorkflowIdentity): Promise<PreparedWorkflow>;
   nodes: Partial<Record<StageId, WorkflowNode>>;
   /** B05/B08 inject read-only reconciliation here. No create operation is replayed automatically. */
   reconcile?: WorkflowNode;
@@ -193,7 +200,11 @@ export class WorkflowDriver {
     const preparationKey = JSON.stringify([incidentUrl, operatorId]);
     let pending = this.#prepared.get(preparationKey);
     if (!pending) {
-      pending = this.options.prepare(incidentUrl, operatorId);
+      const identity = { runId: RunIdSchema.parse(randomUUID()),
+        evaluationAttemptId: EvaluationAttemptIdSchema.parse(randomUUID()),
+        runtimeAttemptId: RuntimeAttemptIdSchema.parse(randomUUID()) };
+      pending = this.options.prepare(incidentUrl, operatorId, Object.freeze(identity))
+        .then(prepared => ({ ...prepared, identity }));
       this.#prepared.set(preparationKey, pending);
     }
     let prepared: PreparedWorkflow;
@@ -210,8 +221,8 @@ export class WorkflowDriver {
       if (state.ownerId !== operatorId) throw new WorkflowCommandError('forbidden');
       return this.#result(state, 'reopened');
     }
-    const runId = RunIdSchema.parse(randomUUID()), evaluationAttemptId = EvaluationAttemptIdSchema.parse(randomUUID());
-    const runtimeAttemptId = RuntimeAttemptIdSchema.parse(randomUUID()), at = this.#at();
+    const { runId, evaluationAttemptId, runtimeAttemptId } = prepared.identity!;
+    const at = this.#at();
     const state = WorkflowStateSchema.parse({ schemaVersion: 2, runId, ownerId: operatorId, evaluationAttemptId,
       runtimeAttemptId, runtimeAttemptIds: [runtimeAttemptId], commandId: randomUUID(), incidentTitle: prepared.title,
       stage: 'ingest', spanId: randomUUID(), lastEventId: randomUUID(), bootId: null, spanOpen: false, waitId: null,

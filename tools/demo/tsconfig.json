@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "outDir": "../../.local/demo-build",
+    "declaration": false,
+    "allowJs": true,
+    "checkJs": false,
+    "noCheck": true
+  },
+  "include": ["run.ts", "../../src/shared/checker.d.ts", "../reliability/check-evidence.mjs"]
+}

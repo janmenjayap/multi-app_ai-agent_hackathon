@@ -237,8 +237,8 @@ function readbackFixture(value: ImmutablePlan) {
     },
     slack: {
       scope: { app: 'slack', accountRef: 'account-slack' }, mode: 'fake',
-      readApprovalThread: async (channelId, threadTs, context) => complete(context,
-        state.messages.filter(message => message.channelId === channelId && message.threadTs === threadTs)),
+      readApprovalThread: async (channelId, threadTs, context) => { calls.push(context.operation); return complete(context,
+        state.messages.filter(message => message.channelId === channelId && message.threadTs === threadTs)); },
       getMessage: async (channelId, messageTs, context) => complete(context,
         state.messages.find(message => message.channelId === channelId && message.messageTs === messageTs) ?? null),
       findReview: async (marker, context) => { calls.push(context.operation); return complete(context,
@@ -489,7 +489,7 @@ test('publishes and freshly reads Slack before returning a whole-run completion 
   assert.equal(result.status, 'completed');
   if (result.status !== 'completed') return;
   assert.deepEqual(fixture.order, ['artifact-claim', 'claim', 'post', 'outcome']);
-  assert.deepEqual(fixture.fixture.calls.slice(-2), ['slack.findReview', 'slack.readSummary']);
+  assert.deepEqual(fixture.fixture.calls.slice(-2), ['slack.readApprovalThread', 'slack.readSummary']);
   assert.equal(result.proof.verifications.length, 5);
   assert.equal(result.proof.finalSlackVerificationId, 'verification-effect-thread');
   assert.match(fixture.fixture.state.messages[0]!.body, /Coordination finalization: pending/);
@@ -506,7 +506,7 @@ test('rejects a phantom Slack acknowledgement after fresh summary lookup', async
   assert.equal(result.status, 'mismatched');
   assert.equal('reason' in result ? result.reason : null, 'summary_readback_failed');
   assert.equal(fixture.fixture.state.messages.length, 0);
-  assert.deepEqual(fixture.fixture.calls.slice(-1), ['slack.findReview']);
+  assert.deepEqual(fixture.fixture.calls.slice(-1), ['slack.readApprovalThread']);
 });
 
 test('does not publish a success claim or Slack summary when business evidence is incomplete', async () => {

@@ -4,13 +4,11 @@ PromiseGuard is a proposed incident-to-customer-follow-up agent across GitHub,
 HubSpot, Slack, and Gmail. It is intended to create approved, assigned recovery
 work and a verified customer email draft.
 
-**Current status — September 14, 2026 (IST):** a Fastify/React application
-scaffold, the original offline evidence checker, and a runnable
-TypeScript/SQLite reliability monitor.
-The monitor checks supplied traces, snapshots, and labels; it does not run agents
-or call providers. The scaffold serves a browser entry and bootstrap health
-endpoint. The four app adapters, authentic Slack approval, durable business
-execution, model runtime, and operator console remain unimplemented.
+**Current status — September 14, 2026 (IST):** R01 assembles the durable workflow,
+three model roles, four app adapters, Slack approval, and independent readback.
+The executable demo uses stateful fake providers and mock model responses through
+the real runtime. Live S1/S2 are **unrun**; simulated approval is not human review.
+The original offline checker and standalone reliability monitor remain available.
 
 For the hackathon, **agent reliability is a P0 deliverable with three parts**:
 grounded original AI outputs judged against source facts and independent labels;
@@ -26,19 +24,17 @@ quality. A valid no-affected outcome instead uses `no_affected` claim scope with
 no plan reference, supported by complete selection and absence-of-effect evidence.
 
 The [detailed reliability implementation plan](ideation/implementation-plan/06-agent-reliability-implementation.md)
-maps the remaining work to the existing commits and branches: finish the controlled
-workflow and event producers, connect independent S0/S1 collection to the tested
-monitor, execute and label the frozen scenario suite, and publish a versioned
-scorecard with failed, unverified, and not-run cases. This documentation update
-does not implement those application capabilities.
+maps the remaining evidence work to the existing commits and branches: reconcile
+independent S0/S1 collection with the frozen oracle, execute and label the scenario
+suite, and publish a versioned scorecard with failed, unverified, and not-run cases.
 
-## Planned agent and app integration
+## Agent and app integration
 
 “Spawn agents” means invoke three bounded backend roles in the same process.
 B04's `src/server/workflow/driver.ts` schedules R01's
 `src/server/workflow/graph.ts`: A02 Evidence Analyst → A03 Customer Update Drafter
 → deterministic validation → A04 Blind Semantic Auditor. Each role calls A01's
-`src/server/agents/runtime.ts`, whose `model.ts` uses the planned
+`src/server/agents/runtime.ts`, whose `model.ts` uses the
 `@langchain/openai` `ChatOpenAI` integration with OpenAI Responses. F01 pins and
 smoke-tests compatible dependencies/configuration; F02 owns the shared contracts.
 The roles receive scoped source data and return structured artifacts; they do
@@ -57,43 +53,56 @@ assistant plugins do not provide backend credentials or live-product evidence.
 
 The [agent/LLM integration guide](ideation/implementation-plan/07-agent-spawning-and-llm-integration.md)
 and [MCP/API/external-app integration guide](ideation/implementation-plan/08-mcp-api-and-external-app-integration.md)
-define call sites, wiring, access, tests, and commit ownership. All paths above
-are planned application modules. R01/R02 must preserve separate fake-model,
+define call sites, wiring, access, tests, and commit ownership. R01/R02 preserve separate fake-model,
 model-live, and provider-live receipts before describing an integrated live run.
 
-## Run the application scaffold
+## Run the simulated workflow
 
 Use Node **24.21.0** from `.node-version` (Node 18 cannot run this package).
 
 ```bash
 npm ci
-npx playwright install chromium
-cp .env.example .env
-npm run typecheck
-npm test
+npm exec -- tsc -p tools/demo/tsconfig.json
+node .local/demo-build/tools/demo/run.js
+```
+
+Run from the repository root. The demo copies the required migrations, creates
+temporary databases, waits for a simulated Slack decision, restarts, executes
+the approved plan, and replays the same run. Its JSON reports model calls,
+verified effects, and excess replay writes; temporary databases are removed on exit.
+`--review` enables an optional interactive review of original outputs.
+
+This is `synthetic_fixture` evidence. The frozen Q01 oracle and generated B03
+plan still differ in effect/content bindings, so collected outcome evidence stays
+unverified. Original-output quality also stays unverified without independent
+human labels. The demo does not establish live S1/S2 or full scenario-suite results.
+
+## Start the HTTP application
+
+Copy `.env.example` to `.env`, then configure `PG_WORKFLOW_MODULE` with a trusted
+local module path, such as `.local/workflow-bootstrap.mjs`. That module exports
+`createCompositionOptions(config)` returning [CompositionOptions](src/server/composition.ts):
+`buildWorkflow(services)` supplies the graph, frozen preflight/manifest registration,
+and server-owned selection/approval policies; `auth.resolveSession` supplies trusted
+operator sessions. Account-specific bootstrap and authentication are not bundled.
+
+```bash
+npm run build
 npm start
 ```
 
-Open `http://127.0.0.1:3000`. `npm test` builds both server and browser, then runs
-checker/monitor regressions, application, component/accessibility, and Chromium
-tests. `npm start` serves `dist/web` from the same Fastify origin as
-`/api/health`. The health response reports **bootstrap readiness only**.
+The composed Fastify app serves the browser and authenticated `/api/runs` routes
+at `http://127.0.0.1:3000`. Missing `PG_WORKFLOW_MODULE` stops CLI startup with an
+explicit configuration error. The legacy `createApp()` bootstrap seam remains
+available for foundation tests.
 
-`PG_MODEL_MODE=mock|live` and `PG_ADAPTER_MODE=fake|rest` are independent. Any
-mock/fake combination requires an explicit `PG_FIXTURE_ID`; the example uses
-`bootstrap-synthetic-v1`. Live modes require the server configuration listed in
-`.env.example` and fail before constructing services if it is missing. Startup
-does not contact models/providers or verify account capabilities. All credentials
-and private account settings stay server-side; Vite exports no environment
-variables. Application data, checkpoints, and restricted evidence have separate
-paths under ignored `.local/`, with actual product persistence deferred to B01.
-
-For development, run `npm run build` once, then `npm run dev:server` and
-`npm run dev:web` in separate terminals. Vite proxies `/api` to port 3000.
-Focused commands are `build:server`, `build:web`, `test:app`, `test:web`, and
-`test:e2e`; build before running standalone application or browser tests.
-See the [F01 receipt](ideation/implementation-plan/commits/F01.md#completion-receipt)
-for tested versions, scope, and remaining handoff gates.
+`PG_MODEL_MODE=mock|live` and `PG_ADAPTER_MODE=fake|rest` remain independent;
+mock/fake modes require `PG_FIXTURE_ID` and injected fixture clients. REST mode
+requires the four account configurations in `.env.example` plus
+`PG_HUBSPOT_MAPPING_JSON` (or `hubspotMapping` from the trusted module), matching
+[HubSpotMappingSchema](src/server/adapters/hubspot.ts). Property names and
+association IDs must match the configured portal. Credentials stay server-side;
+the business ledger, checkpoints, and evidence use separate ignored `.local/` paths.
 
 ## Run the local monitor
 
@@ -116,8 +125,8 @@ register/append/measure/report/trace commands, persistence, metrics, and limits.
 
 The standalone monitor uses Node's built-in `node:sqlite` and Zod. F01 tests
 Fastify/React startup plus local LangGraph/checkpointer and `better-sqlite3`
-compatibility. The application effect ledger remains future work; monitor job
-durability does not implement business-write safety.
+compatibility. The standalone monitor's job durability is separate from the
+application's guarded business-effect ledger.
 
 ## Run the original checker
 

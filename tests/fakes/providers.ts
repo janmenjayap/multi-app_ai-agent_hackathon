@@ -117,7 +117,10 @@ export function createFakeProviders(options: FakeProviderOptions) {
   const appliedEdits = new Set<string>();
   const clone = <T>(value: T): T => structuredClone(value);
   const frozenCopy = <T>(value: T): Readonly<T> => immutable(clone(value));
-  const allocateId = (kind: string) => `${namespace}.${kind}.${++nextId}`;
+  // Approval validates Slack's actual numeric timestamp identity and ordering.
+  const allocateId = (kind: string) => kind === 'message'
+    ? `${Math.floor(Date.parse(now()) / 1000)}.${String(Date.parse(now()) % 1000 * 1000 + ++nextId).padStart(6, '0')}`
+    : `${namespace}.${kind}.${++nextId}`;
   const recordId = (row: Record<string, unknown>) => String(row.id ?? row.draftId ?? row.messageTs);
   function artifact(value: unknown, mediaType: RestrictedArtifactRef['mediaType'] = 'application/json'): RestrictedArtifactRef {
     const bytes = typeof value === 'string' && mediaType !== 'application/json' ? value : canonical(value);
@@ -361,11 +364,13 @@ export function createFakeProviders(options: FakeProviderOptions) {
     findDrafts: (marker, context) => rowsRead(context, 'gmail.findDrafts', () => drafts.filter(row => markerMatches(row, row.draftId, marker) || row.subject.includes(marker))),
     getDraft: (id, context) => oneRead(context, 'gmail.getDraft', () => drafts.find(row => row.draftId === id) ?? null),
   });
+  // observedAt describes this fresh read, not the message's original creation time.
+  const observedMessage = (message: Message | undefined): Message | null => message ? { ...message, observedAt: now() } : null;
   const slackReader: SlackReader = Object.freeze<SlackReader>({ scope: Object.freeze({ app: 'slack' as const, accountRef: world.accounts.slack }), mode: 'fake',
-    readApprovalThread: (channelId, threadTs, context) => rowsRead(context, 'slack.readApprovalThread', () => messages.filter(row => row.channelId === channelId && row.threadTs === threadTs)),
-    getMessage: (channelId, messageTs, context) => oneRead(context, 'slack.getMessage', () => messages.find(row => row.channelId === channelId && row.messageTs === messageTs) ?? null),
-    findReview: (marker, context) => rowsRead(context, 'slack.findReview', () => messages.filter(row => markerMatches(row, row.messageTs, marker))),
-    readSummary: (channelId, messageTs, context) => oneRead(context, 'slack.readSummary', () => messages.find(row => row.channelId === channelId && row.messageTs === messageTs) ?? null),
+    readApprovalThread: (channelId, threadTs, context) => rowsRead(context, 'slack.readApprovalThread', () => messages.filter(row => row.channelId === channelId && row.threadTs === threadTs).map(row => observedMessage(row)!)),
+    getMessage: (channelId, messageTs, context) => oneRead(context, 'slack.getMessage', () => observedMessage(messages.find(row => row.channelId === channelId && row.messageTs === messageTs))),
+    findReview: (marker, context) => rowsRead(context, 'slack.findReview', () => messages.filter(row => markerMatches(row, row.messageTs, marker)).map(row => observedMessage(row)!)),
+    readSummary: (channelId, messageTs, context) => oneRead(context, 'slack.readSummary', () => observedMessage(messages.find(row => row.channelId === channelId && row.messageTs === messageTs))),
   });
   const github: GitHubAdapter = Object.freeze<GitHubAdapter>({ ...githubReader,
     createComment: (input, context) => {
