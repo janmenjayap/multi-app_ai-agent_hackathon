@@ -8,6 +8,7 @@ import {
   DigestSchema, EffectKeySchema, ImmutablePlanSchema, ModelAttemptIdSchema, RestrictedArtifactRefSchema,
   RevisionSchema, RunIdSchema, SelectionSchema, immutable,
 } from '../../shared/domain.js';
+import { normalizeApprovedText } from './canonical.js';
 import { verifyPlanEffectKeys } from './effect-keys.js';
 
 export const PlanTaskContractSchema = AuditorInputSchema.shape.taskContract;
@@ -54,8 +55,9 @@ export function validatePlanClaims(input: PlanClaimValidationInput) {
   const assessment = parseIncidentAssessment(analyst.output, value.sourceFacts);
   const proposal = parseDraftProposal(drafter.output, selectedIds, value.sourceFacts.map(fact => fact.factId));
   if (proposal.entries.some(entry => entry.claims.length === 0)) throw new Error('draft_claims_required');
-  const forbidden = value.taskContract.forbiddenClaims.map(claim => claim.normalize('NFC').toLocaleLowerCase('en-US'));
-  if (proposal.entries.some(entry => forbidden.some(claim => entry.text.normalize('NFC').toLocaleLowerCase('en-US').includes(claim))))
+  const forbidden = value.taskContract.forbiddenClaims.map(claim => normalizeApprovedText(claim).toLocaleLowerCase('en-US'));
+  if (proposal.entries.some(entry => forbidden.some(claim =>
+    normalizeApprovedText(entry.text).toLocaleLowerCase('en-US').includes(claim))))
     throw new Error('forbidden_claim');
   const auditInput = AuditorInputSchema.parse({ schemaVersion: 2, sources: value.sourceFacts, proposal,
     taskContract: value.taskContract });
