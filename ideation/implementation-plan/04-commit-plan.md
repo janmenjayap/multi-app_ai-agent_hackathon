@@ -251,19 +251,24 @@ guard, label a simulation live, or fill a missed measurement with a target.
 
 - **Branch / owner:** `feat/foundation` / P1. **Merge dependencies:** P00.
 - **Paths:** `package.json`, `package-lock.json`, `.node-version`, `tsconfig.json`,
-  `vite.config.ts`, `vitest.config.ts`, `index.html`, `.env.example`, `.gitignore`,
-  `src/server/index.ts`, `src/web/main.tsx`, `tests/app/bootstrap.test.ts`.
+  `vite.config.ts`, `vitest.config.ts`, `playwright.config.ts`, `index.html`,
+  `.env.example`, `.gitignore`, `src/server/index.ts`, `src/web/main.tsx`,
+  `tests/app/bootstrap.test.ts`, `tests/web/bootstrap.test.tsx`,
+  `tests/e2e/bootstrap.spec.ts`.
 - **Do:** pin a tested Node 24 toolchain; establish React/Vite, Fastify/Zod,
-  LangGraph/LangChain/OpenAI, SQLite/checkpointer, and test dependencies. Verify
-  actual package APIs and native SQLite compatibility before freezing versions.
-  Reserve scripts/configuration for subsequent owners; keep checker compatibility.
+  LangGraph/LangChain/OpenAI, SQLite/checkpointer, component/accessibility and
+  Playwright dependencies. Add explicit server/web build and app/web/E2E scripts,
+  same-origin static serving, and a no-secret browser-bundle smoke. Verify actual
+  APIs and native SQLite compatibility; keep checker/monitor commands intact.
 - **Do not:** add hosting, generic tool registries, credentials, or mocked
   production completion. Do not upgrade packages independently on feature branches.
-- **Parallel inside this chunk:** P1 builds the scaffold; P4 checks clean setup
-  instructions and P2 checks runtime/API prerequisites.
-- **Verify / handoff:** clean install, typecheck/build, health bootstrap test,
-  both SQLite stores opening, and the existing checker tests. Record the actual
-  tested versions and installation caveats for all lanes.
+- **Parallel inside this chunk:** P1 owns dependencies/config/bootstrap; P4 owns
+  disjoint server, component/accessibility and browser bootstrap tests; P2 checks
+  runtime/API prerequisites without editing root files.
+- **Verify / handoff:** clean install, typecheck, server/web builds, health/static
+  bootstrap, component/accessibility/browser smokes, both SQLite stores opening,
+  and existing checker/monitor tests. Record versions, scripts, browser install
+  and viewport caveats for all lanes.
 
 ### F02 — Freeze shared contracts before concurrent implementation
 
@@ -277,15 +282,19 @@ guard, label a simulation live, or fill a missed measurement with a target.
   `tests/monitoring/contracts.test.mjs` belong to this foundation owner.
 - **Do:** define Zod contracts for identities, complete/incomplete reads, immutable
   plan payloads, effect/attempt states including unknown outcomes, API projections,
-  three role inputs/outputs, events, and evidence/metric modes. Freeze method
-  signatures and error categories with consumers before merge.
+  three role inputs/outputs, events, and evidence/metric modes. Freeze versioned
+  `RunView`, event page, command/error, redacted reference, assessment summary and
+  optional evaluation summary schemas with monotonic revision/cursor semantics.
+  Freeze method signatures and state meanings with consumers before merge.
 - **Do not:** conflate a graph checkpoint with the ledger, `awaiting_approval`
   with completion, or a missing assessment with a pass. Do not change checker v1.
 - **Parallel inside this chunk:** adapter, agent, frontend, and evaluator owners
   each review their boundary and supply one valid and one rejected payload.
 - **Verify / handoff:** contract tests reject malformed IDs/statuses, undeclared
   mutations, incomplete reads masquerading as empty results, and invalid agent
-  outputs. Publish the same versioned fixture objects for every lane.
+  outputs. Also reject unversioned/stale browser DTOs, authority-bearing client
+  commands and secret/private fields. Publish accepted/rejected examples and the
+  same state vocabulary for B04, Q01, U01/U02, Q05 and R02.
 
 ## Backend, policy, approval, and execution
 
@@ -359,16 +368,19 @@ guard, label a simulation live, or fill a missed measurement with a target.
   `tests/app/driver.test.ts`, `tests/app/api.test.ts`.
 - **Do:** persist command acceptance before response; schedule work outside HTTP;
   initialize separate application/checkpointer files; enforce the single-process
-  deployment and one active invocation per incident. Expose contracted status,
-  cursor events, reconcile, and pending/saved evaluation routes with authentication
-  and command-route CSRF protection.
+  deployment and one active invocation per incident. Expose versioned run/event/
+  assessment/report projections with monotonic revisions, opaque cursors, stable
+  event IDs/errors, redacted authorized links, explicit availability,
+  authentication and command-route CSRF protection.
 - **Do not:** allow clients to choose graph nodes, submit approvals, or edit state.
 - **Parallel inside this chunk:** P1 handles scheduling/storage; P4 tests public
   API projections and cursor behavior from fixtures without touching driver files.
 - **Verify / handoff:** concurrent POSTs attach to one run; browser disconnect
   does not cancel it; restart restores waiting jobs; readiness waits for stores;
-  unauthorized/CSRF-invalid requests fail. Graph nodes remain dependency-injected
-  until R01; a fake driver run must be clearly labeled simulated.
+  unauthorized/CSRF-invalid/session-expired requests fail. Test stale revisions,
+  reconnect pagination, monitor/report absence, failed partial and completed-but-
+  unverified projections. Graph nodes remain injected until R01; fake runs stay
+  labeled simulated.
 
 ### B05 — Bind Slack approval to the current plan and source state
 
@@ -725,12 +737,15 @@ guard, label a simulation live, or fill a missed measurement with a target.
 - **Do:** encode the 18 canonical families with fixed baseline/variant outcomes,
   clock/budgets, all five S1 artifact kinds, protected Beta records, forbidden
   operations, and named fault boundaries. Separate fixture setup/reset authority
-  from runtime tools; preserve local logical-to-real-ID mappings.
+  from runtime tools; preserve local logical-to-real-ID mappings. Q01 owns
+  canonical scenario truth; U01 separately owns F02-valid browser display fixtures
+  and adopts Q01 identities when available.
 - **Do not:** derive expected effects from worker output, add resets inside an
   evidence window, or reduce a failed expectation after seeing actual results.
 - **Parallel inside this chunk:** one person labels expected sources/artifacts
-  while another builds stateful fakes/fault hooks; approve fixture expectations
-  before dependent product code is evaluated.
+  while others build stateful provider/model fakes. Q01 and U01 can proceed as
+  sibling branches after F02; they align identities before U02/R01 without
+  importing each other's unmerged files.
 - **Verify / handoff:** manifests reject a Slack-only S1, missing required draft
   fields, absent protected records, and undefined outcomes. Publish deterministic
   examples for every branch; real seed/reset runs require an explicitly scoped
@@ -830,6 +845,9 @@ guard, label a simulation live, or fill a missed measurement with a target.
   versions, critical counters, and failed/unrun cases in each evidence mode.
   Bind actual human reviewer reasons and per-claim labels to original text/source
   digests. Aggregate Q03's v2 claim classifications; keep old-v1 semantics separate.
+  Publish F02's authorized saved summary/detail projection with stable report ID/
+  revision, raw M1-M7 counts/nulls, census, critical counts, gaps, cutoff and
+  watermark; never return an empty report for unavailable data.
 - **Do not:** treat checker assertions as workflow runs, retry/resume as a new
   scenario denominator, human approval as original model correctness, or a
   successful safe stop as successful recovery within budget.
@@ -837,7 +855,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
   reviewers label original content before seeing a repaired final answer.
 - **Verify / handoff:** small hand-calculated cohorts check deduplication, union of
   wait intervals, no-attempt cases, and checkpoint/repair attribution. Archive
-  a reproducible measured report for U02/U03/R02 without uploading private raw data.
+  a reproducible measured report plus field-for-field public projection examples
+  for U02/U03/R02 without uploading private raw data.
 
 ### Q06 — Export sanitized traces to LangSmith without blocking work [P1]
 
@@ -878,6 +897,9 @@ guard, label a simulation live, or fill a missed measurement with a target.
   guard/reconcile/write/readback loop → Slack finalization → recorded verdict.
   Protected provider mutations go through B06; Slack review/summary coordination
   uses its logged deterministic workflow path. Source facts remain untrusted data.
+  Project the same real stage, model/provider attempt, plan, approval, effect,
+  readback and assessment identities through F02/B04 for U02 without relabeling
+  deterministic controls as agents.
 - **Do not:** add another orchestration loop, let nodes infer success from graph
   progression, or combine provider side effects into the pure wait node.
 - **Parallel inside this chunk:** P1 wires only composition files; P2 checks
@@ -886,7 +908,9 @@ guard, label a simulation live, or fill a missed measurement with a target.
   Then capture actual S1 with all five artifacts across four apps, exact approved
   draft and protected Beta, followed by S2 with preserved provider IDs and no
   excess creation. A failed/unrun live gate blocks the claim of a working product;
-  do not hold integration code hostage to optional hosting or dashboard work.
+  validate saved redacted run/event projections against stored events and hand
+  them to U02/R02 as API evidence, not rendered-UI proof. Do not hold integration
+  code hostage to optional hosting or dashboard work.
 
 ### R02 — Freeze the release, verify completion, and package the evidence
 
@@ -903,16 +927,21 @@ guard, label a simulation live, or fill a missed measurement with a target.
   failures/unrun items, and limitations. Compare implemented code and observed
   proof against every promised capability in the global completion ledger.
   Record the two-minute S1/S2/safety story with actual demonstrated behavior.
+  Verify the clean authenticated console, keyboard/focus/redaction/session states,
+  authorized links, saved-versus-visible values and 375x812, 768x1024 and
+  1440x900 layouts.
 - **Do not:** mark planning prose or passing offline checker tests as completed
   runtime capabilities; publish secrets/private snapshots; imply production
   scale, automatic sending, distributed exactly-once behavior, or proven recovery
   without the corresponding evidence.
-- **Parallel inside this chunk:** one person runs final regression while another
-  prepares/redacts the recording and brief; a different teammate verifies links
-  and the global checklist against the frozen release.
-- **Verify / handoff:** clean setup/build/checker/app/scenario checks appropriate
-  to the release; real S1 and S2 evidence, S3 block, required safety cases, original
-  proposal labels, and honest pending items. Re-run affected checks after fixes.
+- **Parallel inside this chunk:** after scope freeze, P1 runs final regression,
+  P4 rehearses/records that immutable build, P2 verifies provider links/access,
+  P3 reviews labels, and an evaluation reviewer checks visible report values.
+- **Verify / handoff:** clean setup/server/web/checker/app/component/accessibility/
+  browser/scenario checks appropriate to the release; three viewport receipts,
+  real S1 and S2 evidence, S3 block, required safety cases, original proposal
+  labels, saved-versus-rendered counts and honest pending items. Re-run affected
+  checks after fixes.
   Submission owner verifies organizer instructions/access and submits within the
   reserved cutoff buffer, retaining confirmation. Completion is earned by code
   plus the required evidence; a checked box or commit title alone is insufficient.

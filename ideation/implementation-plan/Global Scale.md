@@ -394,19 +394,42 @@ Proposed path: `src/server/verification/`.
 ### C12 — Frontend and operator handoff
 
 **Expected:** a small authenticated operator console shows source evidence,
-exact plan, Slack review status, persisted effect timeline, links, and coverage.
+exact plan, all three named model roles plus deterministic control stages, Slack
+review status, persisted effects/readbacks, provider links, and reliability
+coverage in the fixed hierarchy from the
+[frontend pipeline and reliability guide](09-frontend-pipeline-and-reliability.md).
 **Actual:** **PLANNED**; no frontend or backend HTTP implementation.
 **Owner/commits:** product owner; U01/U02, optional U03, with F02/B04/Q05 handoffs.
 Proposed paths: `src/web/`, `src/server/api/`.
 
-- [ ] Fixture-driven components use the frozen API before live integration;
-  waiting, safe block, failure, partial, pending and N/A are visibly distinct.
+- [ ] F01 supplies the tested React/Vite, component/accessibility, browser and
+  same-origin static-serving toolchain; F02 supplies versioned run/event/report
+  DTOs, stable state vocabulary, redaction and revision/cursor semantics.
+- [ ] U01's fixture-driven one-screen console uses the frozen API before live
+  integration. Waiting, approval wait, safe block, failure, failed partial,
+  completed-but-unverified, no affected commitments, offline, expired session,
+  unavailable report, zero labels and N/A are visibly distinct and synthetic
+  fixtures stay labeled.
 - [ ] Reopen/reconnect resumes observation of backend state; UI never approves
-  through a Boolean or mistakes a scheduled reconcile command for completion.
-- [ ] Live console displays actual provider links and verification times;
-  backend validates operator access and commands, with no client-side secrets.
+  through a Boolean, starts duplicate model/effect work, extends deadlines, or
+  mistakes a scheduled reconcile command for completion. Stale/out-of-order
+  responses cannot replace a newer run/report revision.
+- [ ] Live console displays exact recipient/subject/body, actual provider IDs/
+  links, created-versus-reused effects, field comparisons and verification times;
+  backend validates operator access and commands, with no client-side secrets or
+  private raw artifacts.
 - [ ] Product status, trace coverage, outcome assessment, and semantic assessment
-  are separate; monitor outages do not turn missing assessment into a green score.
+  are separate; stage success, HTTP success, monitor outages and missing labels/
+  evidence do not turn missing assessment into a green score.
+- [ ] U02 displays Q05's saved M1-M7 numerators/denominators or N/A, critical
+  counts, census/gaps, modes, versions, cutoff and watermark without browser
+  arithmetic. A reviewer compares displayed fields with the exact saved report.
+- [ ] Component, keyboard/focus, automated accessibility, session/error and
+  browser/API tests pass. At 375x812, 768x1024 and 1440x900, no required command,
+  status, pipeline label, plan or evidence row overlaps or escapes its container.
+- [ ] R02 proves a clean authenticated S1/S2/safety demo, authorized provider/
+  evidence links, redaction and readable recording layout; screenshots retain
+  exact fixture/run/report references and evidence mode.
 - [ ] **P1/U03:** richer scorecard drilldowns link metrics to individual attempts
   and supporting evidence. U02's raw evidence/status view is sufficient for P0;
   this presentation enhancement can be explicitly deferred.
@@ -510,8 +533,10 @@ implemented and reviewed against the [detailed completion plan](06-agent-reliabi
   registration immediately before graph dispatch. Later faults remain attempted;
   never move the boundary retrospectively. Keep untouched slots unrun and accepted
   starts without results attempted/stalled, preserving IDs/versions/denominators.
-- [ ] **U02/R02:** show the three reliability axes and package actual claim-to-
-  evidence references. Optional LangSmith/U03 cannot replace P0 reliability proof.
+- [ ] **U02/R02:** show product status plus the three reliability axes, saved raw
+  counts/census/gaps and actual claim-to-evidence references. Verify display
+  values against Q05 and the clean browser at all required viewports. Optional
+  LangSmith/U03 cannot replace P0 reliability proof.
 
 **No implementation completion is recorded by this documentation update.**
 The recorded 129 tests and synthetic checker assertions retain their prior
