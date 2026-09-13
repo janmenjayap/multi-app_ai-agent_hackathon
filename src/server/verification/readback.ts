@@ -320,11 +320,19 @@ async function prepareReads(
     }
     case 'thread': {
       if (!options.expectedSlackWorkspaceId) throw new Error('slack_workspace_required');
-      const bindingContext = makeContext(plan, effect, options, 'slack.findReview', 'binding');
-      const bindingResult = await options.readers.slack.findReview(effect.effectKey, bindingContext);
+      const bindingContext = makeContext(plan, effect, options, 'slack.readApprovalThread', 'binding');
+      const bindingResult = await options.readers.slack.readApprovalThread(
+        effect.payload.channelId, effect.payload.threadTs, bindingContext);
+      // The approval message quotes the entire plan, including this marker. Only
+      // an artifact starting with the frozen summary prefix is a candidate.
+      const firstPart = effect.payload.body[0];
+      const prefix = firstPart?.type === 'text' ? firstPart.text : null;
+      if (!prefix) throw new Error('summary_prefix_missing');
       return {
         binding: { purpose: 'binding', context: bindingContext, result: bindingResult },
-        candidateProviderIds: bindingResult.status === 'complete' ? bindingResult.data.map(candidate => candidate.messageTs) : [],
+        candidateProviderIds: bindingResult.status === 'complete' ? bindingResult.data
+          .filter(candidate => candidate.body.startsWith(prefix) && candidate.body.includes(effect.effectKey))
+          .map(candidate => candidate.messageTs) : [],
         read: async providerId => {
           const context = makeContext(plan, effect, options, 'slack.readSummary', 'artifact');
           const result = await options.readers.slack.readSummary(effect.payload.channelId, providerId, context);
@@ -346,7 +354,7 @@ export async function verifyArtifactReadback(
   options: ReadbackVerifierOptions,
 ): Promise<ArtifactReadback> {
   if (record.runId !== plan.runId || record.effectKey !== effect.effectKey || record.requestDigest !== effect.requestDigest ||
-      !record.providerId || record.state !== 'applied' || record.outcome?.status !== 'applied') {
+      !record.providerId || !['applied', 'verified'].includes(record.state) || record.outcome?.status !== 'applied') {
     return incompleteResult(effect);
   }
 
@@ -490,7 +498,7 @@ export function createApplicationReadbackRecorder(options: ApplicationReadbackRe
       }
       const eventReadContext = persistedAttempt ?? lastRead.context;
       const eventContext = options.eventContext(eventReadContext);
-      if (eventContext.stage !== 'verify' || eventContext.runId !== eventReadContext.runId ||
+      if (!['execute', 'verify'].includes(eventContext.stage) || eventContext.runId !== eventReadContext.runId ||
           eventContext.evaluationAttemptId !== eventReadContext.evaluationAttemptId ||
           eventContext.runtimeAttemptId !== eventReadContext.runtimeAttemptId || eventContext.spanId !== eventReadContext.spanId) {
         throw new Error('readback_event_context_mismatch');

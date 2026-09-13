@@ -4,6 +4,8 @@ import { access } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { z } from "zod";
+import { HubSpotMappingSchema } from './adapters/hubspot.js';
+import { createComposedApp, type CompositionOptions } from './composition.js';
 
 const optionalText = z.string().trim().optional();
 const positiveInteger = (fallback: number, maximum: number) =>
@@ -28,6 +30,7 @@ const environmentSchema = z.object({
   PG_DATABASE_PATH: z.string().trim().min(1).default(".local/application.sqlite"),
   PG_CHECKPOINT_PATH: z.string().trim().min(1).default(".local/checkpoints.sqlite"),
   PG_EVIDENCE_DIR: z.string().trim().min(1).default(".local/evidence"),
+  PG_WORKFLOW_MODULE: optionalText,
   OPENAI_API_KEY: optionalText,
   OPENAI_MODEL: optionalText,
   OPENAI_MODEL_ANALYST: optionalText,
@@ -44,6 +47,7 @@ const environmentSchema = z.object({
   PG_HUBSPOT_ACCESS_TOKEN: optionalText,
   PG_HUBSPOT_PORTAL_ID: optionalText,
   PG_HUBSPOT_READER_TOKEN: optionalText,
+  PG_HUBSPOT_MAPPING_JSON: optionalText,
   PG_SLACK_BOT_TOKEN: optionalText,
   PG_SLACK_READER_TOKEN: optionalText,
   PG_SLACK_TEAM_ID: optionalText,
@@ -69,6 +73,10 @@ const environmentSchema = z.object({
     if (env.PG_SLACK_APPROVER_IDS && !/^[UW][A-Z0-9]+(?:,[UW][A-Z0-9]+)*$/.test(env.PG_SLACK_APPROVER_IDS)) invalid("PG_SLACK_APPROVER_IDS");
   }
   if (env.PG_MODEL_ROLE_BUDGET_MS < env.PG_MODEL_TIMEOUT_MS) invalid("PG_MODEL_ROLE_BUDGET_MS");
+  if (env.PG_HUBSPOT_MAPPING_JSON) {
+    try { if (!HubSpotMappingSchema.safeParse(JSON.parse(env.PG_HUBSPOT_MAPPING_JSON)).success) invalid('PG_HUBSPOT_MAPPING_JSON'); }
+    catch { invalid('PG_HUBSPOT_MAPPING_JSON'); }
+  }
   if (resolve(env.PG_DATABASE_PATH) === resolve(env.PG_CHECKPOINT_PATH)) invalid("PG_CHECKPOINT_PATH");
   if ([env.PG_DATABASE_PATH, env.PG_CHECKPOINT_PATH].some(path => resolve(path) === resolve(env.PG_EVIDENCE_DIR))) invalid("PG_EVIDENCE_DIR");
 });
@@ -87,6 +95,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     modelMode: value.PG_MODEL_MODE,
     adapterMode: value.PG_ADAPTER_MODE,
     fixtureId: value.PG_MODEL_MODE === "mock" || value.PG_ADAPTER_MODE === "fake" ? value.PG_FIXTURE_ID! : null,
+    hubspotMapping: value.PG_HUBSPOT_MAPPING_JSON ? HubSpotMappingSchema.parse(JSON.parse(value.PG_HUBSPOT_MAPPING_JSON)) : undefined,
+    workflowModule: value.PG_WORKFLOW_MODULE ? resolve(value.PG_WORKFLOW_MODULE) : undefined,
     storage: { databasePath: resolve(value.PG_DATABASE_PATH), checkpointPath: resolve(value.PG_CHECKPOINT_PATH), evidenceDir: resolve(value.PG_EVIDENCE_DIR) },
     model: {
       name: value.OPENAI_MODEL,
@@ -123,6 +133,8 @@ export interface BootstrapOptions {
   env?: NodeJS.ProcessEnv;
   webRoot?: string;
   createServices?: (config: AppConfig) => ApplicationServices | Promise<ApplicationServices>;
+  /** R01 application composition; fixture/live policy and frozen manifests are server-owned. */
+  composition?: CompositionOptions;
 }
 
 async function closeAfterFailure(app: FastifyInstance, error: unknown): Promise<never> {
@@ -138,6 +150,7 @@ export async function createApp(options: BootstrapOptions = {}): Promise<Fastify
   const webRoot = options.webRoot ?? fileURLToPath(new URL("../../dist/web/", import.meta.url));
   try { await access(resolve(webRoot, "index.html")); }
   catch { throw new Error("Browser build is missing. Run npm run build:web before starting the application."); }
+  if (options.composition) return createComposedApp(config, { ...options.composition, webRoot });
   const services = await options.createServices?.(config);
   const app = Fastify({ logger: false });
   app.addHook("onReady", async () => { await services?.start?.(); });
@@ -161,7 +174,16 @@ export async function createApp(options: BootstrapOptions = {}): Promise<Fastify
 
 export async function startServer(options: BootstrapOptions = {}) {
   const config = loadConfig(options.env);
-  const app = await createApp(options);
+  let composition = options.composition;
+  if (!composition && config.workflowModule) {
+    // Only the server environment selects this trusted local bootstrap module.
+    const module = await import(pathToFileURL(config.workflowModule).href);
+    if (typeof module.createCompositionOptions !== 'function') throw new Error('Workflow module must export createCompositionOptions(config).');
+    composition = await module.createCompositionOptions(config);
+    if (!composition || typeof composition.buildWorkflow !== 'function' || typeof composition.auth?.resolveSession !== 'function')
+      throw new Error('Workflow module must configure the graph and operator authentication.');
+  }
+  const app = await createApp({ ...options, composition });
   const shutdown = () => { void app.close().catch(() => { process.exitCode = 1; }); };
   app.server.once("close", () => {
     process.off("SIGINT", shutdown);
@@ -178,11 +200,15 @@ export async function startServer(options: BootstrapOptions = {}) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  startServer().then(app => {
-    process.stdout.write(`PromiseGuard application scaffold listening on ${app.listeningOrigin}\n`);
+  Promise.resolve().then(() => {
+    if (!process.env.PG_WORKFLOW_MODULE?.trim())
+      throw new Error('Workflow startup requires PG_WORKFLOW_MODULE pointing to a trusted module exporting createCompositionOptions(config); use tools/demo/run.ts for the simulated workflow.');
+    return startServer();
+  }).then(app => {
+    process.stdout.write(`PromiseGuard workflow application listening on ${app.listeningOrigin}\n`);
   }).catch(error => {
     // Configuration/build errors are curated above. Other failures may include secrets.
-    const message = error instanceof Error && /^(Invalid server configuration:|Browser build is missing\.)/.test(error.message)
+    const message = error instanceof Error && /^(Invalid server configuration:|Browser build is missing\.|Workflow startup requires |Workflow module must )/.test(error.message)
       ? error.message : "Application startup failed; check the local configuration and port availability.";
     process.stderr.write(`${message}\n`);
     process.exitCode = 1;

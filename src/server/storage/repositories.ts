@@ -590,7 +590,7 @@ export class ApplicationWriter extends ApplicationRepository {
     this.sql.prepare('INSERT INTO verifications VALUES(?,?,?,?,?,?)').run(event.verificationId, event.runId,
       event.effectKey, input.observationId, event.readAttemptId, canonical({ schemaVersion: 2, event, providerId: input.providerId }));
     if (event.verdict === 'matched') {
-      if (effect.state !== 'applied') throw new Error('effect_not_applied');
+      if (!['applied', 'verified'].includes(effect.state)) throw new Error('effect_not_applied');
       this.#updateEffect({ ...effect, state: 'verified', verificationRef: event.receiptRef });
     }
     this.#required.add(`verification:${event.verificationId}`);

@@ -7,6 +7,7 @@ import {
   planHashMaterial, requestHashMaterial, sha256Text,
 } from '../../shared/domain.js';
 import type { ImmutablePlan, PlannedEffect } from '../../shared/domain.js';
+import { githubCommentMarker } from '../adapters/github.js';
 import { bindIncidentIdentity } from './identity.js';
 import {
   PlanRoleResultsSchema, PlanTaskContractSchema, RolePlanProvenanceSchema, validatePlanClaims,
@@ -131,12 +132,29 @@ export async function freezePlan(input: unknown) {
       kind: 'comment', app: 'github', effectKey: commentKey, payload: {
         repositoryId: value.incident.repositoryId, issueId: value.incident.issueId,
         taskIds: keys.map(row => effectRef(row.task)), draftIds: keys.map(row => effectRef(row.draft)),
-        body: [{ type: 'text', text: `[PromiseGuard:${commentKey}] Approved customer-impact follow-up.` }],
+        body: [
+          { type: 'text', text: `${githubCommentMarker(commentKey)} Approved customer-impact follow-up.\n` },
+          ...keys.flatMap(row => [
+            { type: 'text' as const, text: `Commitment ${row.commitmentId}: task ` }, effectRef(row.task),
+            { type: 'text' as const, text: ', Gmail draft ' }, effectRef(row.draft),
+            { type: 'text' as const, text: '.\n' },
+          ]),
+        ],
       } }),
     PlannedEffectSchema.parse({ commitmentId: null, requestDigest: EMPTY_DIGEST,
       kind: 'thread', app: 'slack', effectKey: threadKey, payload: {
         channelId: value.slack.channelId, threadTs: value.slack.threadTs,
-        body: [{ type: 'text', text: `[PromiseGuard:${threadKey}] Verified follow-up summary for ${value.runId}.` }],
+        body: [
+          { type: 'text', text: `[PromiseGuard:${threadKey}] Verified follow-up artifacts for ${value.runId}.\nCoordination finalization: pending.\n` },
+          ...keys.flatMap(row => [
+            { type: 'text' as const, text: `Commitment ${row.commitmentId}: task ` }, effectRef(row.task),
+            { type: 'text' as const, text: ', note ' }, effectRef(row.note),
+            { type: 'text' as const, text: ', Gmail draft ' }, effectRef(row.draft),
+            { type: 'text' as const, text: '.\n' },
+          ]),
+          { type: 'text', text: 'GitHub impact comment ' }, effectRef(commentKey),
+          { type: 'text', text: '.' },
+        ],
       } }),
   );
   const signedEffects = await Promise.all(effects.map(async effect => PlannedEffectSchema.parse({ ...effect,

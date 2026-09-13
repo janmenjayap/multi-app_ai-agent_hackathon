@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     projects: [
-      { extends: true, test: { name: "app", environment: "node", include: ["tests/app/**/*.test.ts"] } },
+      { extends: true, test: { name: "app", environment: "node", include: ["tests/app/**/*.test.ts", "tests/scenarios/**/*.test.ts"] } },
       { extends: true, test: { name: "web", environment: "jsdom", include: ["tests/web/**/*.test.tsx", "tests/app/**/*.test.tsx"] } },
     ],
   },

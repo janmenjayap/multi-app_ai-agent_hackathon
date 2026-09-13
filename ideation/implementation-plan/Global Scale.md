@@ -1,12 +1,26 @@
 # Global Scale: implementation and completion verification
 
-**Current verdict — September 14, 2026 (IST): an application scaffold, the
-verified offline checker, a standalone reliability monitor, and locally tested
-application contracts; product workflows
-remain unimplemented.** This file compares the intended system with
-observed repository evidence. It is the global completion checklist for the
-[commit plan](04-commit-plan.md), not a claim of production readiness or a
-percentage of work completed.
+**Current verdict — September 14, 2026 (IST): R01's guarded workflow is
+implemented and verified with simulated providers.** Three recorded roles, Slack
+approval, ordered four-app effects, independent inline readback, restart and
+zero-write replay execute through the durable driver. Live S1/S2, actual human
+quality review, and the Q01/B03 frozen-oracle binding remain unverified. The
+measured-release gate remains open. Historical receipts below retain their
+original scope.
+
+## R01 execution update — September 14, 2026
+
+Implementation commit: `bacb8ea4e2c340f547fe2a081c6836b911fe24d3`.
+
+See the [R01 receipt](commits/R01.md#r01-implementation-receipt--september-14-2026)
+for prerequisite SHAs, integration corrections, commands, reviewers, and gaps.
+The focused walking skeleton passes **3/3 tests**, covering seven simulated
+scenario setups plus replay: approved completion/restart, ambiguity and semantic
+blocks, complete no-affected selection, wrong recipient, phantom Slack success,
+and accepted-unknown-write reconciliation. Typecheck and build pass. The demo
+reports three model calls, five verified effects and zero excess replay writes.
+These are runtime/API projection observations, not a live-provider, human-label,
+browser-rendering, or full-cohort release receipt.
 
 **Delivery navigation:** [per-branch plans](branches/README.md) and
 [individual commit briefs](commits/README.md) now specify the remaining work,
