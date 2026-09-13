@@ -95,7 +95,7 @@ test('migration preserves populated monitor-v1 evidence, assessments, exhaustion
   assert.equal(migrated.monitor.listAttempts().length, 1);
   assert.equal(count(migrated, 'evidence_revisions'), 2);
   assert.equal(migrated.connection.prepare('PRAGMA user_version').get()!.user_version, 1);
-  assert.equal(count(migrated, 'application_migrations'), 2);
+  assert.equal(count(migrated, 'application_migrations'), 3);
 });
 
 test.each(['events', 'measurement_jobs'])('failed %s persistence rolls initial application state and evidence back together', table => {
@@ -118,8 +118,8 @@ test('B01 upgrade retains history and workflow scheduling, commands and public r
   const { database, repository, open } = setup();
   initialize(repository);
   const original = repository.getRun(context.runId);
-  database.connection.exec(`DROP TABLE workflow_commands; DROP TABLE workflow_invocations; DROP TABLE run_projections;
-    DELETE FROM application_migrations WHERE migration_id=2`);
+  database.connection.exec(`DROP TABLE trace_exports; DROP TABLE workflow_commands; DROP TABLE workflow_invocations; DROP TABLE run_projections;
+    DELETE FROM application_migrations WHERE migration_id>=2`);
   database.close();
   const upgraded = open();
   assert.deepEqual(upgraded.repository.getRun(context.runId), original);
@@ -154,7 +154,7 @@ test('B01 upgrade retains history and workflow scheduling, commands and public r
   assert.deepEqual(reopened.repository.getWorkflow(context.runId)?.state, state);
   assert.equal(reopened.repository.getPublicRevision(context.runId, digest({ changed: 'assessment' })), revision + 1);
   assert.equal(count(reopened.database, 'workflow_commands'), 1);
-  assert.equal(count(reopened.database, 'application_migrations'), 2);
+  assert.equal(count(reopened.database, 'application_migrations'), 3);
 });
 
 test('terminal transition and its event/job commit together and event cursor survives reopening', () => {

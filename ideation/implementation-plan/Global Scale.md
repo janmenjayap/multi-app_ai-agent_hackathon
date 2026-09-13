@@ -142,6 +142,22 @@ provider/model clients, sessions, and optional Q03/Q05 projection adapters.
 Live writes, authentic approval, U02 integration, and a measured four-app release
 remain unproven by this bounded synthetic implementation.
 
+## U02 execution update — September 14, 2026
+
+U02 is implemented at `93a6cdfe16eb9692dc683879fcba88520e18f9c9` on
+`feat/operator-console`, conventions **1.2**, API schema **2**. The default console
+uses B04 HTTP commands and polling; explicit `/?preview=1` retains U01 examples.
+Synthetic tests cover CSRF, read/reconnect identity, stale revisions across
+outages, duplicate commands, partial reconciliation, authorization/session
+errors and saved report presentation. An assembled HTTP/SQLite/controlled-graph
+browser test retains one run/evaluation/runtime through browser closure.
+
+The [U02 receipt](commits/U02.md#reviewed-implementation-and-verification-receipt)
+records raw counts, viewport checks, accepted consumer review and limitations.
+Production startup/session/CSRF and the real graph await R01; actual collected
+saved reports await Q05. Synthetic screenshots/report comparisons and a single
+controlled node do not close the live S1/S2/S3 release or four-app evidence gates.
+
 ## Q01 execution update — September 14, 2026
 
 Q01's frozen evaluation fixtures and stateful fakes are implemented at
@@ -189,6 +205,23 @@ reclaim; this is not a claim of automatic crash recovery. Production role prompt
 R01 scheduling and scored workflow scenarios remain downstream. F01 still owns
 the optional npm smoke-script registration. No C05–C07 role-quality or live scenario
 gate is advanced by this synthetic runtime verification.
+
+## A04 execution update — September 14, 2026
+
+A04's blind semantic auditor is implemented at
+`784b32bf96b26ab96188eef6ca9596fe3cdeb6c3`, merged by
+`aabb72317546b21a0b1cba4811b70943a7380896`, under conventions **1.2**.
+It builds fresh original-source/proposed-text/task context, validates exact
+commitment/claim/required-fact coverage, and preserves concerns and required-stage
+failures through A01. It exposes no approval, repair or provider operation.
+
+Node **24.21.0** checks pass **10/10** auditor tests, **25/25** combined auditor
+and runtime tests, full typecheck and both builds, including the merged main.
+Delegated Codex review accepted the module and R01/Q05 handoff. See
+[A04's receipt](commits/A04.md#completion-receipt) for commands, versions,
+initial fixture errors and retained gaps. Evidence is **synthetic/mock** only.
+R01 graph routing, live model/provider use, and independently human-labeled
+missed defects/false blocks remain **unrun**; no scenario or quality gate closes.
 
 ## B02 execution update — September 14, 2026
 
@@ -447,22 +480,40 @@ complete normalized F02/Q01 inputs. Live I02/I03 source retrieval remains open.
 
 **Expected:** bounded original technical evidence becomes cited facts,
 contradictions, unknowns, and candidate-change assessment.
-**Actual:** **PLANNED**; no prompt, model transport, or output schema executable.
-**Owner/commits:** agent owner; A01, A02. Proposed path: `src/server/agents/`.
+**Actual:** **MODULE IMPLEMENTED, SYNTHETICALLY TESTED**. A02 provides the
+versioned prompt, F02 entrypoint and mechanical validation through A01, with
+immutable first outputs and saved replay. R01 integration and actual-model
+semantic quality remain unverified.
+**Owner/commits:** agent owner; A01, A02. Path: `src/server/agents/analyst/`.
+
+Implementation-ID register: **A02** is
+`ffe2ccaf9911dc0f8eb9df0142e7fe6cfd973e3a`, merged at
+`c4029c5e1a8a07b3b41c72bfa4822c26cc29db1d` under conventions **1.2**.
+The [A02 receipt](commits/A02.md#completion-receipt) records independent Codex
+review, **12/12** analyst tests (**27/27** with A01), typecheck and both builds,
+including the updated B04 integration base. Model/provider/human evidence is
+explicitly unrun; this advances module conformance only.
 
 - [ ] Required structured output, citation-reference validation, timeout, and
   schema retry budget work with both fixtures and the actual selected model.
 - [ ] No source implies proven root cause, recovery, or human action without
   evidence; weak causal evidence and injection cases receive independent labels.
-- [ ] Preserve original outputs and failures before correction with prompt/model/
+- [x] Preserve original outputs and failures before correction with prompt/model/
   schema versions; the agent has no app credentials or mutation tools.
 
 ### C06 — Customer Update Drafter agent
 
 **Expected:** original facts and the validated assessment produce grounded
 customer text and claim references for code-selected commitments.
-**Actual:** **PLANNED**; no runnable drafting stage.
-**Owner/commits:** agent owner; A01, A03. Proposed path: `src/server/agents/`.
+**Actual:** **PARTIAL — module implemented and synthetically verified.** A03 at
+`afa83ab7053f6baad8ad960ff626304c3aa57492`, main merge
+`6af6d75f81a4482bf817da05e686639a8dfe6c20`, adds the A01-backed fixed-set drafter,
+source/checklist validation, original-output references and replay. **17/17**
+focused tests, typecheck and server/web build pass. Independent Codex agent review
+accepted R01/Q05 handoffs. See the [A03 receipt](commits/A03.md#completion-receipt).
+Complete-source quotation is a conservative prototype constraint; actual model
+quality, human labels and integrated workflow execution remain unverified.
+**Owner/commits:** agent owner; A01, A03. Path: `src/server/agents/drafter/`.
 
 - [ ] Owner, designated recipient, subject marker, dates, and allowed effects
   come from code; model text cannot change them or promise unsupported outcomes.
@@ -475,8 +526,9 @@ customer text and claim references for code-selected commitments.
 
 **Expected:** original evidence, proposed text, and the task contract yield
 structured findings without seeing upstream reasoning or a desired verdict.
-**Actual:** **PLANNED**; no runnable auditor. Three model roles remain the target.
-**Owner/commits:** agent owner; A01, A04. Proposed path: `src/server/agents/`.
+**Actual:** A04 module implemented and tested through A01 with synthetic fixtures;
+R01 graph enforcement and human-labeled actual-model usefulness remain unverified.
+**Owner/commits:** agent owner; A01, A04. Path: `src/server/agents/auditor/`.
 
 - [ ] Inputs exclude prior reasoning, confidence, shared chat, and desired result;
   explicit concerns block review/execution according to the frozen policy.
@@ -578,9 +630,9 @@ exact plan, all three named model roles plus deterministic control stages, Slack
 review status, persisted effects/readbacks, provider links, and reliability
 coverage in the fixed hierarchy from the
 [frontend pipeline and reliability guide](09-frontend-pipeline-and-reliability.md).
-**Actual:** **PARTIAL / VERIFIED SYNTHETIC U01**; F01/F02 scaffold/contracts and
-the fixture console are merged. Durable authenticated API wiring and live
-workflow observation remain U02 work.
+**Actual:** **PARTIAL / U01 + U02 WITH SYNTHETIC HTTP EVIDENCE**; the fixture
+console and durable API client are implemented. Production authentication and
+assembled live workflow/report observation remain R01/Q05/R02 gates.
 **Owner/commits:** product owner; U01/U02, optional U03, with F02/B04/Q05 handoffs.
 Proposed paths: `src/web/`, `src/server/api/`.
 
@@ -592,7 +644,7 @@ Proposed paths: `src/web/`, `src/server/api/`.
   completed-but-unverified, no affected commitments, offline, expired session,
   unavailable report, zero labels and N/A are visibly distinct and synthetic
   fixtures stay labeled.
-- [ ] Reopen/reconnect resumes observation of backend state; UI never approves
+- [x] Reopen/reconnect resumes observation of backend state (synthetic HTTP); UI never approves
   through a Boolean, starts duplicate model/effect work, extends deadlines, or
   mistakes a scheduled reconcile command for completion. Stale/out-of-order
   responses cannot replace a newer run/report revision.
@@ -600,8 +652,8 @@ Proposed paths: `src/web/`, `src/server/api/`.
   links, created-versus-reused effects, field comparisons and verification times;
   backend validates operator access and commands, with no client-side secrets or
   private raw artifacts.
-- [ ] Product status, trace coverage, outcome assessment, and semantic assessment
-  are separate; stage success, HTTP success, monitor outages and missing labels/
+- [x] Product status, trace coverage, outcome assessment, and semantic assessment
+  are separate in tested synthetic HTTP projections; stage success, HTTP success, monitor outages and missing labels/
   evidence do not turn missing assessment into a green score.
 - [ ] U02 displays Q05's saved M1-M7 numerators/denominators or N/A, critical
   counts, census/gaps, modes, versions, cutoff and watermark without browser
@@ -945,3 +997,23 @@ recovery, or regional compliance result has been measured. The following are
 When this work is authorized, create a separate production plan with explicit
 targets and independent evidence. A small seeded demo establishes behavior for
 its tested scope; it cannot establish global reliability or readiness.
+
+
+## Q06 execution update — September 14, 2026
+
+Implementation-ID register: **Q06** is `62c69ad7f41a28e6266e43ca67be438c93d66f06` on
+`feat/langsmith-export`, based on reviewed B01/Q03. P1/P4 Codex integration and
+independent delegated reviewer `q06_review` accepted the offline handoff.
+
+Sanitized canonical span projection, an optional REST client and a durable export
+outbox are implemented. Private keyed identity references link attempts and
+claims; export status, bounded retries and crash recovery do not change local
+evidence or denominators. P1 supplied migration 003 because B01 had no trace
+outbox. See the [Q06 receipt](commits/Q06.md#completion-receipt) for exact paths,
+prerequisites and failed/unrun checks.
+
+Evidence: **11/11** exporter tests, **23/23** storage/monitor tests, **133/133**
+baseline regressions, typecheck and server/web builds passed. This is synthetic
+local evidence only. Optional R01 wiring and live LangSmith sandbox/UI-link smoke
+remain pending; no hosted export, provider workflow, human label, or release
+gate is established by Q06.

@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { initializeMonitorSchema, MonitorStore } from './monitor-store.js';
 
 export const APPLICATION_STORE_VERSION = 2;
-const MIGRATIONS = ['001-initial.sql', '002-workflow-driver.sql'] as const;
+const MIGRATIONS = ['001-initial.sql', '002-workflow-driver.sql', '003-trace-exports.sql'] as const;
 
 /** The application and monitor share this connection; checkpoints never do. */
 export class ApplicationDatabase {
