@@ -211,6 +211,6 @@ These examples demonstrate the tooling with synthetic evidence. Passing them is 
 
 ## 05 Demo video
 
-**Video link:** `<VIDEO_LINK_PLACEHOLDER>`
+**Video link:** [Watch the demo](https://drive.google.com/drive/folders/14ESRy4QuwqIl9Wugk_fxa5Ri6aTs7faz?usp=sharing)
 
-**Maximum duration:** 2 minutes. Recording to be added.
+**Maximum duration:** 2 minutes.
