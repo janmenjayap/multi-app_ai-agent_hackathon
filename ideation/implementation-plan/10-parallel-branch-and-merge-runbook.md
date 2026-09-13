@@ -20,16 +20,18 @@ optional unless the release explicitly claims them.
 
 ## 1. Current starting point
 
-**Execution update, September 14:** P00 is preserved at
-`37e1aa029439d7cd509b237525f8b8e02553528e`. F01 implementation starts on
-`feat/foundation` from `dd37c38adc72c003f426b7b9e37c040f0a721485`; intervening
-changes are planning Markdown only. See the [P00 receipt](commits/P00.md) and
-[F01 receipt](commits/F01.md#completion-receipt) for fresh checks and pending
-review/merge gates. F02 is now implemented locally with six shared contract
-modules and 57 contract tests; its [receipt](commits/F02.md#completion-receipt)
-records 235 passing aggregate tests and the v1 compatibility boundary. F01/F02
-are still uncommitted and unmerged. F02's reviewed contract freeze and Round 1
-are not yet released.
+**Execution update, September 14:** local main now contains the reviewed
+foundation commits, merged sequentially after pulling the latest planning update:
+
+- P00: `37e1aa029439d7cd509b237525f8b8e02553528e`.
+- F01: `9235026140db8d5083a9d2eabf5a91f73d37de5b`.
+- F02: `87d3c7d7bad17d54300e452e932c7f226fc74299`.
+
+P2/P3/P4 delegated Codex boundary reviews accepted F02 under conventions 1.2;
+the [F02 receipt](commits/F02.md#completion-receipt) records reviewer identities,
+57 focused tests, typecheck/server build and the retained 235-test full receipt.
+The reviewed local F02 base permits B01/I01/Q01/U01 work. Provider/model live
+access remains unrun. Commits are merged locally but not yet pushed to origin.
 
 At the time this runbook was written:
 

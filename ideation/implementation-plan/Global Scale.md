@@ -61,9 +61,9 @@ environment failures and remaining review/merge gates. F01's package/config edit
 do not rewrite the historical `monitor-v1`/`checker-v1` receipt. Monitor/checker
 source, tests, supplied schemas and example evidence remain unchanged.
 
-Implementation-ID register: **P00** is the existing SHA above; **F01** is a local
-working-tree implementation with no commit/merge SHA yet; **F02** is the local
-contract implementation recorded below, also without a commit/merge SHA.
+Implementation-ID register: **P00** is the existing SHA above; **F01** is merged into local main at
+`9235026140db8d5083a9d2eabf5a91f73d37de5b`; **F02** is merged at
+`87d3c7d7bad17d54300e452e932c7f226fc74299`.
 The local deterministic graph and SDK fetch fixture are compatibility tests,
 not an assembled PromiseGuard workflow. Product scenario attempts, actual model
 calls, live-provider workflows and actual semantic reviews remain **0**.
@@ -84,9 +84,15 @@ commands, helper review findings and the resolved sandbox subprocess failure.
 
 This is local synthetic contract evidence. It does not implement monitor-v2
 assessment, product workflows, provider/model clients, actual review/approval,
-independent collection, or a measured release. F01/F02 remain uncommitted on
-`feat/foundation`; named receiving-owner review and sequential merge gates remain
-pending. No Round 1 branch is released and no real SHA has been fabricated.
+independent collection, or a measured release. F01/F02 are now reviewed and
+merged into local main in order: `9235026140db8d5083a9d2eabf5a91f73d37de5b`,
+then `87d3c7d7bad17d54300e452e932c7f226fc74299`. P2/P3/P4 delegated Codex
+reviewers accepted the contract boundaries under conventions 1.2. Fresh focused
+validation after the pull passed 57 contract tests, typecheck and server build;
+the unchanged full/browser suite was not rerun. A missing server command identity
+was added with a rejection case. Round 1 can use the reviewed local F02 base.
+Remote publication is not performed; origin/main still points to the pulled
+planning commit. No live or downstream capability is advanced by this merge.
 
 ## 1. Historical repository baseline
 

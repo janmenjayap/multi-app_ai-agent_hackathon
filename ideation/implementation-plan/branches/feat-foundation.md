@@ -1,8 +1,7 @@
 # Branch plan: feat/foundation
 
-**Owner:** P1. **Status:** F01 and F02 implemented on local `feat/foundation`,
-pending commits, receiving-owner acceptance and sequential review/merge.
-See the individual receipts for validation; Round 1 is not yet released.
+**Owner:** P1. **Status:** F01 and F02 reviewed and merged sequentially into
+local `main`; remote publication remains separate. Conventions 1.2 applies.
 **Canonical source:** [commit backlog](../04-commit-plan.md).
 **Base:** integration `main`, after the prerequisite commits below land.
 
@@ -80,8 +79,13 @@ planning-only HEAD.
 
 ## Branch completion receipt
 
-- [ ] Dependency SHAs and actual base SHA: `UNRECORDED`.
-- [ ] Every linked commit receipt completed; actual commit SHAs: `UNRECORDED`.
-- [ ] Combined verification commands/evidence and remaining gaps: `UNRECORDED`.
-- [ ] Reviewer and consumer handoff acceptance: `UNRECORDED`.
-- [ ] Actual merged branch/PR reference: `UNRECORDED`.
+- [x] Base after pull: `0f9907e5c62571506d8ca066a09da45ee6b1586a`.
+  P00 prerequisite: `37e1aa029439d7cd509b237525f8b8e02553528e`.
+- [x] F01: `9235026140db8d5083a9d2eabf5a91f73d37de5b`.
+- [x] F02: `87d3c7d7bad17d54300e452e932c7f226fc74299`.
+- [x] Prior full verification retained (235 tests); fresh F02 57-case contract
+  suite, typecheck, server build and whitespace checks pass.
+- [x] P2/P3/P4 delegated Codex reviewers accepted their boundaries under
+  conventions 1.2. See the F02 receipt; this is not human semantic review.
+- [x] Both commits fast-forward merged into local main in prerequisite order.
+- [ ] Remote publication / PR link: not pushed or created.
