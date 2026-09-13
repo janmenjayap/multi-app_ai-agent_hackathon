@@ -124,6 +124,24 @@ See [B01's receipt](commits/B01.md#completion-receipt) for exact versions,
 hashes, reviewers, commands and limitations. Driver/agent/provider integration,
 actual approval, semantic verification and live collection remain downstream work.
 
+## B04 execution update — September 14, 2026
+
+B04 is implemented at `7b13aa0b15c558526bfe9a25c15cf1649f101f14` on
+`feat/workflow-driver`, using conventions **1.2** and F02 schema **2**. The user
+authorized main integration and remote publication. Its isolated base is
+`e27ee70ce85143a58ae73ce604afcf4be76f12a6`. Durable commands/scheduling, separate
+synchronous LangGraph checkpoints, wait/restart, explicit reconciliation,
+canonical claims, authenticated run APIs, and persistent public revisions now
+have synthetic coverage. An additive reviewed migration extends B01 without
+changing migration 001. The integrated 29 driver/API/storage tests, typecheck,
+and build pass; the existing baseline has 133 passing tests.
+
+See the [B04 receipt](commits/B04.md#reviewed-merge-handoff--september-14-2026)
+for commands, boundary reviews, and handoffs. R01 supplies real graph nodes,
+provider/model clients, sessions, and optional Q03/Q05 projection adapters.
+Live writes, authentic approval, U02 integration, and a measured four-app release
+remain unproven by this bounded synthetic implementation.
+
 ## Q01 execution update — September 14, 2026
 
 Q01's frozen evaluation fixtures and stateful fakes are implemented at
@@ -385,18 +403,20 @@ product workflows remain unimplemented.
 
 **Expected:** one run per immutable incident, one active executor, stable effect
 keys, and persisted attempts across crash/restart and approval waits.
-**Actual:** **PARTIAL — B01 storage implemented and synthetically tested.**
-The application ledger now persists run/effect identities, immutable attempts
-and evidence with canonical events/jobs in one transaction. Graph checkpoints,
-driver scheduling and integrated provider execution remain B04/B06 work.
+**Actual:** **PARTIAL — B01 storage and B04 driver implemented and synthetically tested.**
+The application ledger persists run/effect identities, immutable attempts,
+canonical events/jobs, and durable scheduling. Separate graph checkpoints and
+bounded restart/reconciliation are covered; integrated provider execution remains
+B06/R01/Q04 work.
 **Owner/commits:** backend owner; B01, B04, B06. Proposed paths:
 `src/server/storage/`, `src/server/workflow/`, `src/server/execution/`.
 
 - [x] B01 unique constraints and atomic storage claims preserve incident/effect
   identity across retries; concurrent role claims and unknown writes fail closed.
   Full workflow replay scenarios remain B04/B06/Q04 gates.
-- [ ] Application state, canonical event, and measurement job commit together;
-  graph checkpoint storage is separate and restart reloads application truth.
+- [x] Application state, canonical event, and measurement job commit together;
+  graph checkpoint storage is separate and restart reloads application truth
+  (B04 synthetic restart/checkpoint-failure tests).
 - [ ] Intent persists before dispatch. Missing results remain unresolved; a
   crash after remote acceptance cannot erase the inflight effect.
 - [ ] Pause/restart/resume preserves the same thread, reviewed plan, rejected
