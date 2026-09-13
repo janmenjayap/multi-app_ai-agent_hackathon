@@ -65,7 +65,7 @@ function contentRef(planRevision: number, contentKey: string) {
   return ApprovedContentRefSchema.parse({ type: 'approved_content', planRevision, contentKey });
 }
 
-export async function freezePlan(input: PlanBuildInput) {
+export async function freezePlan(input: unknown) {
   const value = PlanBuildInputSchema.parse(input);
   const bound = bindIncidentIdentity(value.incident, value.incident);
   if (bound.incidentFingerprint !== value.incidentFingerprint) throw new Error('incident_fingerprint_mismatch');
