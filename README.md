@@ -4,11 +4,13 @@ PromiseGuard is a proposed incident-to-customer-follow-up agent across GitHub,
 HubSpot, Slack, and Gmail. It is intended to create approved, assigned recovery
 work and a verified customer email draft.
 
-**Current status — September 14, 2026 (IST):** product planning, the original
-offline evidence checker, and a runnable TypeScript/SQLite reliability monitor.
+**Current status — September 14, 2026 (IST):** a Fastify/React application
+scaffold, the original offline evidence checker, and a runnable
+TypeScript/SQLite reliability monitor.
 The monitor checks supplied traces, snapshots, and labels; it does not run agents
-or call providers. The application, four app adapters, authentic Slack approval,
-durable business execution, and operator UI remain unimplemented.
+or call providers. The scaffold serves a browser entry and bootstrap health
+endpoint. The four app adapters, authentic Slack approval, durable business
+execution, model runtime, and operator console remain unimplemented.
 
 For the hackathon, **agent reliability is a P0 deliverable with three parts**:
 grounded original AI outputs judged against source facts and independent labels;
@@ -59,6 +61,40 @@ define call sites, wiring, access, tests, and commit ownership. All paths above
 are planned application modules. R01/R02 must preserve separate fake-model,
 model-live, and provider-live receipts before describing an integrated live run.
 
+## Run the application scaffold
+
+Use Node **24.21.0** from `.node-version` (Node 18 cannot run this package).
+
+```bash
+npm ci
+npx playwright install chromium
+cp .env.example .env
+npm run typecheck
+npm test
+npm start
+```
+
+Open `http://127.0.0.1:3000`. `npm test` builds both server and browser, then runs
+checker/monitor regressions, application, component/accessibility, and Chromium
+tests. `npm start` serves `dist/web` from the same Fastify origin as
+`/api/health`. The health response reports **bootstrap readiness only**.
+
+`PG_MODEL_MODE=mock|live` and `PG_ADAPTER_MODE=fake|rest` are independent. Any
+mock/fake combination requires an explicit `PG_FIXTURE_ID`; the example uses
+`bootstrap-synthetic-v1`. Live modes require the server configuration listed in
+`.env.example` and fail before constructing services if it is missing. Startup
+does not contact models/providers or verify account capabilities. All credentials
+and private account settings stay server-side; Vite exports no environment
+variables. Application data, checkpoints, and restricted evidence have separate
+paths under ignored `.local/`, with actual product persistence deferred to B01.
+
+For development, run `npm run build` once, then `npm run dev:server` and
+`npm run dev:web` in separate terminals. Vite proxies `/api` to port 3000.
+Focused commands are `build:server`, `build:web`, `test:app`, `test:web`, and
+`test:e2e`; build before running standalone application or browser tests.
+See the [F01 receipt](ideation/implementation-plan/commits/F01.md#completion-receipt)
+for tested versions, scope, and remaining handoff gates.
+
 ## Run the local monitor
 
 Use Node 24; this implementation was tested with **v24.21.0**. No provider or
@@ -78,9 +114,10 @@ fixture. Its results are **monitor checks, not live workflow or human-evaluation
 results**. The [monitor guide](tools/monitoring/README.md) covers frozen manifests,
 register/append/measure/report/trace commands, persistence, metrics, and limits.
 
-The standalone monitor uses Node's built-in `node:sqlite` and Zod. The proposed
-Fastify/React/LangGraph application and its `better-sqlite3` effect ledger remain
-future work; monitor job durability does not implement business-write safety.
+The standalone monitor uses Node's built-in `node:sqlite` and Zod. F01 tests
+Fastify/React startup plus local LangGraph/checkpointer and `better-sqlite3`
+compatibility. The application effect ledger remains future work; monitor job
+durability does not implement business-write safety.
 
 ## Run the original checker
 
