@@ -58,6 +58,25 @@ server/tool map, equivalent contract tests and live account evidence exist.
 Historical measurement receipts remain as recorded below. The F01 execution
 update records the subsequent application scaffold separately.
 
+The selected A01 migration target is the Gemini Developer API free tier with
+stable `gemini-3.8-flash`, direct REST, and server-only `GEMINI_API_KEY`. This
+does not close a capability gate: live model compatibility remains unrun, active
+quota must be checked before evidence capture, free-tier runs use synthetic data,
+and no paid or mock fallback is allowed.
+
+**Migration execution update:** the current working tree now implements that
+transport and removes the OpenAI dependency/configuration. The existing
+`agent-runtime-v1` evidence label remains stable for frozen manifests, while
+`model-compatibility-smoke-v2` records the new transport. Each call uses one
+non-streaming `generateContent` request, persists exact raw bytes before parsing,
+requests Gemini JSON Schema output with no tools, and classifies safety and
+free-tier quota outcomes explicitly. Node 24.21.0 clean install, typecheck,
+server/web builds, 133 baseline tests, 344 application tests (including 8 R01/Q04
+scenarios), and 36 web tests pass. Latest main's Playwright stage remains blocked
+before test launch because its web-server command does not provide the now-required
+`PG_WORKFLOW_MODULE`; do not count that gate as passed. This is deterministic/
+injected evidence only; no migration SHA or successful live Gemini receipt exists yet.
+
 ## F01 execution update — September 14, 2026
 
 P00 is preserved at `37e1aa029439d7cd509b237525f8b8e02553528e` with a fresh

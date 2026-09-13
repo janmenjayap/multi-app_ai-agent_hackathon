@@ -129,7 +129,7 @@ Every implementation MUST preserve these invariants.
 - String discriminants and persisted enum values use `lower_snake_case`:
   `awaiting_approval`, `failed_partial`, `no_affected`.
 - Environment variables use the `PG_` prefix and `UPPER_SNAKE_CASE`, except
-  standard vendor variables such as `OPENAI_API_KEY`.
+  standard vendor variables such as `GEMINI_API_KEY`.
 - Boolean names MUST read as predicates: `isComplete`, `hasMore`,
   `wasApplied`. Avoid ambiguous names such as `completeFlag`.
 - Collection names are plural; one-item entity names are singular.
@@ -870,8 +870,12 @@ describe. Do not compress them into a single misleading `live: true` flag.
   validated configuration through dependency injection and MUST NOT call
   `process.env` directly.
 - `PG_MODEL_MODE=mock|live` and `PG_ADAPTER_MODE=fake|rest` are independent.
-- `OPENAI_API_KEY`, `OPENAI_MODEL`, optional role-model overrides, model budgets,
+- `GEMINI_API_KEY`, `GEMINI_MODEL`, optional role-model overrides, model budgets,
   and provider credentials are server-only.
+- The selected Gemini free tier is restricted to synthetic, disposable demo data
+  because Google may use free-tier prompts and responses to improve its products.
+  Recheck model eligibility and active project quotas before live evidence; quota
+  exhaustion fails visibly and never triggers paid fallback.
 - Browser-visible environment variables MUST NOT contain credentials, tokens,
   account secrets, private evidence, or provider payloads.
 - `.env.example` contains names and safe descriptions/placeholders only.

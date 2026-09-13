@@ -85,9 +85,11 @@ function createScenarioModel(faults: FaultController) {
     }
     const refused = fault?.kind === 'refusal';
     const rawText = fault?.kind === 'malformed_output' ? '{invalid JSON' : JSON.stringify(output);
-    await onRawResponse({ body: JSON.stringify({ status: 'completed', output: [{ type: 'message', status: 'completed',
-      content: refused ? [{ type: 'refusal', refusal: 'Predeclared synthetic refusal.' }] : [{ type: 'output_text', text: rawText }] }],
-      usage: { input_tokens: 100, output_tokens: 100 } }), status: 200, requestId: `synthetic-${randomUUID()}`, retryAfterMs: null });
+    await onRawResponse({ body: JSON.stringify({ responseId: `synthetic-${randomUUID()}`, modelVersion: 'synthetic-model',
+      candidates: [{ content: { role: 'model', parts: [{ text: refused ? 'Predeclared synthetic refusal.' : rawText }] },
+        finishReason: refused ? 'SAFETY' : 'STOP', index: 0 }],
+      usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 100, totalTokenCount: 200 } }),
+      status: 200, requestId: `synthetic-${randomUUID()}`, retryAfterMs: null });
     return { output: refused ? null : output, rawText, refused, incomplete: false,
       usage: { inputTokens: 100, outputTokens: 100 } };
   } };

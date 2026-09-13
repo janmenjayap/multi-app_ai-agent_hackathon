@@ -52,7 +52,7 @@ flowchart TD
 
 The three AI roles run as bounded calls within the backend process. They receive scoped evidence and return structured outputs; application code owns tool dispatch and credentials. The auditor receives a separate review context. Approval, retry decisions, persistence, and completion checks are enforced by code.
 
-**Stack:** TypeScript, React + Vite, Fastify, LangGraph/LangChain, OpenAI, SQLite, and Zod. Tests use Node's test runner, Vitest, and Playwright.
+**Stack:** TypeScript, React + Vite, Fastify, LangGraph/LangChain, Gemini Developer API, SQLite, and Zod. Tests use Node's test runner, Vitest, and Playwright.
 
 ## 02 External apps used
 
@@ -63,7 +63,7 @@ PromiseGuard integrates **four external apps**, exceeding the minimum of three. 
 - **Slack — human approval and coordination:** presents the plan, checks the authorized approver's reply, and publishes the final summary.
 - **Gmail — customer communication:** creates and verifies the approved draft, including its recipient and content.
 
-The backend includes typed REST adapters for all four apps. OpenAI powers the model roles through LangChain; LangGraph coordinates the workflow. MCP is an optional future transport, not required for the current implementation.
+The backend includes typed REST adapters for all four apps. Gemini powers the model roles through a direct server-side structured-output request; LangGraph coordinates the workflow. MCP is an optional future transport, not required for the current implementation.
 
 ## 03 Setup instructions
 
@@ -112,7 +112,7 @@ cp .env.example .env
 Configure the following in `.env`:
 
 - **Workflow and sessions:** set `PG_WORKFLOW_MODULE` to a trusted local `.mjs` file exporting `createCompositionOptions(config)`. It must supply `buildWorkflow(services)` and `auth.resolveSession`, including the graph, frozen evaluation setup, selection/approval policies, and trusted operator sessions. See [CompositionOptions](src/server/composition.ts) and the [integration receipt](ideation/implementation-plan/commits/R01.md).
-- **Model mode:** `PG_MODEL_MODE=live` requires `OPENAI_API_KEY` and `OPENAI_MODEL`. Optional role-specific model names and bounded call settings are listed in [.env.example](.env.example).
+- **Model mode:** `PG_MODEL_MODE=live` requires server-only `GEMINI_API_KEY` and `GEMINI_MODEL`; the selected free-tier target is `gemini-3.8-flash`. Optional role-specific model names and bounded call settings are listed in [.env.example](.env.example). Free-tier availability and project quota can change, and there is no automatic paid or mock fallback.
 - **Provider mode:** `PG_ADAPTER_MODE=rest` requires the GitHub repository/token, HubSpot portal/token, Slack workspace/channel/tokens/approver IDs, and Gmail OAuth/mailbox settings in `.env.example`. HubSpot also needs portal-specific `PG_HUBSPOT_MAPPING_JSON`, or a mapping supplied by the trusted module, matching [HubSpotMappingSchema](src/server/adapters/hubspot.ts).
 - **Simulation:** model and provider modes are independent. Any `mock`/`fake` combination requires `PG_FIXTURE_ID` and the corresponding injected mock model or fake provider clients.
 
@@ -134,6 +134,31 @@ Open **http://127.0.0.1:3000**. Fastify serves the browser and authenticated `/a
 - [`tools/`](tools/) — demo, provider/model smoke tools, evidence collection, and reliability utilities.
 - [Project proposal](ideation/final-project-promiseguard.md), [detailed architecture](ideation/promiseguard-architecture.md), and [implementation plan](ideation/implementation-plan/README.md).
 - [Integration verification receipt](ideation/implementation-plan/commits/R01.md) and [completion register](ideation/implementation-plan/Global%20Scale.md) — recorded implementation checks and outstanding gates. Earlier planning documents may describe older baselines or future work.
+
+### Gemini compatibility smoke
+
+For live model compatibility, rotate any Gemini key that has appeared in chat or
+another non-secret channel, put the replacement only in local `GEMINI_API_KEY`,
+and keep `GEMINI_MODEL=gemini-3.8-flash`. As checked on September 14, 2026,
+Google lists that stable model's input/output tokens as free of charge, but
+availability and RPM/TPM/RPD quotas vary by project and may change. There is no
+code-side free-tier switch or automatic paid fallback. Free-tier inputs and
+outputs may be used by Google to improve its products, so use synthetic,
+disposable demo data only. Run one explicit compatibility check with:
+
+```bash
+PG_MODEL_MODE=live npm run smoke:model -- --mode live --role analyst --receipt-dir /absolute/private/promiseguard-model-smoke
+```
+
+The receipt is private compatibility evidence, not semantic-quality or four-app
+workflow evidence.
+
+For development, run `npm run build` once, then `npm run dev:server` and
+`npm run dev:web` in separate terminals. Vite proxies `/api` to port 3000.
+Focused commands are `build:server`, `build:web`, `test:app`, `test:web`, and
+`test:e2e`; build before running standalone application or browser tests.
+See the [F01 receipt](ideation/implementation-plan/commits/F01.md#completion-receipt)
+for tested versions, scope, and remaining handoff gates.
 
 **Local data:** credentials stay server-side in ignored `.env` files. The business database, checkpoints, and restricted evidence use separate paths under ignored `.local/`. Keep real customer records and raw provider evidence private; use reviewed, redacted summaries when sharing results.
 
@@ -203,7 +228,7 @@ These examples demonstrate the tooling with synthetic evidence. Passing them is 
 
 **As of September 14, 2026:** the simulated workflow is runnable, and the four REST adapters and connected application components are implemented. The following evidence gaps remain:
 
-- **Live validation:** the initial live workflow and its replay with OpenAI and all four real apps have not been run. A synthetic demo does not establish live-provider success.
+- **Live validation:** the initial live workflow and its replay with Gemini and all four real apps have not been run. A synthetic demo does not establish live-provider success.
 - **Outcome evaluation:** the frozen expected-outcome manifest and generated plan still differ in effect/content bindings. Independent collection exists, but the demo reports that comparison as unverified.
 - **AI quality:** original-output quality remains unverified without independent human review labels. An auditor pass or Slack approval does not establish quality on its own.
 - **Evaluation coverage:** the full 18-family scenario suite and final measured reliability scorecard are not complete; no production reliability percentage is claimed.

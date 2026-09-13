@@ -4,6 +4,13 @@ Audit date: September 14, 2026 (IST). Scope: the current working tree, including
 
 **Verdict: partially implemented.** The offline checker and monitoring/measurement engine work. The reliable multi-app agent, independent provider evidence collection, and actual agent evaluation remain unimplemented or unobserved. The hackathon reliability requirement is still open.
 
+**Model-provider decision, September 14:** the implementation now targets the
+Gemini Developer API free tier with stable `gemini-3.8-flash`, direct
+`models.generateContent`, and server-only `GEMINI_API_KEY`. This changes no
+historical evidence count: live compatibility is still unrun. Free-tier model
+runs are restricted to synthetic data, and safety/quota blocks remain failed or
+unrun evidence rather than triggering a paid or mock fallback.
+
 ## What the original plan means
 
 Reliability means demonstrating that the agent makes grounded decisions, performs only authorized actions, and reaches the independently verified expected state—or stops with the correct explicit outcome when it cannot.

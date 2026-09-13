@@ -46,7 +46,7 @@ steps; the guides define shared configuration and call paths.
 - **F01/F02:** server-only model/app configuration, tested packages, fixed role
   signatures, complete reads/unknown writes and capability-separated app contracts.
 - **B01/A01/A02–A04:** durable role claims/output records; the single recorded
-  OpenAI call boundary; analyst, drafter and auditor prompt/input/output functions.
+  Gemini REST call boundary; analyst, drafter and auditor prompt/input/output functions.
 - **B04/R01:** schedule graph work outside HTTP; construct clients in
   `src/server/composition.ts`; call role functions from `workflow/nodes.ts` and
   enforce ordering in `workflow/graph.ts`. B02/B03 remain deterministic policy.
@@ -257,7 +257,7 @@ guard, label a simulation live, or fill a missed measurement with a target.
   `tests/app/web-bootstrap.test.tsx`,
   `tests/e2e/bootstrap.spec.ts`.
 - **Do:** pin a tested Node 24 toolchain; establish React/Vite, Fastify/Zod,
-  LangGraph/LangChain/OpenAI, SQLite/checkpointer, component/accessibility and
+  LangGraph/LangChain plus direct Gemini REST, SQLite/checkpointer, component/accessibility and
   Playwright dependencies. Add explicit server/web build and app/web/E2E scripts,
   same-origin static serving, and a no-secret browser-bundle smoke. Verify actual
   APIs and native SQLite compatibility; keep checker/monitor commands intact.
@@ -579,8 +579,8 @@ guard, label a simulation live, or fill a missed measurement with a target.
 - **Paths:** `src/server/agents/runtime.ts`, `src/server/agents/model.ts`,
   `tests/app/agent-runtime.test.ts`, `tools/smoke/model.ts`.
   The model smoke entrypoint is an explicit A01 scope refinement; F01 owns its
-  proposed `smoke:model` package-script registration and TypeScript execution setup.
-- **Do:** wire the pinned LangChain/OpenAI transport with tested structured
+  registered `smoke:model` package script and TypeScript execution setup.
+- **Do:** wire direct Gemini `models.generateContent` with tested structured
   outputs, explicit timeout/token/schema retry budgets, role-specific prompt/model
   versions, immutable first outputs, per-attempt events, and validated references.
 - **Do not:** give agents provider write tools, shared chat history, generic URL

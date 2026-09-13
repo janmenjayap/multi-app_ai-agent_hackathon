@@ -6,7 +6,6 @@ import { afterEach, test, vi, type TestContext } from 'vitest';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { Annotation, END, START, StateGraph } from '@langchain/langgraph';
 import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite';
-import { ChatOpenAI } from '@langchain/openai';
 import Database from 'better-sqlite3';
 import { build } from 'vite';
 import { z } from 'zod';
@@ -17,8 +16,8 @@ afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 // These deliberately unusable credentials only exercise local configuration.
 // No live model or provider request is made by this bootstrap suite.
 const modelEnvironment: NodeJS.ProcessEnv = {
-  OPENAI_API_KEY: 'synthetic-openai-secret-do-not-dispatch',
-  OPENAI_MODEL: 'synthetic-bootstrap-model',
+  GEMINI_API_KEY: 'synthetic-gemini-secret-do-not-dispatch',
+  GEMINI_MODEL: 'gemini-3.8-flash',
 };
 const providerEnvironment: NodeJS.ProcessEnv = {
   PG_GITHUB_TOKEN: 'synthetic-github-secret-do-not-dispatch',
@@ -77,10 +76,10 @@ test('default configuration freezes the listener, model budgets and independent 
 test('role-specific model overrides fall back to the default without requiring tracing credentials', () => {
   const config = loadConfig({
     ...fixtureEnvironment, ...modelEnvironment, PG_MODEL_MODE: 'live',
-    OPENAI_MODEL_ANALYST: 'synthetic-analyst-model', OPENAI_MODEL_AUDITOR: 'synthetic-auditor-model',
+    GEMINI_MODEL_ANALYST: 'synthetic-analyst-model', GEMINI_MODEL_AUDITOR: 'synthetic-auditor-model',
   });
   assert.deepEqual(config.model.roles, {
-    analyst: 'synthetic-analyst-model', drafter: modelEnvironment.OPENAI_MODEL,
+    analyst: 'synthetic-analyst-model', drafter: modelEnvironment.GEMINI_MODEL,
     auditor: 'synthetic-auditor-model',
   });
 });
@@ -254,9 +253,9 @@ test('a missing production build reports how to build it before constructing ser
 test('the production browser build excludes server secrets, including VITE-prefixed values', async t => {
   const directory = await temporaryDirectory(t);
   const markers = {
-    OPENAI_API_KEY: 'F01_BUILD_PRIVATE_OPENAI_71d9cf',
+    GEMINI_API_KEY: 'F01_BUILD_PRIVATE_GEMINI_71d9cf',
     PG_GITHUB_TOKEN: 'F01_BUILD_PRIVATE_GITHUB_28a1ec',
-    VITE_OPENAI_API_KEY: 'F01_BUILD_PRIVATE_VITE_OPENAI_43e0ba',
+    VITE_GEMINI_API_KEY: 'F01_BUILD_PRIVATE_VITE_GEMINI_43e0ba',
   };
   for (const [name, value] of Object.entries(markers)) vi.stubEnv(name, value);
   const output = await build({
@@ -278,7 +277,7 @@ test('the production browser build excludes server secrets, including VITE-prefi
     for (const chunk of bundle.output) {
       if (chunk.type !== 'chunk') continue;
       for (const moduleId of Object.keys(chunk.modules)) {
-        assert.doesNotMatch(moduleId, /\/src\/server\/|\/(?:fastify|better-sqlite3|@langchain|openai)\//);
+        assert.doesNotMatch(moduleId, /\/src\/server\/|\/(?:fastify|better-sqlite3|@langchain)\//);
       }
     }
   }
@@ -429,7 +428,7 @@ test('the selected LangGraph/checkpointer pair persists and reopens graph state 
     const persisted = JSON.stringify(checkpoint);
     assert.ok(!persisted.includes('apiKey'));
     assert.ok(!persisted.includes('client_secret'));
-    assert.ok(!persisted.includes('synthetic-openai-secret'));
+    assert.ok(!persisted.includes('synthetic-gemini-secret'));
     assert.ok((await readFile(path)).byteLength > 0);
     assert.ok((await readdir(directory)).includes('checkpoints.sqlite'));
   } finally {
@@ -437,37 +436,7 @@ test('the selected LangGraph/checkpointer pair persists and reopens graph state 
   }
 });
 
-test('LangChain prompts and OpenAI Responses structured-output wiring work with an offline transport', async () => {
-  let response = JSON.stringify({ status: 'bootstrap', fixtureId: 'f01-bootstrap-v1' });
-  const localFetch = vi.fn<typeof fetch>(async (input, options) => {
-    assert.match(String(input), /\/responses$/);
-    assert.equal(options?.method, 'POST');
-    const request = JSON.parse(String(options?.body));
-    assert.equal(request.model, modelEnvironment.OPENAI_MODEL);
-    assert.equal(request.text.format.type, 'json_schema');
-    assert.equal(request.text.format.name, 'BootstrapCompatibility');
-    assert.equal(request.text.format.strict, true);
-    assert.deepEqual(request.text.format.schema.required, ['status', 'fixtureId']);
-    assert.ok(JSON.stringify(request.input).includes('f01-bootstrap-v1'));
-    return new Response(JSON.stringify({
-      id: 'resp_f01_bootstrap', object: 'response', created_at: 0,
-      status: 'completed', model: modelEnvironment.OPENAI_MODEL,
-      output: [{
-        id: 'msg_f01_bootstrap', type: 'message', role: 'assistant', status: 'completed',
-        content: [{ type: 'output_text', text: response, annotations: [] }],
-      }],
-      usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
-    }), { status: 200, headers: { 'content-type': 'application/json' } });
-  });
-  const model = new ChatOpenAI({
-    apiKey: modelEnvironment.OPENAI_API_KEY,
-    model: modelEnvironment.OPENAI_MODEL,
-    useResponsesApi: true,
-    timeout: 30_000,
-    maxRetries: 0,
-    configuration: { fetch: localFetch },
-  });
-  assert.equal(model.useResponsesApi, true);
+test('LangChain prompts and Gemini-compatible JSON schemas are prepared locally', async () => {
   const schema = z.object({ status: z.literal('bootstrap'), fixtureId: z.string() }).strict();
   const prompt = ChatPromptTemplate.fromMessages([
     ['system', 'Return the bootstrap marker for the named fixture.'],
@@ -475,15 +444,10 @@ test('LangChain prompts and OpenAI Responses structured-output wiring work with 
   ]);
   const messages = await prompt.formatMessages({ fixtureId: 'f01-bootstrap-v1' });
   assert.equal(messages[1].content, 'f01-bootstrap-v1');
-  // Responses can return SDK-parsed data without enforcing the Zod schema locally.
-  // A01 must independently validate role payloads even with strict model output.
-  const chain = prompt.pipe(model.withStructuredOutput(schema, {
-    name: 'BootstrapCompatibility', method: 'jsonSchema', strict: true,
-  })).pipe(result => schema.parse(result));
-  assert.deepEqual(await chain.invoke({ fixtureId: 'f01-bootstrap-v1' }), {
+  const jsonSchema = z.toJSONSchema(schema);
+  assert.deepEqual(jsonSchema.required, ['status', 'fixtureId']);
+  assert.deepEqual(schema.parse({ status: 'bootstrap', fixtureId: 'f01-bootstrap-v1' }), {
     status: 'bootstrap', fixtureId: 'f01-bootstrap-v1',
   });
-  response = JSON.stringify({ status: 'unsupported-product-success' });
-  await assert.rejects(chain.invoke({ fixtureId: 'f01-bootstrap-v1' }));
-  assert.equal(localFetch.mock.calls.length, 2);
+  assert.throws(() => schema.parse({ status: 'unsupported-product-success' }));
 });

@@ -21,6 +21,7 @@
     "test:web": "vitest run --project web",
     "test:e2e": "playwright test",
     "test": "npm run build && npm run test:baseline && npm run test:app && npm run test:web && npm run test:e2e",
+    "smoke:model": "node --experimental-transform-types tools/smoke/model.ts",
     "monitor": "node dist/server/monitoring/cli.js"
   },
   "dependencies": {
@@ -28,7 +29,6 @@
     "@langchain/core": "1.2.11",
     "@langchain/langgraph": "1.4.15",
     "@langchain/langgraph-checkpoint-sqlite": "1.0.4",
-    "@langchain/openai": "1.5.13",
     "better-sqlite3": "12.11.1",
     "fastify": "5.12.4",
     "react": "19.3.0",

@@ -96,8 +96,9 @@ function scripted(texts: string[]) {
     assert.notEqual(text, undefined, 'Unexpected additional model dispatch.');
     requests.push(request);
     await capture({ status: 200, requestId: 'synthetic-request', retryAfterMs: null,
-      body: JSON.stringify({ status: 'completed', output: [{ type: 'message', role: 'assistant',
-        content: [{ type: 'output_text', text }] }], usage: { input_tokens: 10, output_tokens: 10 } }) });
+      body: JSON.stringify({ responseId: 'synthetic-response', modelVersion: 'synthetic-model',
+        candidates: [{ content: { role: 'model', parts: [{ text }] }, finishReason: 'STOP', index: 0 }],
+        usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 10, totalTokenCount: 20 } }) });
     let output: unknown;
     try { output = JSON.parse(text!); } catch { output = undefined; }
     return { output, rawText: text!, refused: false, incomplete: false, usage: { inputTokens: 10, outputTokens: 10 } };

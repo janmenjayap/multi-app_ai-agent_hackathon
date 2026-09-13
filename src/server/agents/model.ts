@@ -1,7 +1,3 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
-import { ChatOpenAI } from '@langchain/openai';
-import { AsyncLocalStorageProviderSingleton } from '@langchain/core/singletons';
-import { CallbackManager } from '@langchain/core/callbacks/manager';
 import { z } from 'zod';
 import { AgentFailureCodeSchema, type AgentRole } from '../../shared/agents.js';
 import type { AppConfig } from '../index.js';
@@ -37,7 +33,7 @@ export interface ModelClient {
     onRawResponse: (raw: RawModelResponse) => Promise<void>): Promise<ModelDispatchResult>;
 }
 
-/** Only registry codes cross this boundary; SDK messages/cause may contain private content. */
+/** Only registry codes cross this boundary; provider messages/causes may contain private content. */
 export class ModelDispatchError extends Error {
   constructor(readonly reason: AgentFailureCode, readonly retryable = false,
     readonly retryAfterMs: number | null = null) {
@@ -57,36 +53,82 @@ function responseObject(raw: RawModelResponse): Record<string, unknown> | null {
 /** Call only after the unchanged response body has been durably saved. */
 export function inspectRawResponse(raw: RawModelResponse): Omit<ModelDispatchResult, 'output'> {
   const response = responseObject(raw);
+  const candidates = Array.isArray(response?.candidates) ? response.candidates : [];
+  const candidate = candidates.length === 1 ? object(candidates[0]) : null;
+  const promptFeedback = object(response?.promptFeedback);
+  const finishReason = typeof candidate?.finishReason === 'string' ? candidate.finishReason : null;
+  const blockedReasons = new Set([
+    'SAFETY', 'RECITATION', 'LANGUAGE', 'BLOCKLIST', 'PROHIBITED_CONTENT', 'SPII',
+    'IMAGE_SAFETY', 'IMAGE_PROHIBITED_CONTENT', 'IMAGE_RECITATION', 'ESCALATION',
+  ]);
   const text: string[] = [];
-  let refused = false;
-  let incomplete = response?.status !== undefined && response.status !== 'completed';
-  if (Array.isArray(response?.output)) {
-    for (const item of response.output) {
-      const message = object(item);
-      if (message?.type !== 'message') continue;
-      if (message.status !== undefined && message.status !== 'completed') incomplete = true;
-      if (!Array.isArray(message.content)) continue;
-      for (const item of message.content) {
-        const content = object(item);
-        if (content?.type === 'refusal') {
-          refused = true;
-          if (typeof content.refusal === 'string') text.push(content.refusal);
-        }
-        if (content?.type === 'output_text' && typeof content.text === 'string') text.push(content.text);
-      }
+  let refused = typeof promptFeedback?.blockReason === 'string' &&
+    promptFeedback.blockReason !== 'BLOCK_REASON_UNSPECIFIED';
+  let incomplete = raw.status < 200 || raw.status >= 300 || !candidate || finishReason !== 'STOP';
+  if (finishReason && blockedReasons.has(finishReason)) refused = true;
+  const content = object(candidate?.content);
+  if (Array.isArray(content?.parts)) {
+    for (const value of content.parts) {
+      const part = object(value);
+      if (part?.thought === true) continue;
+      if (typeof part?.text === 'string') text.push(part.text);
+      else if (part) incomplete = true;
     }
   }
-  const usage = object(response?.usage);
-  const inputTokens = usage?.input_tokens;
-  const outputTokens = usage?.output_tokens;
+  if (!text.length) incomplete = true;
+  const usage = object(response?.usageMetadata);
+  const inputTokens = usage?.promptTokenCount;
+  const candidateTokens = usage?.candidatesTokenCount;
+  const thoughtTokens = usage?.thoughtsTokenCount ?? 0;
+  const validCount = (value: unknown): value is number =>
+    typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+  const outputTokens = validCount(candidateTokens) && validCount(thoughtTokens)
+    ? candidateTokens + thoughtTokens : null;
   return {
     rawText: text.length ? text.join('') : null,
     refused,
     incomplete,
-    usage: typeof inputTokens === 'number' && Number.isSafeInteger(inputTokens) && inputTokens >= 0 &&
-      typeof outputTokens === 'number' && Number.isSafeInteger(outputTokens) && outputTokens >= 0
+    usage: validCount(inputTokens) && outputTokens !== null && Number.isSafeInteger(outputTokens)
       ? { inputTokens, outputTokens } : null,
   };
+}
+
+const schemaKeys = new Set([
+  '$id', '$defs', '$ref', '$anchor', 'type', 'format', 'title', 'description',
+  'enum', 'items', 'prefixItems', 'minItems', 'maxItems', 'minimum', 'maximum',
+  'anyOf', 'oneOf', 'properties', 'additionalProperties', 'required',
+]);
+
+function geminiSchemaNode(value: unknown): unknown {
+  const source = object(value);
+  if (!source) return value;
+  const result: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(source)) {
+    if (key === 'const') {
+      if (!Object.hasOwn(source, 'enum')) result.enum = [child];
+      continue;
+    }
+    if (!schemaKeys.has(key)) continue;
+    if (key === 'properties' || key === '$defs') {
+      const entries = object(child);
+      if (entries) result[key] = Object.fromEntries(
+        Object.entries(entries).map(([name, schema]) => [name, geminiSchemaNode(schema)]),
+      );
+    } else if (key === 'items' || (key === 'additionalProperties' && typeof child === 'object')) {
+      result[key] = geminiSchemaNode(child);
+    } else if (key === 'prefixItems' || key === 'anyOf' || key === 'oneOf') {
+      if (Array.isArray(child)) result[key] = child.map(geminiSchemaNode);
+    } else {
+      result[key] = child;
+    }
+  }
+  return result;
+}
+
+function geminiSchema<T>(schema: z.ZodType<T>, name: string): Record<string, unknown> {
+  const normalized = object(geminiSchemaNode(z.toJSONSchema(schema)));
+  if (!normalized) throw new ModelDispatchError('configuration_mismatch');
+  return { ...normalized, title: name };
 }
 
 function retryDelay(headers: Headers): number | null {
@@ -98,22 +140,35 @@ function retryDelay(headers: Headers): number | null {
   return Number.isFinite(delay) && delay >= 0 ? Math.ceil(delay) : null;
 }
 
+function errorFingerprint(raw: RawModelResponse | undefined): string {
+  if (!raw) return '';
+  const response = responseObject(raw);
+  const error = object(response?.error);
+  try {
+    return JSON.stringify({ code: error?.code, status: error?.status, details: error?.details }).toUpperCase();
+  } catch {
+    return '';
+  }
+}
+
 function failure(error: unknown, raw: RawModelResponse | undefined, signal: AbortSignal): ModelDispatchError {
   if (error instanceof ModelDispatchError) return error;
   const name = object(error)?.name;
   if (signal.aborted) return new ModelDispatchError(
     object(signal.reason)?.name === 'TimeoutError' ? 'timeout' : 'cancelled', false);
-  if (name === 'TimeoutError' || name === 'APIConnectionTimeoutError') return new ModelDispatchError('timeout', true);
-  if (name === 'AbortError' || name === 'APIUserAbortError') return new ModelDispatchError('cancelled');
+  if (name === 'TimeoutError') return new ModelDispatchError('timeout', true);
+  if (name === 'AbortError') return new ModelDispatchError('cancelled');
   const status = raw?.status;
-  if (status === 401 || status === 403) return new ModelDispatchError('authentication');
+  const fingerprint = errorFingerprint(raw);
+  if (status === 401 || status === 403 || /API_KEY_INVALID|UNAUTHENTICATED/.test(fingerprint)) {
+    return new ModelDispatchError('authentication');
+  }
   if (status === 404) return new ModelDispatchError('unsupported_model');
   if (status === 429) {
-    const code = object(raw && responseObject(raw)?.error)?.code;
-    const retryable = code !== 'insufficient_quota' && code !== 'billing_hard_limit_reached';
-    return new ModelDispatchError('rate_limited', retryable, raw?.retryAfterMs ?? null);
+    const dailyQuota = /PERDAY|DAILY|QUOTA_EXCEEDED/.test(fingerprint);
+    return new ModelDispatchError('rate_limited', !dailyQuota, raw?.retryAfterMs ?? null);
   }
-  if (status === 408) return new ModelDispatchError('timeout', true, raw?.retryAfterMs ?? null);
+  if (status === 408 || status === 504) return new ModelDispatchError('timeout', true, raw?.retryAfterMs ?? null);
   if (status !== undefined && status >= 500) return new ModelDispatchError('transport_error', true, raw?.retryAfterMs ?? null);
   if (status !== undefined && status >= 400) return new ModelDispatchError('configuration_mismatch');
   if (raw) return new ModelDispatchError('output_invalid', true);
@@ -128,27 +183,25 @@ export function createModelClient(options: {
   const { config } = options;
   if (config.modelMode === 'mock') {
     if (options.mockClient?.mode !== 'mock') throw new ModelDispatchError('configuration_mismatch');
-    // No OpenAI construction, key lookup, or transport fallback in fixture mode.
+    // No Gemini key lookup or transport fallback in fixture mode.
     return options.mockClient;
   }
-  if (config.modelMode !== 'live' || !config.secrets.openaiApiKey?.trim() || !config.model.name?.trim() ||
+  if (config.modelMode !== 'live' || !config.secrets.geminiApiKey?.trim() || !config.model.name?.trim() ||
       Object.values(config.model.roles).some(model => !model?.trim())) {
     throw new ModelDispatchError('configuration_mismatch');
   }
-  const apiKey = config.secrets.openaiApiKey;
+  const apiKey = config.secrets.geminiApiKey;
   const models = { ...config.model.roles };
   const limits = { ...config.model };
   const transport = options.fetch ?? globalThis.fetch;
   if (typeof transport !== 'function') throw new ModelDispatchError('configuration_mismatch');
-  // The pinned core shares this context with LangGraph and LangSmith. Clear the
-  // caller's context, then create an untraced root rather than inheriting hooks.
-  AsyncLocalStorageProviderSingleton.initializeGlobalInstance(new AsyncLocalStorage());
 
   return {
     mode: 'live',
     async dispatchStructured(request, onRawResponse) {
       if (!Object.hasOwn(models, request.role) || models[request.role] !== request.resolvedModelId ||
           !/^[A-Za-z0-9_-]{1,64}$/.test(request.schemaName) ||
+          !/^[A-Za-z0-9._-]{1,128}$/.test(request.resolvedModelId) ||
           !Number.isSafeInteger(request.maxOutputTokens) || request.maxOutputTokens < 1 ||
           request.maxOutputTokens > limits.maxOutputTokens) throw new ModelDispatchError('configuration_mismatch');
       if (!request.messages.length || request.messages.some(message =>
@@ -156,63 +209,49 @@ export function createModelClient(options: {
         throw new ModelDispatchError('input_invalid');
       }
       const messages = request.messages.map(({ role, content }) => ({ role, content }));
+      if (messages[0]?.role !== 'system' || messages.length < 2 ||
+          messages.slice(1).some(message => message.role !== 'user')) {
+        throw new ModelDispatchError('input_invalid');
+      }
       if (JSON.stringify(messages).length > limits.maxInputChars) throw new ModelDispatchError('input_budget_exceeded');
       let savedRaw: RawModelResponse | undefined;
       let storageFailed = false;
       let dispatched = false;
-      const capture: typeof globalThis.fetch = async (input, init) => {
-        // Guard against a future SDK changing its hidden retry policy or routing.
-        const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input : input.url);
-        if (dispatched || url.href !== 'https://api.openai.com/v1/responses') {
-          throw new ModelDispatchError('configuration_mismatch');
-        }
+      try {
+        request.abortSignal.throwIfAborted();
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(request.resolvedModelId)}:generateContent`;
+        const body = JSON.stringify({
+          systemInstruction: { parts: [{ text: messages[0]!.content }] },
+          contents: messages.slice(1).map(message => ({ role: 'user', parts: [{ text: message.content }] })),
+          generationConfig: {
+            responseMimeType: 'application/json',
+            responseJsonSchema: geminiSchema(request.outputSchema, request.schemaName),
+            candidateCount: 1,
+            maxOutputTokens: request.maxOutputTokens,
+          },
+          store: false,
+        });
         dispatched = true;
-        const response = await transport(input, { ...init, redirect: 'error' });
-        const raw = {
-          body: await response.clone().text(), status: response.status,
-          requestId: response.headers.get('x-request-id'), retryAfterMs: retryDelay(response.headers),
-        };
+        const response = await transport(endpoint, {
+          method: 'POST', redirect: 'error', signal: request.abortSignal, body,
+          headers: { accept: 'application/json', 'content-type': 'application/json', 'x-goog-api-key': apiKey },
+        });
+        const raw = { body: await response.text(), status: response.status,
+          requestId: response.headers.get('x-request-id') ?? response.headers.get('x-goog-request-id'),
+          retryAfterMs: retryDelay(response.headers) };
         try { await onRawResponse(raw); }
         catch { storageFailed = true; throw new ModelDispatchError('transport_error'); }
         savedRaw = raw;
-        return response;
-      };
-      try {
-        request.abortSignal.throwIfAborted();
-        const llm = new ChatOpenAI({
-          apiKey, model: request.resolvedModelId, useResponsesApi: true,
-          maxRetries: 0, maxTokens: request.maxOutputTokens, timeout: limits.timeoutMs,
-          streaming: false, disableStreaming: true, streamUsage: false, verbose: false,
-          callbacks: [], zdrEnabled: true,
-          configuration: {
-            apiKey, baseURL: 'https://api.openai.com/v1', maxRetries: 0,
-            organization: null, project: null, logLevel: 'off', fetch: capture,
-          },
-        });
-        // JSON schema is derived from the caller's F02 schema. Application/Zod
-        // refinements remain runtime-owned validation after restricted capture.
-        const structured = llm.withStructuredOutput(z.toJSONSchema(request.outputSchema), {
-          name: request.schemaName, method: 'jsonSchema', strict: true, includeRaw: true,
-        });
-        const result = await AsyncLocalStorageProviderSingleton.getInstance().run(undefined, () =>
-          AsyncLocalStorageProviderSingleton.runWithConfig({ callbacks: [], tags: [], metadata: {} }, () => {
-            // Environment-driven console/debug hooks cannot be disabled through
-            // verbose:false in this pinned core. Detect them before any prompt
-            // enters a runnable; optional export belongs to the redacted outbox.
-            if (CallbackManager.configure([], [])?.handlers.length) {
-              throw new ModelDispatchError('configuration_mismatch');
-            }
-            return structured.invoke(messages, { signal: request.abortSignal, callbacks: [], runName: request.role });
-          }));
-        if (!savedRaw) throw new ModelDispatchError('transport_error');
-        return { output: result.parsed, ...inspectRawResponse(savedRaw) };
+        if (!response.ok) throw failure(undefined, raw, request.abortSignal);
+        const inspected = inspectRawResponse(raw);
+        let output: unknown = null;
+        if (inspected.rawText !== null) {
+          try { output = JSON.parse(inspected.rawText); }
+          catch { /* Runtime records and repairs malformed role JSON. */ }
+        }
+        return { output, ...inspected };
       } catch (error) {
         if (storageFailed) throw new ModelDispatchError('transport_error');
-        if (savedRaw && savedRaw.status >= 200 && savedRaw.status < 300) {
-          const inspected = inspectRawResponse(savedRaw);
-          if (inspected.refused || inspected.incomplete) return { output: null, ...inspected };
-        }
-        // Schema construction errors are configuration failures, not repairable outputs.
         if (!dispatched && !request.abortSignal.aborted) throw new ModelDispatchError('configuration_mismatch');
         throw failure(error, savedRaw, request.abortSignal);
       }

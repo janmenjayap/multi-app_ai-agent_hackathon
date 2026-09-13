@@ -69,8 +69,9 @@ export function createDemoModel(options: { auditorBlock?: boolean } = {}) {
       })) };
     }
     const rawText = JSON.stringify(output);
-    await onRawResponse({ body: JSON.stringify({ status: 'completed', output: [{ type: 'message', status: 'completed',
-      content: [{ type: 'output_text', text: rawText }] }], usage: { input_tokens: 100, output_tokens: 100 } }),
+    await onRawResponse({ body: JSON.stringify({ responseId: `synthetic-${randomUUID()}`, modelVersion: 'synthetic-model',
+      candidates: [{ content: { role: 'model', parts: [{ text: rawText }] }, finishReason: 'STOP', index: 0 }],
+      usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 100, totalTokenCount: 200 } }),
       status: 200, requestId: `synthetic-${randomUUID()}`, retryAfterMs: null });
     return { output, rawText, refused: false, incomplete: false, usage: { inputTokens: 100, outputTokens: 100 } };
   } };

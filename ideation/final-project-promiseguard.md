@@ -346,10 +346,16 @@ source snapshots flow through A02 `agents/analyst/index.ts`, A03
 `agents/drafter/index.ts`, deterministic B03 checks and A04
 `agents/auditor/index.ts` under `src/server/`. Every role uses A01
 `src/server/agents/runtime.ts`; the only model-client construction is
-`src/server/agents/model.ts`, using planned `@langchain/openai` `ChatOpenAI`
-structured calls with OpenAI Responses transport. F01 pins/smoke-tests the
-compatible packages/model/configuration, F02 freezes role and artifact schemas,
+`src/server/agents/model.ts`, using one direct Gemini Developer API
+`models.generateContent` structured call per attempt. F01 pins/smoke-tests the
+compatible graph/prompt packages and Gemini REST contract, F02 freezes role and artifact schemas,
 and R01 composes these modules with injected persistence and budgets.
+
+The selected initial model is stable free-tier `gemini-3.8-flash`. Free-tier
+eligibility and quota are rechecked before the demo, quota exhaustion is visible,
+and no paid fallback is enabled. Because Google may use free-tier inputs and
+outputs to improve its products, all model-live demo records must be synthetic
+and disposable. `GEMINI_API_KEY` stays in server-only secret configuration.
 
 Here “spawn” means a bounded backend role invocation with a separate prompt,
 schema, context and trace span. No new process, autonomous debate, provider-tool

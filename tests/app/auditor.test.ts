@@ -101,8 +101,9 @@ function scripted(steps: readonly { text: string; refused?: boolean }[]) {
     const step = steps[requests.length];
     assert.ok(step, 'No extra model dispatch is permitted by this fixture.');
     requests.push(structuredClone(request.messages));
-    await capture({ body: JSON.stringify({ status: 'completed', output: [{ type: 'message', status: 'completed',
-      content: [step.refused ? { type: 'refusal', refusal: step.text } : { type: 'output_text', text: step.text }] }] }),
+    await capture({ body: JSON.stringify({ responseId: 'synthetic-response', modelVersion: 'synthetic-model',
+      candidates: [{ content: { role: 'model', parts: [{ text: step.text }] },
+        finishReason: step.refused ? 'SAFETY' : 'STOP', index: 0 }] }),
     status: 200, requestId: 'synthetic-auditor-response', retryAfterMs: null });
     let output: unknown;
     try { output = JSON.parse(step.text); } catch { output = undefined; }

@@ -111,8 +111,9 @@ function modelWith(...outputs: string[]) {
     const rawText = outputs[requests.length];
     assert.notEqual(rawText, undefined, 'No extra model invocation is permitted by the fixture.');
     requests.push({ role: request.role, messages: request.messages });
-    await capture({ body: JSON.stringify({ status: 'completed', output: [{ type: 'message', status: 'completed',
-      content: [{ type: 'output_text', text: rawText }] }], usage: { input_tokens: 20, output_tokens: 30 } }),
+    await capture({ body: JSON.stringify({ responseId: 'synthetic-response', modelVersion: 'synthetic-model',
+      candidates: [{ content: { role: 'model', parts: [{ text: rawText }] }, finishReason: 'STOP', index: 0 }],
+      usageMetadata: { promptTokenCount: 20, candidatesTokenCount: 30, totalTokenCount: 50 } }),
     status: 200, requestId: 'a03-synthetic-request', retryAfterMs: null });
     let output: unknown;
     try { output = JSON.parse(rawText!); } catch { output = undefined; }

@@ -1,10 +1,27 @@
 # Agent spawning and LLM integration
 
-**Status: implementation specification, not implemented behavior.** The repository
-currently has the offline checker and standalone monitor. Its installed packages
-do not yet provide the application graph or a model client. This document assigns
-the missing work to the existing commit plan; it does not claim a model call,
-create an application agent, or introduce another implementation phase.
+**Status: implementation specification with A01 implemented; live compatibility
+remains unrun.** The repository now has the bounded role runtime and model client,
+but not the assembled application graph or a successful live-model receipt. This
+document assigns the remaining work to the existing commit plan; it does not
+claim a live model call or introduce another implementation phase.
+
+**Gemini decision, September 14, 2026:** use the Gemini Developer API free tier
+with the stable `gemini-3.8-flash` model for the initial compatibility and demo
+runs. Google listed that model's input/output tokens as free of charge when this
+decision was checked, but free-tier access and quotas are account-, project-,
+region-, and time-dependent. Recheck the official [pricing](https://ai.google.dev/gemini-api/docs/pricing),
+[models](https://ai.google.dev/gemini-api/docs/models), and active AI Studio
+[rate limits](https://ai.google.dev/gemini-api/docs/rate-limits) before evidence
+capture. There is no request flag that guarantees free service and no automatic
+upgrade or fallback to a paid model.
+
+Free-tier prompts and responses may be used by Google to improve its products.
+Therefore model-live and integrated demo runs use synthetic, disposable
+hackathon data only unless a separate data owner explicitly approves another
+tier and handling policy. A key pasted into chat or another non-secret channel
+is treated as exposed: rotate it, store the replacement only as the server-side
+`GEMINI_API_KEY`, and never copy it into this repository or a receipt.
 
 Read with [workflow](02-agent-workflow.md), [contracts](05-contracts-and-handoffs.md),
 [reliability implementation](06-agent-reliability-implementation.md), and
@@ -19,8 +36,8 @@ PromiseGuard has three fixed backend role implementations: Incident Evidence
 Analyst, Customer Update Drafter, and Blind Semantic Auditor. To **spawn** one is
 to invoke that role function from its LangGraph node with a bounded, immutable
 input and its own model-call identity. The role uses a separate versioned prompt,
-output schema, and context. All wrappers run in the same Node process; OpenAI
-performs the model inference over HTTPS.
+output schema, and context. All wrappers run in the same Node process; the Gemini
+Developer API performs the model inference over HTTPS.
 
 There is no operating-system process per agent, dynamically selected workforce,
 recursive agent creation, shared conversation, or supervisor LLM. LangGraph owns
@@ -79,7 +96,7 @@ set exceeds the frozen input/output capacity, block explicitly before approval.
    result/error references. It is the only model retry owner.
 9. **A01 `src/server/agents/model.ts`:** `createModelClient(...)` produces the
    injected `dispatchStructured(...)` implementation. This is the only product
-   module constructing `ChatOpenAI` and dispatching model HTTPS requests.
+  module dispatching Gemini Developer API HTTPS requests.
 10. **B03/B05/B06/B07:** after the roles, code freezes exact plan bytes, waits
     for authentic Slack approval, guards/executes the permitted app operations,
     and independently reads them back. None of those stages calls an LLM to
@@ -169,11 +186,11 @@ seam. Examples deliberately contain no key or supposedly tested model ID:
 
 ```dotenv
 PG_MODEL_MODE=mock
-OPENAI_API_KEY=
-OPENAI_MODEL=
-OPENAI_MODEL_ANALYST=
-OPENAI_MODEL_DRAFTER=
-OPENAI_MODEL_AUDITOR=
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-3.8-flash
+GEMINI_MODEL_ANALYST=
+GEMINI_MODEL_DRAFTER=
+GEMINI_MODEL_AUDITOR=
 PG_MODEL_TIMEOUT_MS=30000
 PG_MODEL_ROLE_BUDGET_MS=90000
 PG_MODEL_MAX_ATTEMPTS=2
@@ -189,13 +206,19 @@ token estimate. Reject oversized context explicitly rather than silently omit
 required evidence. F01/A01 must validate the actual schema/context/output-token
 combination against the selected model before live use.
 
-In `live` mode require a server-held `OPENAI_API_KEY` and an explicit
-`OPENAI_MODEL`; nonempty role overrides select a tested model for that role,
+In `live` mode require a server-held `GEMINI_API_KEY` and an explicit
+`GEMINI_MODEL`; nonempty role overrides select a tested model for that role,
 otherwise use the base model. Freeze the resolved IDs and limits in a versioned
 `modelConfigRef` per revision. Do not hot-swap a model during retry or resume.
-`mock` mode requires an injected Q01 fake and performs zero OpenAI requests. A
+`mock` mode requires an injected Q01 fake and performs zero Gemini requests. A
 missing live key, unsupported mode, or unavailable client must fail explicitly;
 there is no automatic fallback to mock.
+
+The selected free tier is an evidence mode and operating constraint, not an API
+parameter. Do not attach billing or silently switch models after quota exhaustion.
+Treat `429 RESOURCE_EXHAUSTED` as `rate_limited`, honor a provider retry delay only
+inside the existing role budget, and preserve a failed/exhausted receipt when the
+free allocation cannot complete the run.
 
 Keep these settings independent from `PG_ADAPTER_MODE=fake|rest` in the
 [external integration guide](08-mcp-api-and-external-app-integration.md). For
@@ -203,11 +226,14 @@ example, live models with fake apps establish model behavior against fixtures;
 they do not establish live app integration. A mock model with REST adapters still
 makes real provider calls and must retain every approval/execution guard.
 
-The intended A01 implementation uses `@langchain/openai` `ChatOpenAI` with
-`useResponsesApi: true`; structured output uses the role schema. F01 must pin
-compatible tested packages rather than assume the current monitor dependency
-set provides them. See the official
-[ChatOpenAI integration](https://docs.langchain.com/oss/javascript/integrations/chat/openai).
+The A01 implementation uses the official Gemini REST `models.generateContent`
+endpoint through the injected server-side `fetch`. Direct REST is deliberate:
+it keeps the exact HTTP envelope observable, has no SDK retry layer, and allows
+the raw response body to be durably saved before any provider-envelope or role
+schema parsing. LangChain remains in use for role prompt templates and LangGraph;
+no provider-specific model SDK is required. See the official
+[generateContent reference](https://ai.google.dev/api/generate-content) and
+[structured-output guide](https://ai.google.dev/gemini-api/docs/structured-output).
 
 Illustrative A01 factory internals; these local helper names are specifications
 to implement, not installed library exports:
@@ -216,66 +242,79 @@ to implement, not installed library exports:
 // model.ts: called only by runtime.ts for one recorded modelAttemptId.
 // serverSecrets is captured by createModelClient, never read from role input.
 async function dispatchStructured(request, onRawResponse) {
-  const llm = new ChatOpenAI({
-    apiKey: serverSecrets.openaiApiKey,
-    model: request.resolvedModelId,
-    useResponsesApi: true,
-    maxRetries: 0,
-    maxTokens: request.maxOutputTokens,
-    configuration: {
-      maxRetries: 0,
-      fetch: captureResponseBeforeParser(fetch, onRawResponse),
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${request.resolvedModelId}:generateContent`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-goog-api-key": serverSecrets.geminiApiKey,
+      },
+      signal: request.abortSignal,
+      redirect: "error",
+      body: JSON.stringify({
+        systemInstruction: { parts: systemParts(request.messages) },
+        contents: userContents(request.messages),
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseJsonSchema: request.outputJsonSchema,
+          candidateCount: 1,
+          maxOutputTokens: request.maxOutputTokens,
+        },
+        store: false,
+      }),
     },
-  });
-  const structured = llm.withStructuredOutput(request.outputSchema, {
-    name: request.schemaName,
-    method: "jsonSchema",
-    strict: true,
-    includeRaw: true,
-  });
-  return structured.invoke(request.messages, {
-    signal: request.abortSignal,
-    runName: request.role,
-    // Only approved redacted trace metadata; no automatic raw-content export.
-    metadata: request.traceMetadata,
-  });
+  );
+  const raw = {
+    body: await response.text(),
+    status: response.status,
+    requestId: response.headers.get("x-request-id") ?? response.headers.get("x-goog-request-id"),
+    retryAfterMs: parseRetryDelay(response),
+  };
+  await onRawResponse(raw);
+  if (!response.ok) throw classifyGeminiError(raw);
+  return inspectGeminiResponse(raw);
 }
 ```
 
-`captureResponseBeforeParser` must await the underlying fetch, clone a completed
-non-streaming response, and await B01 persistence of its raw body bytes and
-allowlisted status/request metadata **before returning the response to the SDK**.
-This preserves error/refusal/malformed bodies even if SDK parsing or Zod throws.
+The adapter must await the completed non-streaming response and B01 persistence
+of its raw body bytes and allowlisted status/request metadata **before parsing
+the Gemini envelope or role output**. This preserves error/safety-block/malformed
+bodies even if envelope parsing or Zod throws.
 Do not record request headers, credentials, or private model reasoning; do not
 request reasoning summaries or encrypted reasoning content for these roles. Use a
 per-attempt closure so concurrent unrelated runs cannot misattribute responses.
 If raw storage fails, stop that stage without a model retry or a claimed saved
 artifact; the already-recorded dispatched attempt remains unresolved/error.
 
-`includeRaw` returns a raw message alongside structured results, but that alone
-does not prove durable persistence happened before parser failure. The capture
-hook and its ordering test are mandatory. Configure both LangChain and underlying
-SDK retries off, disable streaming for this initial adapter, and inspect the
-outgoing request in a transport stub to verify Responses routing and the selected
-output limit. Never attach `bindTools`, remote MCP tools, browser/search tools,
-or a generic HTTP executor. Omit server conversation/`previous_response_id`
-continuations so each role receives only its declared independent context. Official
-[LangChain structured-output options](https://docs.langchain.com/oss/javascript/langchain/models#structured-output)
-describe the raw-result option; the ordering and persistence rules here are
-PromiseGuard requirements, not library guarantees.
+The request uses one candidate, `application/json`, the Zod-derived JSON Schema,
+and the selected output limit. It omits `tools`, `toolConfig`, grounding, cached
+content, and conversation continuation. System text goes only in
+`systemInstruction`; each remaining message becomes declared user content. Set
+`store: false`, while recognizing that this does not override free-tier product-
+improvement terms. Inspect the outgoing request in a transport stub to prove the
+endpoint, body, absent tools, header-only key, and one network dispatch.
 
 The actual F01/A01 compatibility smoke must confirm the pinned release's option
 names, accepted schema and output-token mapping. Strict schema output still
 needs application validation and refusal/incomplete-response handling; it cannot
 prove that a factual claim follows from evidence. See official
-[OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs).
+[Gemini structured outputs](https://ai.google.dev/gemini-api/docs/structured-output).
+
+Interpret only one returned candidate. `STOP` with text parts is complete;
+`MAX_TOKENS` is incomplete; prompt blocks and candidate finish reasons such as
+`SAFETY`, `RECITATION`, `BLOCKLIST`, `PROHIBITED_CONTENT`, `SPII`, or `ESCALATION`
+are refusals. Missing candidates, non-text/tool parts, unknown finish reasons,
+and malformed envelopes are invalid/incomplete. Map `promptTokenCount` to input
+usage and `candidatesTokenCount + thoughtsTokenCount` to output usage. Persist
+`responseId`, `modelVersion`, finish reason, safety metadata, and the unchanged
+body only in restricted evidence; expose no private content in ordinary events.
 
 ### Executable compatibility-smoke ownership
 
-**A01 adds `tools/smoke/model.ts`**; F01/P1 owns registering the proposed
-`npm run smoke:model` command with the chosen TypeScript runner/build setup.
-No such script is installed today. After implementation, an explicit live
-invocation is:
+**A01 adds `tools/smoke/model.ts`**; F01/P1 owns the registered
+`npm run smoke:model` command and its TypeScript runner/build setup. An explicit
+live invocation is:
 
 ```bash
 PG_MODEL_MODE=live npm run smoke:model -- --mode live --role analyst --receipt-dir /absolute/private/promiseguard-model-smoke
@@ -323,7 +362,7 @@ invokeRole(spec, input, ctx)
   while a permitted attempt remains inside the persisted role/run deadline:
     reserve a unique modelAttemptId and persist attempt.started
     call model.dispatchStructured with a bounded AbortSignal
-      raw transport response is durably captured before SDK/application parsing
+      raw transport response is durably captured before provider/application parsing
     classify refusal/incomplete/transport/parse outcomes
     apply the role schema and application validator
     persist immutable result or failure; return success only if validated
@@ -353,9 +392,10 @@ budget. Clamp the per-dispatch timeout to remaining role and run time and abort
 on shutdown/cancellation. Rate-limit/transient transport failures and bounded
 schema-format repair share the single attempt budget. Authentication, unsupported
 configuration/schema, refusals, storage failure, and semantic/policy failures do
-not trigger blind retry. Honor a server retry delay only when it fits the budget;
-OpenAI documents distinct API failure categories in
-[Error codes](https://developers.openai.com/api/docs/guides/error-codes).
+not trigger blind retry. Honor a server retry delay only when it fits the budget.
+Gemini documents `429` rate/quota exhaustion and `5xx` transient failures in its
+[API errors](https://ai.google.dev/gemini-api/docs/api-errors); daily quota
+exhaustion must not enter a rapid repair loop.
 
 Keep the first returned output, including an invalid one, byte-for-byte. Later
 outputs are linked corrections, not replacements. A timeout with no response has
@@ -372,10 +412,10 @@ evade existing protected effects.
 
 ## 6. Commit-by-commit delivery and acceptance
 
-- **[F01](commits/F01.md):** pin the compatible model/graph dependencies; implement
+- **[F01](commits/F01.md):** pin the compatible graph/prompt dependencies; implement
   configuration validation and application test runner. Prove mock boot requires
-  no key and invalid live configuration fails before dispatch. Register A01's
-  proposed `smoke:model` script through the same owned runner/dependency seam.
+  no key and invalid live configuration fails before dispatch. Maintain A01's
+  registered `smoke:model` script through the same owned runner/dependency seam.
   Do not commit keys.
 - **[F02](commits/F02.md):** freeze the role, invocation, result, error, artifact,
   and event contracts above with accepted/rejected examples and reuse rules.
@@ -412,8 +452,8 @@ evade existing protected effects.
   model call and cannot gate a successful recorded local result.
 - **[U02](commits/U02.md), [U03](commits/U03.md), [R02](commits/R02.md):** display
   backend stage state, immutable evidence references, failure/unverified status,
-  and model/provider modes. Release receipts list real model IDs/package versions,
-  calls and unrun gates; browser code never holds the OpenAI key.
+  and model/provider modes. Release receipts list real model IDs/transport versions,
+  calls and unrun gates; browser code never holds the Gemini key.
 
 Preserve the existing hard merge prerequisites in the individual commit briefs.
 These details explain implementation seams; they do not add a live-model gate

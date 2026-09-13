@@ -31,11 +31,11 @@ const environmentSchema = z.object({
   PG_CHECKPOINT_PATH: z.string().trim().min(1).default(".local/checkpoints.sqlite"),
   PG_EVIDENCE_DIR: z.string().trim().min(1).default(".local/evidence"),
   PG_WORKFLOW_MODULE: optionalText,
-  OPENAI_API_KEY: optionalText,
-  OPENAI_MODEL: optionalText,
-  OPENAI_MODEL_ANALYST: optionalText,
-  OPENAI_MODEL_DRAFTER: optionalText,
-  OPENAI_MODEL_AUDITOR: optionalText,
+  GEMINI_API_KEY: optionalText,
+  GEMINI_MODEL: optionalText,
+  GEMINI_MODEL_ANALYST: optionalText,
+  GEMINI_MODEL_DRAFTER: optionalText,
+  GEMINI_MODEL_AUDITOR: optionalText,
   PG_MODEL_TIMEOUT_MS: positiveInteger(30000, 300000),
   PG_MODEL_ROLE_BUDGET_MS: positiveInteger(90000, 900000),
   PG_MODEL_MAX_ATTEMPTS: positiveInteger(2, 10),
@@ -63,8 +63,8 @@ const environmentSchema = z.object({
   if ((env.PG_MODEL_MODE === "mock" || env.PG_ADAPTER_MODE === "fake") &&
       !env.PG_FIXTURE_ID?.match(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}$/)) invalid("PG_FIXTURE_ID");
   if (env.PG_MODEL_MODE === "live") {
-    if (!env.OPENAI_API_KEY) invalid("OPENAI_API_KEY");
-    if (!env.OPENAI_MODEL) invalid("OPENAI_MODEL");
+    if (!env.GEMINI_API_KEY) invalid("GEMINI_API_KEY");
+    if (!env.GEMINI_MODEL) invalid("GEMINI_MODEL");
   }
   if (env.PG_ADAPTER_MODE === "rest") {
     for (const name of restRequired) if (!env[name]) invalid(name);
@@ -99,8 +99,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     workflowModule: value.PG_WORKFLOW_MODULE ? resolve(value.PG_WORKFLOW_MODULE) : undefined,
     storage: { databasePath: resolve(value.PG_DATABASE_PATH), checkpointPath: resolve(value.PG_CHECKPOINT_PATH), evidenceDir: resolve(value.PG_EVIDENCE_DIR) },
     model: {
-      name: value.OPENAI_MODEL,
-      roles: { analyst: value.OPENAI_MODEL_ANALYST || value.OPENAI_MODEL, drafter: value.OPENAI_MODEL_DRAFTER || value.OPENAI_MODEL, auditor: value.OPENAI_MODEL_AUDITOR || value.OPENAI_MODEL },
+      name: value.GEMINI_MODEL,
+      roles: { analyst: value.GEMINI_MODEL_ANALYST || value.GEMINI_MODEL, drafter: value.GEMINI_MODEL_DRAFTER || value.GEMINI_MODEL, auditor: value.GEMINI_MODEL_AUDITOR || value.GEMINI_MODEL },
       timeoutMs: value.PG_MODEL_TIMEOUT_MS, roleBudgetMs: value.PG_MODEL_ROLE_BUDGET_MS,
       maxAttempts: value.PG_MODEL_MAX_ATTEMPTS, maxOutputTokens: value.PG_MODEL_MAX_OUTPUT_TOKENS, maxInputChars: value.PG_MODEL_MAX_INPUT_CHARS,
     },
@@ -110,7 +110,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
       slackApproverIds: value.PG_SLACK_APPROVER_IDS?.split(",") ?? [], gmailMailbox: value.PG_GMAIL_MAILBOX,
     },
     secrets: {
-      openaiApiKey: value.OPENAI_API_KEY, githubToken: value.PG_GITHUB_TOKEN, githubReaderToken: value.PG_GITHUB_READER_TOKEN,
+      geminiApiKey: value.GEMINI_API_KEY, githubToken: value.PG_GITHUB_TOKEN, githubReaderToken: value.PG_GITHUB_READER_TOKEN,
       hubspotAccessToken: value.PG_HUBSPOT_ACCESS_TOKEN, hubspotReaderToken: value.PG_HUBSPOT_READER_TOKEN,
       slackBotToken: value.PG_SLACK_BOT_TOKEN, slackReaderToken: value.PG_SLACK_READER_TOKEN,
       gmailClientId: value.PG_GMAIL_CLIENT_ID, gmailClientSecret: value.PG_GMAIL_CLIENT_SECRET,

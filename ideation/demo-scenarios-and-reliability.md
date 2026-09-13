@@ -104,10 +104,12 @@ nor provider-live proof. Never infer a live mode from a user-supplied label alon
 
 ### Required LLM and adapter smoke/fault evidence
 
-F01/A01 must first verify the configured `ChatOpenAI`/Responses structured-output
-combination for all three role schemas; record token/time/attempt budgets,
+F01/A01 must first verify the configured Gemini `models.generateContent`
+structured-output combination for all three role schemas; record token/time/attempt budgets,
 package/model versions, result artifact references and any refused/invalid or
-unrun result. A02–A04 must demonstrate scoped contexts and retained first outputs.
+unrun result. The selected free-tier `gemini-3.8-flash` path uses synthetic data,
+records quota/safety blocks honestly, and never falls through to a paid model.
+A02–A04 must demonstrate scoped contexts and retained first outputs.
 I01–I05's `tools/smoke/providers.ts` and per-provider runners must prove bounded
 GitHub reads/comment readback, HubSpot task/note associations, actual Slack human
 reply retrieval and review/summary readbacks, and full Gmail draft content. Use

@@ -49,7 +49,7 @@ const clock: RuntimeClock = { now: Date.now, monotonicNow: () => performance.now
 /** R01 freezes this server-owned configuration once per role/revision. No secrets. */
 export function freezeModelConfiguration(config: AppConfig, role: AgentRole): ModelConfiguration {
   const modelId = config.modelMode === 'mock' ? `mock-${config.fixtureId}` : config.model.roles[role];
-  if (!modelId || (config.modelMode === 'live' && !config.secrets.openaiApiKey))
+  if (!modelId || (config.modelMode === 'live' && !config.secrets.geminiApiKey))
     throw new Error('invalid_model_configuration');
   const material = { schemaVersion: 2 as const, mode: config.modelMode, modelId,
     budgets: { timeoutMs: config.model.timeoutMs, roleBudgetMs: config.model.roleBudgetMs,

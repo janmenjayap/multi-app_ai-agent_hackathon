@@ -25,7 +25,7 @@ POST /api/runs -> B04 workflow/driver.ts -> R01 workflow/graph.ts + nodes.ts
   -> A02 analyst/index.ts: analyzeIncident
   -> A03 drafter/index.ts: draftCustomerUpdate
   -> A04 auditor/index.ts: auditSemantics
-Each role -> A01 agents/runtime.ts: invokeRole -> agents/model.ts -> OpenAI API
+Each role -> A01 agents/runtime.ts: invokeRole -> agents/model.ts -> Gemini Developer API
 ```
 
 These are proposed paths and project function names. The graph interleaves the
@@ -85,7 +85,7 @@ artifact. Final Slack readback is required for artifact-producing completion.
 flowchart LR
     Browser["Browser<br/>React operator console"] --> API["One Node backend<br/>API + scheduler + deterministic LangGraph"]
     API --> Agents["Backend model wrappers<br/>Analyst / Drafter / Auditor"]
-    Agents --> Model["OpenAI model API"]
+    Agents --> Model["Gemini Developer API"]
     API --> Store[("Application SQLite<br/>Plans, approvals, effects, evidence")]
     API --> Checkpoints[("Separate graph SQLite<br/>Checkpoint and resume state")]
     API --> Adapters["Typed adapters<br/>GitHub / HubSpot / Slack / Gmail"]

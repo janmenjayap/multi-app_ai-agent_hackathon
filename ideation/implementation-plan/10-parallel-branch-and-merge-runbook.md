@@ -18,6 +18,22 @@ writes, fresh readback, independent collection, and honest evaluation. MCP,
 automatic recovery, hosted tracing, and richer scorecard inspection remain
 optional unless the release explicitly claims them.
 
+The selected live-model path is direct Gemini Developer API REST with stable
+free-tier `gemini-3.8-flash`. Before any A01/R01 live evidence, rotate any key
+shared outside secret storage, configure only server-side `GEMINI_API_KEY`,
+confirm current model eligibility and project quota, and use synthetic disposable
+records. A `429` quota result blocks or exhausts the bounded role honestly; it
+must not silently select a paid model, another model, or mock mode.
+
+**Gemini migration implementation update, September 14:** direct REST,
+`GEMINI_*` configuration, mock smoke registration, focused role/runtime tests,
+and the Node 24 build/baseline/app/web suites are implemented and passing in the
+current working tree, including all R01/Q04 scenarios. Latest main's Playwright
+web-server command still lacks its required `PG_WORKFLOW_MODULE`, so that existing
+E2E gate is not passed. No migration SHA has been assigned and live compatibility
+remains unrun, so live R01 evidence must still wait for a rotated key and a saved
+private A01 compatibility receipt.
+
 ## 1. Current starting point
 
 **Execution update, September 14:** local main now contains the reviewed

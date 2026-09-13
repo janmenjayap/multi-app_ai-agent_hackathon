@@ -57,13 +57,15 @@ and a SQLite database**. Run them as one application, locally first and on a
   conditional edges, durable checkpoints, and interrupt/resume. It implements
   the same bounded state machine; it does not choose permissions or business
   effects. [LangGraph Graph API](https://docs.langchain.com/oss/javascript/langgraph/graph-api)
-- **Agent composition:** `@langchain/core` supplies prompt/runnable interfaces;
-  `@langchain/openai` supplies `ChatOpenAI` and `withStructuredOutput()`. Keep
-  three distinct prompt/schema/context boundaries for the Evidence Analyst,
-  Customer Update Drafter, and Blind Semantic Auditor. Use `useResponsesApi: true`
-  for the planned OpenAI Responses transport and validate the actual model/schema
-  combination in a smoke test. Pin the tested model and package releases.
-  [ChatOpenAI integration](https://docs.langchain.com/oss/javascript/integrations/chat/openai)
+- **Agent composition:** `@langchain/core` supplies prompt interfaces. A01 uses
+  direct server-side `fetch` to Gemini `models.generateContent`, which keeps one
+  non-streaming HTTP attempt observable and saves its exact body before parsing.
+  Keep three distinct prompt/schema/context boundaries for the Evidence Analyst,
+  Customer Update Drafter, and Blind Semantic Auditor. Request JSON with the
+  Zod-derived `responseJsonSchema`, omit tools, and validate the actual
+  model/schema combination in a smoke test. The selected initial model is stable
+  free-tier `gemini-3.8-flash`; recheck eligibility and quota before capture.
+  [Gemini structured outputs](https://ai.google.dev/gemini-api/docs/structured-output)
 - **Graph persistence:** `@langchain/langgraph-checkpoint-sqlite` supplies
   `SqliteSaver`. Its checkpoint records are separate from application effects,
   approvals, and evidence. [LangGraph checkpointers](https://docs.langchain.com/oss/javascript/langgraph/checkpointers)
@@ -110,7 +112,7 @@ flowchart TB
     end
 
     DB[("SQLite<br/>Runs, plans, approvals, effects, evidence")]
-    Model["OpenAI API"]
+    Model["Gemini Developer API"]
     GitHub["GitHub<br/>Incident and engineering impact comment"]
     HubSpot["HubSpot<br/>Commitments, contacts, owners, tasks, notes"]
     Slack["Slack<br/>Review thread, approval, verified summary"]
@@ -223,9 +225,8 @@ The planned code path is `POST /api/runs` → B04
 `nodes.ts` → A02 `src/server/agents/analyst/index.ts` → A03
 `src/server/agents/drafter/index.ts` → B03 deterministic validation → A04
 `src/server/agents/auditor/index.ts`. Each role invokes A01
-`src/server/agents/runtime.ts`; only `src/server/agents/model.ts` constructs the
-configured `ChatOpenAI` structured-call client using the OpenAI Responses
-transport. The driver schedules the graph; it does not dispatch its own second
+`src/server/agents/runtime.ts`; only `src/server/agents/model.ts` dispatches the
+configured Gemini `models.generateContent` structured call. The driver schedules the graph; it does not dispatch its own second
 set of role calls.
 
 “Spawning” is a bounded function/runnable invocation inside this single backend,
@@ -629,7 +630,7 @@ flowchart LR
         Disk[("Persistent disk: /var/data<br/>App SQLite + graph checkpoint SQLite")]
         Server <--> Disk
     end
-    Server -->|"Outbound HTTPS"| LLM["OpenAI API"]
+    Server -->|"Outbound HTTPS"| LLM["Gemini Developer API"]
     Server -->|"Outbound HTTPS"| Apps["GitHub / HubSpot / Slack / Gmail"]
     Server -.->|"Optional redacted telemetry"| Smith["LangSmith trace project"]
 ```
@@ -852,9 +853,9 @@ outputs. That organization does not add an agent or confer additional authority.
 
 ### Where LangChain is used
 
-Each role uses its own versioned `ChatPromptTemplate`, a `ChatOpenAI` model
-instance/configuration, and `withStructuredOutput(RoleSchema)`, followed by
-application-owned validation and immutable result persistence. The role's
+Each role uses its own versioned `ChatPromptTemplate` and one A01 Gemini REST
+dispatch configured with its JSON Schema, followed by application-owned
+validation and immutable result persistence. The role's
 run name, prompt version, model ID, token usage, schema verdict, and artifact
 reference become trace metadata. Preserve failed/invalid first proposals as
 restricted artifacts too; retries must not erase them.
@@ -1373,7 +1374,7 @@ The detailed [reliability delivery plan](implementation-plan/06-agent-reliabilit
 is the commit-level implementation guide; preserve its original commit/branch IDs.
 
 1. **Install and lock the focused stack:** compatible Node 24, LangGraph,
-   LangChain core/OpenAI, SQLite saver, Zod, and LangSmith SDK. Verify structured
+   LangChain core, direct Gemini REST, SQLite saver, Zod, and LangSmith SDK. Verify structured
    output and application SQLite/checkpointer compatibility. The monitor's pinned
    toolchain does not establish model or application-framework compatibility.
 2. **Express the existing flow as graph nodes:** start with fake adapters and

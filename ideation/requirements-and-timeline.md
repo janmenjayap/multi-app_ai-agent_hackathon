@@ -187,6 +187,11 @@ the opening announces different rules.
 - Sign in to the target apps and prepare API/OAuth credentials; PromiseGuard
   requires all four: GitHub, HubSpot, Slack and Gmail.
 - Confirm model access, spending limits, and secret handling.
+- Confirm `gemini-3.8-flash` is still eligible for the Gemini Developer API free
+  tier and inspect the project's active RPM/TPM/RPD limits. Free tier is not a
+  request option; never enable automatic paid fallback. Use only synthetic,
+  disposable records because free-tier inputs and outputs may be used by Google
+  to improve its products.
 - Assign roles and agree on the single demo scenario.
 - Do not prebuild anything the official rules prohibit; the public page does not
   clarify whether pre-existing code or pre-event development is allowed.

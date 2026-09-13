@@ -98,10 +98,10 @@ function assertEventBindings(f: ReturnType<typeof fixture>) {
 }
 
 function responseBody(rawText: string, refused = false) {
-  return JSON.stringify({ id: 'resp_synthetic', object: 'response', created_at: startMs / 1000,
-    status: 'completed', model: 'fixture-model', output: [{ id: 'msg_synthetic', type: 'message', role: 'assistant', status: 'completed',
-      content: [refused ? { type: 'refusal', refusal: rawText } : { type: 'output_text', text: rawText, annotations: [] }] }],
-    usage: { input_tokens: 11, output_tokens: 7, total_tokens: 18 } });
+  return JSON.stringify({ responseId: 'response-synthetic', modelVersion: 'fixture-model',
+    candidates: [{ content: { role: 'model', parts: [{ text: rawText }] },
+      finishReason: refused ? 'SAFETY' : 'STOP', index: 0 }],
+    usageMetadata: { promptTokenCount: 11, candidatesTokenCount: 7, thoughtsTokenCount: 2, totalTokenCount: 20 } });
 }
 
 function scripted(steps: readonly ({ text: string; refused?: boolean; before?: () => void | Promise<void> } |
@@ -337,44 +337,48 @@ test('per-attempt timeout aborts a hanging model without hidden retries', async 
   assert.equal(wasAborted, true);
 });
 
-test('the real ChatOpenAI Responses path persists raw bytes before SDK parsing and exposes no tools or hidden retries', async () => {
-  const f = fixture({ env: { PG_MODEL_MODE: 'live', OPENAI_API_KEY: 'synthetic-only-test-key',
-    OPENAI_MODEL: 'fixture-model', OPENAI_MODEL_ANALYST: 'fixture-analyst', PG_MODEL_MAX_ATTEMPTS: '1' } });
+test('the real Gemini path persists raw bytes before parsing and exposes no tools or hidden retries', async () => {
+  const f = fixture({ env: { PG_MODEL_MODE: 'live', GEMINI_API_KEY: 'synthetic-only-test-key',
+    GEMINI_MODEL: 'fixture-model', GEMINI_MODEL_ANALYST: 'fixture-analyst', PG_MODEL_MAX_ATTEMPTS: '1' } });
   const raw = responseBody(`\n${JSON.stringify(assessment)}\n`);
   let fetches = 0;
   let parserReads = 0;
+  const parse = JSON.parse;
+  vi.spyOn(JSON, 'parse').mockImplementation((text: string, reviver?: (this: unknown, key: string, value: unknown) => unknown) => {
+    if (text === raw) {
+      parserReads++;
+      const event = f.events().find(e => e.kind === 'fault.recorded' && e.faultId.startsWith('model-response-'));
+      assert.ok(event && event.kind === 'fault.recorded', 'Raw receipt must be committed before Gemini parsing.');
+      const receipt = parse(f.repository.readArtifact(event.evidenceRef));
+      assert.equal(f.repository.readArtifact(receipt.bodyRef), raw);
+    }
+    return parse(text, reviver);
+  });
   const fetchStub: typeof fetch = async (input, init) => {
     fetches++;
     assert.equal(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
-      'https://api.openai.com/v1/responses');
+      'https://generativelanguage.googleapis.com/v1beta/models/fixture-analyst:generateContent');
+    assert.equal(init?.method, 'POST');
     assert.equal(init?.redirect, 'error');
+    assert.equal(new Headers(init?.headers).get('x-goog-api-key'), 'synthetic-only-test-key');
     assert.equal(f.repository.getRole(f.context.roleInvocationKey)!.attempts.length, 1);
     assert.equal(f.events().filter(e => e.kind === 'model.attempt.started').length, 1);
     const request = JSON.parse(String(init?.body));
-    assert.equal(request.model, 'fixture-analyst');
-    assert.equal(request.max_output_tokens, 500);
-    assert.equal(request.stream, false);
+    assert.equal(request.generationConfig.maxOutputTokens, 500);
+    assert.equal(request.generationConfig.responseMimeType, 'application/json');
+    assert.equal(request.generationConfig.candidateCount, 1);
+    assert.equal(request.generationConfig.responseJsonSchema.title, 'analyst_v2');
+    assert.deepEqual(request.generationConfig.responseJsonSchema.properties.schemaVersion.enum, [2]);
+    assert.equal(JSON.stringify(request.generationConfig.responseJsonSchema).includes('const'), false);
+    assert.equal(JSON.stringify(request.generationConfig.responseJsonSchema).includes('minLength'), false);
+    assert.equal(request.systemInstruction.parts[0].text, messages[0]!.content);
+    assert.equal(request.contents[0].role, 'user');
+    assert.equal(request.contents[0].parts[0].text, messages[1]!.content);
     assert.equal(request.store, false);
-    assert.equal(request.include, undefined);
-    assert.equal(request.reasoning, undefined);
-    assert.equal(request.text.format.type, 'json_schema');
-    assert.equal(request.text.format.strict, true);
-    assert.equal(request.text.format.name, 'analyst_v2');
-    assert.equal(request.tools === undefined || request.tools.length === 0, true);
-    assert.equal(request.previous_response_id, undefined);
-    assert.equal(request.conversation, undefined);
-    const response = new Response(raw, { headers: { 'content-type': 'application/json', 'x-request-id': 'stub-request' } });
-    const assertSaved = () => {
-      parserReads++;
-      const event = f.events().find(e => e.kind === 'fault.recorded' && e.faultId.startsWith('model-response-'));
-      assert.ok(event && event.kind === 'fault.recorded', 'Raw receipt must be committed before the SDK reads its response.');
-      const receipt = JSON.parse(f.repository.readArtifact(event.evidenceRef));
-      assert.equal(f.repository.readArtifact(receipt.bodyRef), raw);
-    };
-    const json = response.json.bind(response), text = response.text.bind(response);
-    response.json = async () => { assertSaved(); return json(); };
-    response.text = async () => { assertSaved(); return text(); };
-    return response;
+    assert.equal(request.tools, undefined);
+    assert.equal(request.toolConfig, undefined);
+    assert.equal(request.cachedContent, undefined);
+    return new Response(raw, { headers: { 'content-type': 'application/json', 'x-request-id': 'stub-request' } });
   };
   const model = createModelClient({ config: f.config, fetch: fetchStub });
   const result = await f.call(model);
@@ -385,17 +389,46 @@ test('the real ChatOpenAI Responses path persists raw bytes before SDK parsing a
   assertEventBindings(f);
 
   // A retryable HTTP failure still produces one HTTP dispatch per runtime attempt.
-  const failed = fixture({ env: { PG_MODEL_MODE: 'live', OPENAI_API_KEY: 'synthetic-only-test-key',
-    OPENAI_MODEL: 'fixture-model', PG_MODEL_MAX_ATTEMPTS: '1' } });
+  const failed = fixture({ env: { PG_MODEL_MODE: 'live', GEMINI_API_KEY: 'synthetic-only-test-key',
+    GEMINI_MODEL: 'fixture-model', PG_MODEL_MAX_ATTEMPTS: '1' } });
   let failures = 0;
   const failedResult = await failed.call(createModelClient({ config: failed.config, fetch: async () => {
     failures++;
-    return new Response('{"error":{"message":"synthetic service failure","code":"server_error"}}',
+    return new Response('{"error":{"message":"synthetic service failure","status":"UNAVAILABLE"}}',
       { status: 503, headers: { 'content-type': 'application/json' } });
   } }));
   assert.equal(failedResult.status, 'failure');
   assert.equal(failures, 1);
   assert.equal(failedResult.attemptRefs.length, 1);
+});
+
+test('Gemini prompt blocks and free-tier daily quota exhaustion are terminal recorded failures', async () => {
+  const blocked = fixture({ env: { PG_MODEL_MODE: 'live', GEMINI_API_KEY: 'synthetic-only-test-key',
+    GEMINI_MODEL: 'gemini-3.8-flash' } });
+  let blockedFetches = 0;
+  const blockedResult = await blocked.call(createModelClient({ config: blocked.config, fetch: async () => {
+    blockedFetches++;
+    return Response.json({ promptFeedback: { blockReason: 'SAFETY', safetyRatings: [] },
+      usageMetadata: { promptTokenCount: 11, candidatesTokenCount: 0, totalTokenCount: 11 } });
+  } }));
+  assert.equal(blockedResult.status, 'failure');
+  if (blockedResult.status === 'failure') assert.equal(blockedResult.reason, 'refusal');
+  assert.equal(blockedFetches, 1);
+  assert.equal(blocked.repository.listOutputs(blocked.context.roleInvocationKey)[0]?.parseStatus, 'refused');
+
+  const quota = fixture({ env: { PG_MODEL_MODE: 'live', GEMINI_API_KEY: 'synthetic-only-test-key',
+    GEMINI_MODEL: 'gemini-3.8-flash' } });
+  let quotaFetches = 0;
+  const quotaResult = await quota.call(createModelClient({ config: quota.config, fetch: async () => {
+    quotaFetches++;
+    return Response.json({ error: { code: 429, status: 'RESOURCE_EXHAUSTED', details: [{
+      '@type': 'type.googleapis.com/google.rpc.QuotaFailure',
+      violations: [{ quotaId: 'GenerateRequestsPerDayPerProjectPerModel-FreeTier' }],
+    }] } }, { status: 429 });
+  } }));
+  assert.equal(quotaResult.status, 'failure');
+  if (quotaResult.status === 'failure') assert.equal(quotaResult.reason, 'rate_limited');
+  assert.equal(quotaFetches, 1);
 });
 
 test('mock creation needs an explicit fixture client and invalid live setup fails before network access', async () => {
@@ -448,7 +481,7 @@ test('live smoke needs explicit configuration, dispatches one selected schema, a
   const options = { write: (value: string) => summaries.push(value), fetch: (async (_input, init) => {
     fetches++;
     const request = JSON.parse(String(init?.body));
-    assert.equal(request.text.format.name, 'auditor_v2');
+    assert.equal(request.generationConfig.responseJsonSchema.title, 'auditor_v2');
     return new Response(responseBody(refusal, true), { headers: { 'content-type': 'application/json' } });
   }) as typeof fetch };
   assert.equal(await runModelSmoke(['--mode', 'live', '--role', 'auditor', '--receipt-dir', directory],
@@ -456,7 +489,7 @@ test('live smoke needs explicit configuration, dispatches one selected schema, a
   assert.equal(fetches, 0);
   assert.equal(JSON.parse(summaries[0]!).reason, 'configuration_invalid');
   assert.equal(await runModelSmoke(['--mode', 'live', '--role', 'auditor', '--receipt-dir', directory],
-    { ...options, env: { PG_MODEL_MODE: 'live', OPENAI_API_KEY: 'synthetic-only-test-key', OPENAI_MODEL: 'fixture-model' } }), 1);
+    { ...options, env: { PG_MODEL_MODE: 'live', GEMINI_API_KEY: 'synthetic-only-test-key', GEMINI_MODEL: 'fixture-model' } }), 1);
   assert.equal(fetches, 1);
   const summary = JSON.parse(summaries.at(-1)!);
   assert.equal(summary.reason, 'refusal');

@@ -26,6 +26,12 @@ observed expected-versus-actual app state separate required proof. The 31 existi
 commit briefs and 29 branch plans now include those responsibilities; none becomes
 implemented merely because its plan is more detailed.
 
+**Model-provider decision:** A01 targets stable `gemini-3.8-flash` on the Gemini
+Developer API free tier through direct server-side REST. The authoritative
+[LLM guide](07-agent-spawning-and-llm-integration.md) owns configuration,
+structured-output, quota, data-handling, and evidence rules. No live call or
+free-tier availability claim is implied until its compatibility smoke passes.
+
 ## Read and work in this order
 
 **For implementation assignments, start with the [per-branch plans](branches/README.md)

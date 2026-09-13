@@ -171,7 +171,7 @@ Source changes allocate another revision only through the existing guarded
 replanning path, preserving prior effects and original-output history.
 
 F01 validates `PG_MODEL_MODE=mock|live` separately from
-`PG_ADAPTER_MODE=fake|rest`. Only live model mode requires `OPENAI_API_KEY` and a
+`PG_ADAPTER_MODE=fake|rest`. Only live model mode requires `GEMINI_API_KEY` and a
 pinned tested model configuration; no missing credential silently selects a mock.
 Freeze time/input/output/attempt budgets and a redacted configuration digest with
 the invocation. Raw response capture must precede parsing and validation, including

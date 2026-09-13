@@ -40,22 +40,26 @@ owners listed in [A01](../commits/A01.md), then join before conformance tests.
 Implement [A01's exact call site](../commits/A01.md#exact-llm-call-site-and-spawning-contract)
 and the [agent/LLM specification](../07-agent-spawning-and-llm-integration.md).
 `runtime.ts` owns `invokeRole` and bounded retry/resume; `model.ts` owns
-`createModelClient`/`dispatchStructured` and the only product `ChatOpenAI` request.
+`createModelClient`/`dispatchStructured` and the only product Gemini REST request.
 R01 composition injects this into A02–A04; F01 owns packages/server configuration,
 F02 the shared signatures, and B01 durable claims/raw results. Mock/live model
 mode stays separate from the [provider adapter mode](../08-mcp-api-and-external-app-integration.md).
 
-Prove raw persistence precedes SDK/application parsing, every actual request has
+Prove raw persistence precedes provider-envelope/application parsing, every actual request has
 one model-attempt identity, and a committed invocation survives resume without
 another request. No model-callable MCP/app tools, dynamic spawn loop, or provider
 mutation client belongs here. Hand roles the wrapper and R01 the client factory;
 record actual structured-output compatibility separately from fixture evidence.
 
-The branch also owns planned `tools/smoke/model.ts`. Its
+The selected live target is free-tier `gemini-3.8-flash` through direct
+`models.generateContent`, with no provider SDK retry layer. Quota exhaustion and
+safety blocks remain explicit failed evidence; free-tier runs use synthetic data.
+
+The branch also owns `tools/smoke/model.ts`. Its
 [A01 smoke specification](../commits/A01.md#owned-model-compatibility-smoke)
 selects one F02 role schema, passes synthetic noncustomer input through the real
-A01 wrapper, and stores a private B01 compatibility receipt. F01 registers the
-proposed `npm run smoke:model` command; this branch cannot edit packages. Default
+A01 wrapper, and stores a private B01 compatibility receipt. F01 owns the now-
+registered `npm run smoke:model` command; this branch cannot edit packages. Default
 stub tests make no live calls, and an explicit live invocation requires configured
 model access. The runner imports no app adapters or downstream role implementations.
 
