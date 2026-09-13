@@ -5,7 +5,7 @@ import {
   parseDraftProposal, parseIncidentAssessment, roleInvocationKey,
 } from '../../shared/agents.js';
 import {
-  DigestSchema, EffectKeySchema, ImmutablePlanSchema, ModelAttemptIdSchema, RestrictedArtifactRefSchema,
+  DigestSchema, EffectKeySchema, ModelAttemptIdSchema, RestrictedArtifactRefSchema,
   RevisionSchema, RunIdSchema, SelectionSchema, immutable,
 } from '../../shared/domain.js';
 import { normalizeApprovedText } from './canonical.js';
