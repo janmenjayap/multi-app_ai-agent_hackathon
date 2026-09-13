@@ -1047,3 +1047,25 @@ baseline regressions, typecheck and server/web builds passed. This is synthetic
 local evidence only. Optional R01 wiring and live LangSmith sandbox/UI-link smoke
 remain pending; no hosted export, provider workflow, human label, or release
 gate is established by Q06.
+
+
+## B06 execution update — September 14, 2026
+
+Implementation-ID register: **B06** is `192a1db0ff50118a33c8d7d5dab3c2ec3ed964b7` on
+`feat/guarded-execution`, based on `ca9a9e4a66af41008275b2350e4b3753aac7bd28`.
+The [B06 receipt](commits/B06.md#completion-receipt) records every prerequisite,
+commands, scope exception, review and R01/B08 handoff.
+
+Guarded execution now resolves frozen requests, authenticates B05 dispatch approval,
+persists exact intent, and claims effects through the actual I01 dispatch hook.
+Task/note/draft per commitment and the final GitHub comment remain sequential with
+B07 persisted readback before advancement. Unknown effects reconcile through fresh,
+complete marker and exact-object reads or retain `failed_partial`; no uncertain
+create is repeated. A B03 note-marker fix binds discoverable text before approval.
+
+**13/13 focused synthetic tests**, typecheck and both builds pass. This updates
+C09/C10's local implementation evidence; their integrated S1/S2, live-provider and
+B08 automatic restart gates remain open. R01 must compose the protected transport
+observer and independent read observers, publish/read back final Slack and issue the
+completion claim. No live workflow, actual human approval or full-suite result is
+claimed. P3/P4 delegated agent reviews accepted the implementation.

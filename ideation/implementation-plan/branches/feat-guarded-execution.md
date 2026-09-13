@@ -1,6 +1,6 @@
 # Branch plan: feat/guarded-execution
 
-**Owner:** P1. **Status:** proposed branch work; this file creates no branch or commit.
+**Owner:** P1. **Status:** B06 implemented and reviewed, September 14, 2026.
 **Canonical source:** [commit backlog](../04-commit-plan.md).
 **Base:** integration `main`, after the prerequisite commits below land.
 
@@ -58,8 +58,15 @@ Give R01 an executor with injected verification, ordered requests, stable effect
 
 ## Branch completion receipt
 
-- [ ] Dependency SHAs and actual base SHA: `UNRECORDED`.
-- [ ] Every linked commit receipt completed; actual commit SHAs: `UNRECORDED`.
-- [ ] Combined verification commands/evidence and remaining gaps: `UNRECORDED`.
-- [ ] Reviewer and consumer handoff acceptance: `UNRECORDED`.
-- [ ] Actual merged branch/PR reference: `UNRECORDED`.
+- Base: `ca9a9e4a66af41008275b2350e4b3753aac7bd28`; all six prerequisite SHAs
+  are recorded in the [B06 receipt](../commits/B06.md#completion-receipt).
+- B06: `192a1db0ff50118a33c8d7d5dab3c2ec3ed964b7` on `feat/guarded-execution`.
+- Focused tests: **13/13 passed**; typecheck and server/web builds passed.
+  Full/browser/live suites unrun under the user's minimal hackathon scope.
+- P3 `execution_boundaries` and P4 `execution_tests` delegated agent reviews
+  accepted; P1 accepts the R01/B08 handoff. No human-review evidence is claimed.
+- Merge target: `main`; user authorized pushing both branches after sequential merge.
+- R01 owns wiring protected-write observer/read observers and final Slack/completion.
+  B08 automatic restart and live workflow evidence remain unrun.
+- Documented scope exception: freeze the missing HubSpot note marker in B03's
+  `plan.ts` and extend the existing plan assertion before any new approval.
