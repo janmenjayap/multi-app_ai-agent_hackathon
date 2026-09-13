@@ -40,6 +40,12 @@ merges or run conflicting live tests. See each commit's file assignments and
 sequential join. Shared test-account namespaces and resets must be serialized;
 isolated fixtures can run independently.
 
+Follow the [frontend pipeline and reliability guide](../09-frontend-pipeline-and-reliability.md)
+for the R01/U02 handoff. R01 and U02 may progress in separate files after their
+own prerequisites, but R01 owns the real graph-to-F02 projection proof and U02
+owns rendering/polling. Neither branch edits the other's implementation or claims
+the other's acceptance evidence.
+
 ## Reliability implementation and proof
 
 R01 joins the controlled graph, durable transaction/event producer, real agents, authenticated approval, B07 readback, Q02 collector and Q03 v2 assessor. This is where the optional collected-evidence interface becomes a real independently populated integration. Before registration, tools/demo/run.ts completes mandatory preflight/S0 under suiteEntryId; registration binds that S0 hash immediately before graph dispatch. It accepts minimal trusted human-review receipts through F02/B01 before Q05's richer workflow exists, preserving actual reviewer identity/reason and original source/output digests. Synthetic human-label JSON cannot pass as review. Bind generated exact content through B03 ApprovedContentRef before dispatch. Preserve original proposals and claim IDs, then prove all five S1 artifacts and S2 ID reuse with separate provider reads. Complete zero-eligible selection uses no_affected evidence without plan/approval/Slack dependencies. Missing labels or collector coverage stay unverified. R01 does not depend on Q04/Q05; it hands the tested invocation seam to their full harness/report work.
@@ -55,6 +61,12 @@ Own composition.ts, graph.ts and nodes.ts: construct A01/I01–I05 clients, invo
 [guide 08: MCP/API and apps](../08-mcp-api-and-external-app-integration.md).
 Preserve this branch's existing merge gates and allowed paths; these obligations
 refine planned work and do not establish live integration.
+
+Hand U02/R02 saved F02-valid run/event projections for S1, replay, approval wait,
+safe block, failed partial and completed-but-unverified paths. Stage, model/tool
+attempt, effect and readback IDs must match stored events, and deterministic
+controls must not appear as extra agents. These projections are API evidence,
+not proof that the browser rendered or refreshed them correctly.
 
 ## Shared-file exclusions
 
