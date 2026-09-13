@@ -1,4 +1,14 @@
 import { isDeepStrictEqual } from 'node:util';
+import { z } from 'zod';
+import { ProductStatusSchema, IdSchema, CountSchema, ModeSchema } from '../../shared/domain.js';
+import { AssessmentStateSchema, ClaimFactsV2Schema, EVALUATOR_V2_VERSION, LogicalManifestSchema, ImportedObservationSchema,
+  parseCheckerExportBinding,
+  OutputHistorySchema, ReviewLabelSchema, parseReviewLabel,
+  type EvaluationAttemptRegistration, type LogicalManifest, type OriginalOutput, type ReviewLabel,
+} from '../../shared/evaluation.js';
+import { EventV2Schema, type EventV2 } from '../../shared/events.js';
+import { assessClaims, assessMutationAcknowledgements, type ClaimAssessmentInput } from './claim-verdicts.js';
+import { assessTrace } from './trace-rules.js';
 import { checkEvidence } from '../../../tools/reliability/check-evidence.mjs';
 import { EVALUATOR_VERSION, EventSchema, digest, parseManifest,
   type Assessment, type AttemptFacts, type AttemptRecord, type Check, type MonitorEvent, type Verdict,
@@ -345,4 +355,210 @@ export function assess(record:AttemptRecord, nowMs:number):Assessment {
     cohortId:manifest.cohortId,mode:manifest.mode,versions:manifest.versions,watermark:record.watermark,observedAtMs:nowMs,
     productStatus,traceCoverage:record.traceComplete?'complete':'incomplete',traceAssessment,outcomeAssessment,semanticAssessment,
     firstProposalAssessment:combine(quality),status,checks,facts};
+}
+
+/** Q03's server-side composition of frozen F02 contracts; no provider capability. */
+export interface ApplicationObservation extends ClaimAssessmentInput {
+  schemaVersion: 2;
+  registration: EvaluationAttemptRegistration;
+  manifest: LogicalManifest;
+  watermark: number;
+  startedAtMs: number;
+  originalOutputs: OriginalOutput[];
+  labels: ReviewLabel[];
+  isTrustedReview?: (label: ReviewLabel) => boolean;
+  outcomeEvidence?: ApplicationOutcomeEvidence;
+  /** Authenticates the whole collector projection, including fields, scope and history. */
+  isTrustedOutcome?: (evidence: ApplicationOutcomeEvidence) => boolean;
+}
+
+export const ApplicationOutcomeEvidenceSchema = z.object({
+  observations: z.array(ImportedObservationSchema).min(8).max(1000),
+  checkerInput: z.unknown(),
+}).strict();
+export type ApplicationOutcomeEvidence = z.infer<typeof ApplicationOutcomeEvidenceSchema>;
+
+export const ApplicationAssessmentSchema = z.object({
+  schemaVersion: z.literal(2), evaluatorVersion: z.literal(EVALUATOR_V2_VERSION),
+  evaluationAttemptId: IdSchema, runId: IdSchema, cohortId: IdSchema, mode: ModeSchema,
+  versions: LogicalManifestSchema.shape.versions, watermark: CountSchema, observedAtMs: CountSchema,
+  productStatus: ProductStatusSchema.nullable(), traceCoverage: z.enum(['complete', 'incomplete']),
+  traceAssessment: AssessmentStateSchema, outcomeAssessment: AssessmentStateSchema,
+  semanticAssessment: AssessmentStateSchema, firstProposalAssessment: AssessmentStateSchema,
+  status: AssessmentStateSchema,
+  checks: z.array(z.object({ code: IdSchema, status: z.enum(['passed', 'failed', 'unverified']),
+    eventSequence: CountSchema.optional(), effectIndex: CountSchema.optional() }).strict()),
+  claimFacts: ClaimFactsV2Schema,
+  facts: z.object({
+    executionEligible: z.boolean(), contractPassed: z.boolean(),
+    tools: z.object({ dispatched: CountSchema, succeeded: CountSchema, firstDispatched: CountSchema,
+      firstSucceeded: CountSchema, byApp: z.record(z.string(), z.object({ dispatched: CountSchema,
+        succeeded: CountSchema, firstDispatched: CountSchema, firstSucceeded: CountSchema }).strict()) }).strict(),
+    critical: z.object({ forbiddenOperations: CountSchema, approvalBypasses: CountSchema }).strict(),
+    predicates: z.object({ required: CountSchema, confirmed: CountSchema }).strict(),
+    mutationAcks: z.object({ total: CountSchema, verified: CountSchema }).strict(),
+    latency: z.object({ wallMs: CountSchema, waitMs: CountSchema, activeMs: CountSchema, censored: z.boolean() }).strict(),
+    quality: z.record(z.string(), z.object({ firstOutputId: IdSchema.nullable(), selectedOutputId: IdSchema.nullable(),
+      firstProposalAssessment: AssessmentStateSchema, selectedPlanAssessment: AssessmentStateSchema }).strict()),
+  }).strict(),
+}).strict();
+export type ApplicationAssessment = z.infer<typeof ApplicationAssessmentSchema>;
+
+/** V1 above remains byte-for-byte compatible. Missing Q02 or human review is a gap. */
+export function assessApplication(input: ApplicationObservation, nowMs: number): ApplicationAssessment {
+  const manifest = LogicalManifestSchema.parse(input.manifest);
+  if (!Number.isSafeInteger(nowMs) || nowMs < input.startedAtMs) throw new Error('invalid_observation_time');
+  if (input.schemaVersion !== 2 || input.registration.runId !== input.runId ||
+      input.registration.evaluationAttemptId !== input.evaluationAttemptId ||
+      input.registration.manifestHash !== digest(manifest) || input.registration.suiteEntryId !== manifest.suiteEntryId ||
+      input.registration.configuration.evidenceMode !== manifest.mode ||
+      Date.parse(manifest.frozenAt) > Date.parse(input.registration.registeredAt)) throw new Error('observation_manifest_mismatch');
+  const byId = new Map<string, EventV2>();
+  for (const raw of input.events) {
+    const event = EventV2Schema.parse(raw);
+    const prior = byId.get(event.eventId);
+    if (prior && !isDeepStrictEqual(prior, event)) throw new Error('event_conflict');
+    byId.set(event.eventId, event);
+  }
+  const events = [...byId.values()].sort((a, b) => a.sequence - b.sequence);
+  if (events.some(event => event.runId !== input.runId || event.evaluationAttemptId !== input.evaluationAttemptId))
+    throw new Error('observation_event_mismatch');
+  const trace = assessTrace({ events, manifest, startedAtMs: input.startedAtMs, nowMs });
+  const claimsInput = { ...input, manifest, events };
+  const claimFacts = assessClaims(claimsInput);
+  const mutationAcks = assessMutationAcknowledgements(claimsInput);
+  const checks: Check[] = [...trace.checks];
+  if (claimFacts.prematureSuccessClaims.length) checks.push({ code: 'premature_success', status: 'failed' });
+  if (claimFacts.outcomeContradictedCompletionClaims.length) checks.push({ code: 'claim_outcome_contradicted', status: 'failed' });
+  if (claimFacts.classifications.some(claim => claim.outcome === 'unverified')) checks.push({ code: 'claim_outcome_unverified', status: 'unverified' });
+  const outputs = OutputHistorySchema.parse(input.originalOutputs);
+  if (outputs.some(output => output.runId !== input.runId || output.evaluationAttemptId !== input.evaluationAttemptId))
+    throw new Error('observation_output_mismatch');
+  const labels = input.labels.map(label => ReviewLabelSchema.parse(label));
+  const labelHistory: ReviewLabel[] = [];
+  for (const label of labels) {
+    const output = outputs.find(item => item.outputId === label.outputId);
+    if (!output) throw new Error('review_output_missing');
+    parseReviewLabel(label, output, labelHistory);
+    labelHistory.push(label);
+  }
+  const scoreOutput = (output: OriginalOutput | undefined): Verdict => {
+    if (!output) return 'unverified';
+    if (output.parseStatus !== 'valid' || output.validationStatus !== 'valid') return 'failed';
+    const trusted = labels.filter(label => label.outputId === output.outputId && label.reviewer.kind === 'human' &&
+      input.isTrustedReview?.(label) === true && Date.parse(label.reviewedAt) <= nowMs);
+    const superseded = new Set(trusted.map(label => label.supersedesLabelId));
+    const current = trusted.filter(label => !superseded.has(label.labelId));
+    if (!current.length) return 'unverified';
+    const judgments = current.flatMap(label => [label.grounding, label.completeness, label.decision, label.handoff,
+      ...label.findings.map(finding => finding.judgment === 'unsupported' ? false : finding.judgment === 'uncertain' ? 'uncertain' : true)]);
+    return judgments.includes(false) ? 'failed' : judgments.includes('uncertain') ? 'unverified' : 'passed';
+  };
+  const selectedPlan = events.filter(event => event.kind === 'plan.frozen').at(-1);
+  const quality: ApplicationAssessment['facts']['quality'] = {};
+  for (const role of manifest.requiredRoles) {
+    const roleOutputs = outputs.filter(output => output.role === role);
+    const first = roleOutputs[0];
+    const selected = selectedPlan ? roleOutputs.filter(output => output.planRevision === selectedPlan.planRevision &&
+      Date.parse(output.receivedAt) <= Date.parse(selectedPlan.at) && events.some(event => event.kind === 'model.attempt.result' &&
+        event.modelAttemptId === output.modelAttemptId && event.sequence < selectedPlan.sequence)).at(-1) : undefined;
+    quality[role] = { firstOutputId: first?.outputId ?? null, selectedOutputId: selected?.outputId ?? null,
+      firstProposalAssessment: scoreOutput(first), selectedPlanAssessment: scoreOutput(selected) };
+  }
+  const combineStates = (states: Verdict[]): Verdict => states.includes('failed') ? 'failed' :
+    states.some(state => state !== 'passed') ? 'unverified' : 'passed';
+  const semanticAssessment = combineStates(Object.values(quality).map(value => value.selectedPlanAssessment));
+  const firstProposalAssessment = combineStates(Object.values(quality).map(value => value.firstProposalAssessment));
+  if (semanticAssessment !== 'passed') checks.push({ code: semanticAssessment === 'failed' ? 'selected_proposal_failed' : 'semantic_labels_missing', status: semanticAssessment === 'failed' ? 'failed' : 'unverified' });
+  if (firstProposalAssessment !== 'passed') checks.push({ code: firstProposalAssessment === 'failed' ? 'first_proposal_failed' : 'first_proposal_labels_missing', status: firstProposalAssessment === 'failed' ? 'failed' : 'unverified' });
+  // Q02 must supply complete S0/S1, protected-state and operation-history evidence.
+  // Claim-window proof covers only asserted scope and cannot stand in for that bundle.
+  const outcomeChecks: Check[] = [];
+  const outcome = assessApplicationOutcome(input, trace.productStatus, nowMs);
+  outcomeChecks.push(...outcome.checks);
+  if (claimFacts.classifications.some(claim => claim.outcome === 'unverified'))
+    outcomeChecks.push({ code: 'claim_outcome_unverified', status: 'unverified' });
+  if (mutationAcks.verified < mutationAcks.total)
+    outcomeChecks.push({ code: 'mutation_acknowledgement_unverified', status: 'unverified' });
+  if (trace.productStatus === 'completed_no_affected_commitments' && !events.some(event =>
+      event.kind === 'success.claimed' && event.claim.scope === 'no_affected' && claimFacts.classifications.some(claim =>
+        claim.claimId === event.claim.claimId && claim.outcome === 'confirmed')))
+    outcomeChecks.push({ code: 'no_affected_evidence_missing', status: 'unverified' });
+  if (trace.productStatus && !['queued', 'running', 'awaiting_approval'].includes(trace.productStatus) &&
+      trace.productStatus !== manifest.expectedTerminalStatus) outcomeChecks.push({ code: 'outcome_mismatch', status: 'failed' });
+  if (claimFacts.outcomeContradictedCompletionClaims.length) outcomeChecks.push({ code: 'claim_outcome_contradicted', status: 'failed' });
+  const outcomeAssessment = combine(outcomeChecks);
+  checks.push(...outcomeChecks);
+  const traceAssessment = claimFacts.prematureSuccessClaims.length ? 'failed' : trace.traceAssessment;
+  let status = combineStates([traceAssessment, outcomeAssessment, semanticAssessment]);
+  if (status !== 'failed' && (!trace.productStatus || ['queued', 'running', 'awaiting_approval'].includes(trace.productStatus))) status = 'pending';
+  return ApplicationAssessmentSchema.parse({ schemaVersion: 2, evaluatorVersion: EVALUATOR_V2_VERSION,
+    runId: input.runId, evaluationAttemptId: input.evaluationAttemptId, cohortId: manifest.cohortId, mode: manifest.mode,
+    versions: manifest.versions, watermark: input.watermark, observedAtMs: nowMs, productStatus: trace.productStatus,
+    traceCoverage: trace.unresolvedProviderAttemptIds.length || trace.unresolvedModelAttemptIds.length || !trace.productStatus ||
+      trace.checks.some(check => ['stage_result_missing', 'invalid_event_order_or_binding'].includes(check.code)) ||
+      ['queued', 'running', 'awaiting_approval'].includes(trace.productStatus) ? 'incomplete' : 'complete',
+    traceAssessment, outcomeAssessment, semanticAssessment, firstProposalAssessment, status, checks, claimFacts,
+    facts: { executionEligible: manifest.executionEligible, contractPassed: status === 'passed', mutationAcks,
+      tools: trace.tools, critical: trace.critical, predicates: outcome.predicates,
+      latency: { ...trace.latency, censored: trace.latency.censored || status !== 'passed' }, quality } });
+}
+
+/** Checker-v1 remains a subset. Q02 supplies complete, separately collected S0/S1. */
+function assessApplicationOutcome(input: ApplicationObservation, status: ApplicationAssessment['productStatus'], nowMs: number) {
+  const required = 1 + input.manifest.protectedRecords.length + input.manifest.effects.reduce((n, effect) => n + 2 + Object.keys(effect.requiredFields).length, 0);
+  const gap = (code: string) => ({ checks: [{ code, status: 'unverified' as const }], predicates: { required, confirmed: 0 } });
+  if (!input.outcomeEvidence) return gap('independent_outcome_bundle_missing');
+  const parsed = ApplicationOutcomeEvidenceSchema.safeParse(input.outcomeEvidence);
+  if (!parsed.success) return gap('independent_outcome_bundle_invalid');
+  const bundle = parsed.data;
+  if (input.manifest.mode !== 'synthetic_fixture' && !input.isTrustedOutcome?.(bundle)) return gap('outcome_provenance_unverified');
+  const cutoff = Math.min(nowMs, Date.parse(input.manifest.claimWindow.cutoffAt));
+  if (bundle.observations.some(observation => observation.runId !== input.runId ||
+      observation.evaluationAttemptId !== input.evaluationAttemptId || observation.mode !== input.manifest.mode ||
+      observation.receipt.status !== 'complete' || Date.parse(observation.receipt.finishedAt) > cutoff))
+    return gap('outcome_scope_or_collection_incomplete');
+  for (const app of ['github', 'hubspot', 'gmail', 'slack'] as const) for (const phase of ['s0', 's1']) {
+    if (!bundle.observations.some(observation => observation.phase === phase && observation.receipt.app === app &&
+        (phase !== 's0' || Date.parse(observation.receipt.finishedAt) <= Date.parse(input.registration.dispatchAt))))
+      return gap('outcome_scope_or_collection_incomplete');
+  }
+  for (const effect of input.manifest.effects) for (const phase of ['s0', 's1']) {
+    if (!bundle.observations.some(observation => observation.phase === phase &&
+        observation.receipt.app === effect.app && observation.receipt.accountRef === effect.accountRef))
+      return gap('outcome_account_scope_mismatch');
+  }
+  const evidence = bundle.checkerInput as Record<string, unknown> | null;
+  if (!evidence || typeof evidence !== 'object') return gap('checker_export_invalid');
+  try {
+    const binding = input.checkerExportBinding ? parseCheckerExportBinding(input.checkerExportBinding,
+      input.manifest, digest(input.manifest), input.plan ?? null) : null;
+    if (binding && binding.concreteCheckerExportHash !== digest(evidence)) return gap('checker_export_binding_mismatch');
+    const resolve = (value: unknown, field: string): unknown => {
+      if (Array.isArray(value)) return value.map(item => resolve(item, field));
+      if (!value || typeof value !== 'object') return value;
+      if ('type' in value && value.type === 'effect_id' && 'effectKey' in value) {
+        const id = binding?.idBindings.find(item => item.effectRef.effectKey === value.effectKey)?.matches[0].providerId;
+        if (!id) throw new Error();
+        return id;
+      }
+      const content = binding?.contentBindings.find(item => isDeepStrictEqual(item.contentRef, value));
+      if (!content) throw new Error();
+      return field === 'bodySha256' ? content.contentDigest : content.text;
+    };
+    const expected = { terminalStatus: input.manifest.expectedTerminalStatus,
+      effects: input.manifest.effects.map(effect => ({ app: effect.app, effectKey: effect.effectKey, required: true,
+        requiredFields: Object.fromEntries(Object.entries(effect.requiredFields).map(([field, value]) => [field, resolve(value, field)])) })),
+      protectedRecords: input.manifest.protectedRecords.map(record => ({ app: record.app, id: record.logicalId })) };
+    if (!isDeepStrictEqual(evidence.expected, expected) || evidence.observedTerminalStatus !== status ||
+        evidence.evidenceKind !== input.manifest.mode) return gap('checker_frozen_expectation_mismatch');
+    const result = checkEvidence(evidence);
+    if (result.result === 'invalid_input') return gap('checker_export_invalid');
+    // The narrow checker cannot establish independent source completeness or resolved calls.
+    if (!input.events.some(event => event.kind === 'sources.collected' && event.complete)) return gap('source_evidence_missing');
+    return { checks: [{ code: 'checker_subset', status: result.result as 'passed' | 'failed' },
+      ...result.failures.map(failure => ({ code: `checker_${failure.code}`, status: 'failed' as const,
+        ...(failure.effectIndex === undefined ? {} : { effectIndex: failure.effectIndex }) }))],
+      predicates: { required, confirmed: result.result === 'passed' ? required : 0 } };
+  } catch { return gap('checker_export_binding_missing'); }
 }
