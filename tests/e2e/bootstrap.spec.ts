@@ -10,7 +10,7 @@ test('serves an accessible production bootstrap from the API origin', async ({
   const pageErrors: string[] = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
 
-  const response = await page.goto('/');
+  const response = await page.goto('/?scaffold=1');
   expect(response?.ok()).toBe(true);
   await expect(page.getByRole('main')).toBeVisible();
   await expect(

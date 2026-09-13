@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.web.json",
   "compilerOptions": { "types": ["node", "vite/client"] },
-  "include": ["tests/app/**/*.ts", "tests/web/**/*.tsx", "tests/e2e/**/*.ts", "*.config.ts"]
+  "include": ["tests/app/**/*.ts", "tests/app/**/*.tsx", "tests/web/**/*.tsx", "tests/e2e/**/*.ts", "*.config.ts"]
 }

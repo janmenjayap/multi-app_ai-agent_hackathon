@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { App } from './App.js';
 
 export function BootstrapScreen() {
   return (
@@ -15,4 +16,4 @@ export function BootstrapScreen() {
 }
 
 const root = document.getElementById("root");
-if (root) createRoot(root).render(<StrictMode><BootstrapScreen /></StrictMode>);
+if (root) createRoot(root).render(<StrictMode>{new URLSearchParams(window.location.search).has('scaffold') ? <BootstrapScreen /> : <App />}</StrictMode>);

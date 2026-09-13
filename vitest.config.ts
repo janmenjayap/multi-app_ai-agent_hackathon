@@ -6,7 +6,7 @@ export default defineConfig({
   test: {
     projects: [
       { extends: true, test: { name: "app", environment: "node", include: ["tests/app/**/*.test.ts"] } },
-      { extends: true, test: { name: "web", environment: "jsdom", include: ["tests/web/**/*.test.tsx"] } },
+      { extends: true, test: { name: "web", environment: "jsdom", include: ["tests/web/**/*.test.tsx", "tests/app/**/*.test.tsx"] } },
     ],
   },
 });
