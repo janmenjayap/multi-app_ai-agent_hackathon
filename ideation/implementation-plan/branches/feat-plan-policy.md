@@ -1,6 +1,6 @@
 # Branch plan: feat/plan-policy
 
-**Owner:** P3. **Status:** proposed branch work; this file creates no branch or commit.
+**Owner:** P3. **Status:** implemented, reviewed, merged, and published.
 **Canonical source:** [commit backlog](../04-commit-plan.md).
 **Base:** integration `main`, after the prerequisite commits below land.
 
@@ -58,8 +58,19 @@ Give B05 and B06 full-hash/revision rules, exact payload/body normalization, all
 
 ## Branch completion receipt
 
-- [ ] Dependency SHAs and actual base SHA: `UNRECORDED`.
-- [ ] Every linked commit receipt completed; actual commit SHAs: `UNRECORDED`.
-- [ ] Combined verification commands/evidence and remaining gaps: `UNRECORDED`.
-- [ ] Reviewer and consumer handoff acceptance: `UNRECORDED`.
-- [ ] Actual merged branch/PR reference: `UNRECORDED`.
+- [x] Base `6ca7dab44fefc300e9786d7043fe2d520e3b8d44` contains B02
+   `a7a0fcb4d3b893595d1dc33c8afcf96926bc5cb6`.
+- [x] B03 implementation `fe017b511b28cc8cef76c46d706019f3b6f56753`;
+   review fixes `f3a1eae4534174537670772af6dc224afcf080e8` and
+   `fe35ba5bf3fd0bf2f36778dfa54ec48dbd6b391c`.
+- [x] Final merged checks: 8 focused plan-policy tests, full typecheck, server
+   build, staged-path check, and whitespace check passed; evidence is synthetic.
+- [x] Independent Explore boundary review accepted the B05/B06 contract after
+   its CRLF/LF normalization finding was fixed; B07/Q02 receive the same receipt.
+- [x] Final code merge on `main`:
+   `bb7cbcafc001bcc72a2ebba11b01644440a920db`; both remote branches published.
+
+The [B03 receipt](../commits/B03.md#completion-receipt) records commands,
+versions, fixes, evidence limits, and consumer handoffs. Live providers/models,
+authentic Slack approval, guarded execution, full workflow scenarios, and actual
+human semantic review remain downstream and unrun.
