@@ -119,8 +119,10 @@ test('mechanical claim validation rejects unknown citations, failed audit and re
   unknownCitation.roleResults.drafter.output.entries[0].claims[0].sourceFactIds = ['missing-fact'];
   await assert.rejects(freezePlan(unknownCitation), /unknown_source_citation/);
   const blocked = planInput();
-  blocked.roleResults.auditor.output.verdict = 'block' as 'pass';
-  blocked.roleResults.auditor.output.entries[0].findings[0].verdict = 'unsupported';
+  (blocked.roleResults.auditor.output as { verdict: 'pass' | 'block' }).verdict = 'block';
+  (blocked.roleResults.auditor.output.entries[0].findings[0] as {
+    verdict: 'supported' | 'unsupported';
+  }).verdict = 'unsupported';
   await assert.rejects(freezePlan(blocked), /audit_not_passed/);
   const wrongRevision = planInput();
   wrongRevision.roleResults.drafter.roleInvocationKey = roleInvocationKey('run-1', 2, 'drafter');
@@ -146,6 +148,7 @@ test('resolves only plan-declared effect IDs and approved content with binding r
   const note = plan.effects.find(effect => effect.kind === 'note')!;
   const binding = { effectKey: task.effectKey, providerId: 'hubspot-task-1', bindingReceipt: artifact('task-binding') };
   const resolved = await resolvePlannedEffect(plan, note.effectKey, [binding]);
+  assert.ok('taskId' in resolved.payload);
   assert.equal(resolved.payload.taskId, binding.providerId);
   assert.match(resolved.payload.body, /We are investigating é/);
   await assert.rejects(resolvePlannedEffect(plan, note.effectKey, []), /missing_effect_binding/);
