@@ -447,14 +447,25 @@ complete normalized F02/Q01 inputs. Live I02/I03 source retrieval remains open.
 
 **Expected:** bounded original technical evidence becomes cited facts,
 contradictions, unknowns, and candidate-change assessment.
-**Actual:** **PLANNED**; no prompt, model transport, or output schema executable.
-**Owner/commits:** agent owner; A01, A02. Proposed path: `src/server/agents/`.
+**Actual:** **MODULE IMPLEMENTED, SYNTHETICALLY TESTED**. A02 provides the
+versioned prompt, F02 entrypoint and mechanical validation through A01, with
+immutable first outputs and saved replay. R01 integration and actual-model
+semantic quality remain unverified.
+**Owner/commits:** agent owner; A01, A02. Path: `src/server/agents/analyst/`.
+
+Implementation-ID register: **A02** is
+`ffe2ccaf9911dc0f8eb9df0142e7fe6cfd973e3a`, merged at
+`c4029c5e1a8a07b3b41c72bfa4822c26cc29db1d` under conventions **1.2**.
+The [A02 receipt](commits/A02.md#completion-receipt) records independent Codex
+review, **12/12** analyst tests (**27/27** with A01), typecheck and both builds,
+including the updated B04 integration base. Model/provider/human evidence is
+explicitly unrun; this advances module conformance only.
 
 - [ ] Required structured output, citation-reference validation, timeout, and
   schema retry budget work with both fixtures and the actual selected model.
 - [ ] No source implies proven root cause, recovery, or human action without
   evidence; weak causal evidence and injection cases receive independent labels.
-- [ ] Preserve original outputs and failures before correction with prompt/model/
+- [x] Preserve original outputs and failures before correction with prompt/model/
   schema versions; the agent has no app credentials or mutation tools.
 
 ### C06 — Customer Update Drafter agent
