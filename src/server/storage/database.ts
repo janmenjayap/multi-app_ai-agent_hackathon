@@ -3,7 +3,8 @@ import { closeSync, constants, fchmodSync, fstatSync, openSync, readFileSync } f
 import { DatabaseSync } from 'node:sqlite';
 import { initializeMonitorSchema, MonitorStore } from './monitor-store.js';
 
-export const APPLICATION_STORE_VERSION = 1;
+export const APPLICATION_STORE_VERSION = 2;
+const MIGRATIONS = ['001-initial.sql', '002-workflow-driver.sql'] as const;
 
 /** The application and monitor share this connection; checkpoints never do. */
 export class ApplicationDatabase {
@@ -28,15 +29,18 @@ export class ApplicationDatabase {
       connection.exec(`CREATE TABLE IF NOT EXISTS application_migrations (
         migration_id INTEGER PRIMARY KEY, migration_digest TEXT NOT NULL
       ) STRICT`);
-      let migration: string;
-      try { migration = readFileSync(new URL('../migrations/001-initial.sql', import.meta.url), 'utf8'); }
-      catch { migration = readFileSync(new URL('../../../src/server/migrations/001-initial.sql', import.meta.url), 'utf8'); }
-      const hash = createHash('sha256').update(migration).digest('hex');
+      const migrations = MIGRATIONS.map((name, index) => {
+        let contents: string;
+        try { contents = readFileSync(new URL(`../migrations/${name}`, import.meta.url), 'utf8'); }
+        catch { contents = readFileSync(new URL(`../../../src/server/migrations/${name}`, import.meta.url), 'utf8'); }
+        return { id: index + 1, contents, digest: createHash('sha256').update(contents).digest('hex') };
+      });
       const applied = connection.prepare('SELECT * FROM application_migrations ORDER BY migration_id').all();
-      if (applied.some(row => row.migration_id !== APPLICATION_STORE_VERSION || row.migration_digest !== hash)) throw new Error();
-      if (!applied.length) {
-        connection.exec(migration);
-        connection.prepare('INSERT INTO application_migrations VALUES (?, ?)').run(APPLICATION_STORE_VERSION, hash);
+      if (applied.length > migrations.length || applied.some((row, index) =>
+        row.migration_id !== migrations[index]?.id || row.migration_digest !== migrations[index]?.digest)) throw new Error();
+      for (const migration of migrations.slice(applied.length)) {
+        connection.exec(migration.contents);
+        connection.prepare('INSERT INTO application_migrations VALUES (?, ?)').run(migration.id, migration.digest);
       }
       connection.exec('COMMIT');
       this.connection = connection;

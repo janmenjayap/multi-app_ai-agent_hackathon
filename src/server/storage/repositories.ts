@@ -26,6 +26,15 @@ const RunSchema = z.object({ schemaVersion: z.literal(2), runId: IdSchema,
   revision: z.number().int().nonnegative(), eventSequence: z.number().int().nonnegative(),
   createdAt: UtcTimestampSchema, updatedAt: UtcTimestampSchema }).strict();
 export type StoredRun = z.infer<typeof RunSchema>;
+const WorkflowScheduleStatusSchema = z.enum(['queued', 'running', 'waiting', 'stopped']);
+export type WorkflowScheduleStatus = z.infer<typeof WorkflowScheduleStatusSchema>;
+export interface StoredWorkflow {
+  state: unknown;
+  scheduleStatus: WorkflowScheduleStatus;
+  wakeAt: string | null;
+  deadlineAt: string;
+  ownerId: string;
+}
 const resultSchema = (role: AgentInvocationContext['role']) => agentCallResultSchema(
   role === 'analyst' ? IncidentAssessmentSchema : role === 'drafter' ? DraftProposalSchema : AuditVerdictSchema);
 
@@ -54,6 +63,42 @@ export class ApplicationRepository {
       incident: JSON.parse(String(row.incident_json)), configuration: JSON.parse(String(row.configuration_json)),
       status: row.status, revision: row.revision, eventSequence: row.event_sequence,
       createdAt: row.created_at, updatedAt: row.updated_at }));
+  }
+
+  findRunByIncident(repositoryId: string, issueId: string): StoredRun | null {
+    const row = this.sql.prepare('SELECT run_id FROM runs WHERE repository_id=? AND issue_id=?')
+      .get(IdSchema.parse(repositoryId), IdSchema.parse(issueId));
+    return row ? this.getRun(String(row.run_id)) : null;
+  }
+
+  getWorkflow(runId: string): StoredWorkflow | null {
+    const row = this.sql.prepare('SELECT * FROM workflow_invocations WHERE run_id=?').get(IdSchema.parse(runId));
+    return row ? immutable({ state: JSON.parse(String(row.state_json)),
+      scheduleStatus: WorkflowScheduleStatusSchema.parse(row.schedule_status),
+      wakeAt: row.wake_at === null ? null : UtcTimestampSchema.parse(row.wake_at),
+      deadlineAt: UtcTimestampSchema.parse(row.deadline_at), ownerId: IdSchema.parse(row.owner_id) }) : null;
+  }
+
+  listEligibleWorkflow(now: string): string[] {
+    const at = new Date(UtcTimestampSchema.parse(now)).toISOString();
+    return this.sql.prepare(`SELECT run_id FROM workflow_invocations WHERE schedule_status='running'
+      OR (schedule_status IN ('queued','waiting') AND ((schedule_status='queued' AND wake_at IS NULL) OR wake_at<=? OR deadline_at<=?))
+      ORDER BY COALESCE(wake_at,updated_at),run_id`).all(at, at).map(row => String(row.run_id));
+  }
+
+  /** Revision includes asynchronous assessment changes without enqueueing itself. */
+  getPublicRevision(runId: string, fingerprint: string): number {
+    IdSchema.parse(runId); z.string().regex(/^[a-f0-9]{64}$/).parse(fingerprint);
+    return this.database.transaction(() => {
+      const run = this.getRun(runId);
+      if (!run) throw new Error('run_not_found');
+      const prior = this.sql.prepare('SELECT revision,fingerprint FROM run_projections WHERE run_id=?').get(runId);
+      if (prior?.fingerprint === fingerprint) return Number(prior.revision);
+      const revision = Math.max(run.revision, prior ? Number(prior.revision) + 1 : 0);
+      this.sql.prepare(`INSERT INTO run_projections VALUES(?,?,?) ON CONFLICT(run_id)
+        DO UPDATE SET revision=excluded.revision,fingerprint=excluded.fingerprint`).run(runId, revision, fingerprint);
+      return revision;
+    });
   }
 
   listRuns(statuses: RunStatus[] = ['queued', 'running', 'awaiting_approval', 'failed_partial']): StoredRun[] {
@@ -237,6 +282,36 @@ export class ApplicationWriter extends ApplicationRepository {
     if (!this.getRun(this.context.runId)) throw new Error('run_not_found');
     this.sql.prepare('UPDATE runs SET status=? WHERE run_id=?').run(status, this.context.runId);
     this.#required.add(`status:${status}`);
+  }
+
+  saveWorkflow(input: { runId: string; ownerId: string; evaluationAttemptId: string; runtimeAttemptId: string;
+    state: unknown; scheduleStatus: WorkflowScheduleStatus; wakeAt: string | null; deadlineAt: string; updatedAt: string }): void {
+    this.#write(); this.#scope(input); this.#refs(input.state);
+    IdSchema.parse(input.ownerId); WorkflowScheduleStatusSchema.parse(input.scheduleStatus);
+    const state = z.object({ schemaVersion: z.number().int().positive(),
+      stageTimeoutMs: z.number().int().positive().max(300000).optional() }).passthrough().parse(input.state);
+    const at = (value: string) => new Date(UtcTimestampSchema.parse(value)).toISOString();
+    const deadlineAt = at(input.deadlineAt);
+    const prior = this.sql.prepare('SELECT owner_id,evaluation_attempt_id,deadline_at,state_json FROM workflow_invocations WHERE run_id=?').get(input.runId);
+    if (prior && (prior.owner_id !== input.ownerId || prior.evaluation_attempt_id !== input.evaluationAttemptId))
+      throw new Error('workflow_identity_conflict');
+    if (prior && (prior.deadline_at !== deadlineAt || JSON.parse(String(prior.state_json)).stageTimeoutMs !== state.stageTimeoutMs))
+      throw new Error('workflow_budget_conflict');
+    this.sql.prepare(`INSERT INTO workflow_invocations VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(run_id) DO UPDATE SET
+      runtime_attempt_id=excluded.runtime_attempt_id,state_json=excluded.state_json,schedule_status=excluded.schedule_status,
+      wake_at=excluded.wake_at,deadline_at=excluded.deadline_at,updated_at=excluded.updated_at`).run(
+      input.runId, input.evaluationAttemptId, input.runtimeAttemptId, input.ownerId, canonical(input.state),
+      input.scheduleStatus, input.wakeAt === null ? null : at(input.wakeAt), deadlineAt, at(input.updatedAt));
+  }
+
+  saveCommand(input: { commandId: string; runId: string; operatorId: string; kind: 'create' | 'reconcile';
+    expectedRevision: number | null; acceptedAt: string }): void {
+    this.#write(); this.#scope(input);
+    z.enum(['create', 'reconcile']).parse(input.kind);
+    z.number().int().nonnegative().nullable().parse(input.expectedRevision);
+    this.sql.prepare('INSERT INTO workflow_commands VALUES(?,?,?,?,?,?)').run(IdSchema.parse(input.commandId), input.runId,
+      IdSchema.parse(input.operatorId), input.kind, input.expectedRevision,
+      new Date(UtcTimestampSchema.parse(input.acceptedAt)).toISOString());
   }
 
   saveSnapshot(input: SnapshotRef): void {

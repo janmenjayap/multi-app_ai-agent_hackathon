@@ -95,7 +95,7 @@ test('migration preserves populated monitor-v1 evidence, assessments, exhaustion
   assert.equal(migrated.monitor.listAttempts().length, 1);
   assert.equal(count(migrated, 'evidence_revisions'), 2);
   assert.equal(migrated.connection.prepare('PRAGMA user_version').get()!.user_version, 1);
-  assert.equal(count(migrated, 'application_migrations'), 1);
+  assert.equal(count(migrated, 'application_migrations'), 2);
 });
 
 test.each(['events', 'measurement_jobs'])('failed %s persistence rolls initial application state and evidence back together', table => {
@@ -112,6 +112,49 @@ test.each(['events', 'measurement_jobs'])('failed %s persistence rolls initial a
   assert.equal(count(reopened.database, 'attempts'), 0);
   assert.equal(count(reopened.database, 'events'), 0);
   assert.equal(count(reopened.database, 'measurement_jobs'), 0);
+});
+
+test('B01 upgrade retains history and workflow scheduling, commands and public revisions survive restart', () => {
+  const { database, repository, open } = setup();
+  initialize(repository);
+  const original = repository.getRun(context.runId);
+  database.connection.exec(`DROP TABLE workflow_commands; DROP TABLE workflow_invocations; DROP TABLE run_projections;
+    DELETE FROM application_migrations WHERE migration_id=2`);
+  database.close();
+  const upgraded = open();
+  assert.deepEqual(upgraded.repository.getRun(context.runId), original);
+  const state = { schemaVersion: 2, runId: context.runId, stageTimeoutMs: 1000 };
+  const save = () => upgraded.repository.transaction(context, tx => {
+    tx.saveWorkflow({ ...context, ownerId: 'operator-1', state, scheduleStatus: 'waiting', wakeAt: later, deadlineAt, updatedAt: at });
+    tx.saveCommand({ commandId: 'command-1', runId: context.runId, operatorId: 'operator-1', kind: 'create', expectedRevision: null, acceptedAt: at });
+    tx.appendEvent({ kind: 'wait.started', waitId: 'wait-1', reason: 'approval' }, stamp());
+  });
+  upgraded.database.connection.exec(`CREATE TEMP TRIGGER reject_workflow_job BEFORE INSERT ON measurement_jobs
+    BEGIN SELECT RAISE(ABORT,'test_failure'); END`);
+  assert.throws(save);
+  assert.equal(upgraded.repository.getWorkflow(context.runId), null);
+  assert.equal(count(upgraded.database, 'workflow_commands'), 0);
+  upgraded.database.connection.exec('DROP TRIGGER reject_workflow_job');
+  save();
+  for (const override of [{ ownerId: 'other-operator' }, { evaluationAttemptId: 'other-evaluation' },
+    { deadlineAt: '2026-09-14T11:00:00Z' }, { state: { ...state, stageTimeoutMs: 2000 } }]) {
+    assert.throws(() => upgraded.repository.transaction(context, tx => {
+      tx.saveWorkflow({ ...context, ownerId: 'operator-1', state, scheduleStatus: 'waiting', wakeAt: later, deadlineAt, updatedAt: at, ...override });
+      tx.appendEvent({ kind: 'wait.ended', waitId: 'wait-1' }, stamp());
+    }));
+  }
+  assert.equal(upgraded.repository.getWorkflow(context.runId)?.ownerId, 'operator-1');
+  assert.deepEqual(upgraded.repository.listEligibleWorkflow(at), []);
+  assert.deepEqual(upgraded.repository.listEligibleWorkflow(later), [context.runId]);
+  const revision = upgraded.repository.getPublicRevision(context.runId, hash);
+  assert.equal(upgraded.repository.getPublicRevision(context.runId, hash), revision);
+  assert.equal(upgraded.repository.getPublicRevision(context.runId, digest({ changed: 'assessment' })), revision + 1);
+  upgraded.database.close();
+  const reopened = open();
+  assert.deepEqual(reopened.repository.getWorkflow(context.runId)?.state, state);
+  assert.equal(reopened.repository.getPublicRevision(context.runId, digest({ changed: 'assessment' })), revision + 1);
+  assert.equal(count(reopened.database, 'workflow_commands'), 1);
+  assert.equal(count(reopened.database, 'application_migrations'), 2);
 });
 
 test('terminal transition and its event/job commit together and event cursor survives reopening', () => {
