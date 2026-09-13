@@ -2,7 +2,10 @@
 
 **Owner:** P3. **Purpose:** Generate grounded customer text from a fixed input scope while leaving recipient, owner, dates, and action authority in deterministic code.
 
-This is a proposed branch plan. It creates no branch, commit, provider artifact,
+**Execution update:** A03 is implemented and merged; see the completion record below.
+The following text preserves the original planning baseline.
+
+This was a proposed branch plan. It created no branch, commit, provider artifact,
 or model run. The standalone monitor already exists; the product implementation
 owned here remains missing. See the [source backlog](../04-commit-plan.md) and
 [shared handoffs](../05-contracts-and-handoffs.md).
@@ -79,7 +82,10 @@ review. This branch supplies a bounded module and does not authorize live produc
 writes. R01 must still integrate approval, freshness, effect-ledger execution,
 and independent verification in their canonical order.
 
-- [ ] Prerequisite SHAs and integration base recorded: ______
-- [ ] A03 implemented and reviewed; merge SHA: ______
-- [ ] Evidence and unavailable/failed checks recorded: ______
-- [ ] Consumers and P1 accepted the handoff: ______
+- [x] Prerequisite and base SHAs recorded in the [A03 receipt](../commits/A03.md#completion-receipt).
+- [x] A03 implemented at `afa83ab7053f6baad8ad960ff626304c3aa57492`;
+  main merge `6af6d75f81a4482bf817da05e686639a8dfe6c20`.
+- [x] 17 focused synthetic tests, typecheck and server/web build pass; live
+  model/provider and human semantic evidence remain unrun.
+- [x] Independent Codex `a03_review` accepted R01/Q05 module handoffs; integrating
+  owner recorded the receipt and C06 status. Runtime integration remains R01.

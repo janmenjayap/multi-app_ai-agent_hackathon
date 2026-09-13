@@ -1,13 +1,14 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import axe from 'axe-core';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { ApiErrorSchema, RunViewSchema, TraceViewSchema } from '../../src/shared/api.js';
 import { PIPELINE_STAGE_IDS } from '../../src/shared/domain.js';
-import { App } from '../../src/web/App.js';
+import { App, loadConsolePreview } from '../../src/web/App.js';
 import { AssessmentStatus } from '../../src/web/components/StatusBand.js';
 import { DEMO_FIXTURES, type ConsoleFixture } from '../../src/web/fixtures/demo.js';
 
+beforeAll(loadConsolePreview);
 afterEach(cleanup);
 
 function fixtureWhere(predicate: (fixture: ConsoleFixture) => boolean) {

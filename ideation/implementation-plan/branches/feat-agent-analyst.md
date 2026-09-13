@@ -2,9 +2,10 @@
 
 **Owner:** P3. **Purpose:** Turn the bounded GitHub evidence projection into cited facts, contradictions, candidate changes, and explicit unknowns.
 
-This is a proposed branch plan. It creates no branch, commit, provider artifact,
-or model run. The standalone monitor already exists; the product implementation
-owned here remains missing. See the [source backlog](../04-commit-plan.md) and
+This branch's A02 implementation is complete and merged; its
+[completion receipt](../commits/A02.md#completion-receipt) records the exact
+implementation, validation and handoff. Live-model and human semantic review
+remain unverified. See the [source backlog](../04-commit-plan.md) and
 [shared handoffs](../05-contracts-and-handoffs.md).
 
 ## Base and exact commit order
@@ -77,7 +78,7 @@ review. This branch supplies a bounded module and does not authorize live produc
 writes. R01 must still integrate approval, freshness, effect-ledger execution,
 and independent verification in their canonical order.
 
-- [ ] Prerequisite SHAs and integration base recorded: ______
-- [ ] A02 implemented and reviewed; merge SHA: ______
-- [ ] Evidence and unavailable/failed checks recorded: ______
-- [ ] Consumers and P1 accepted the handoff: ______
+- [x] A01 prerequisite and updated integration base recorded in the completion receipt.
+- [x] A02 implementation: `ffe2ccaf9911dc0f8eb9df0142e7fe6cfd973e3a`; merge: `c4029c5e1a8a07b3b41c72bfa4822c26cc29db1d`.
+- [x] 12 analyst / 27 combined runtime tests, typecheck and both builds pass; actual-model, provider-live and human semantic review remain unrun.
+- [x] P1 integrator accepted the R01/Q05 interface handoff; downstream integration is not claimed.
