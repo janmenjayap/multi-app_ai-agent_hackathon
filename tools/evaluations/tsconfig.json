@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "outDir": "../../.local/evaluation-build",
+    "declaration": false
+  },
+  "include": ["*.ts", "../../src/shared/checker.d.ts"]
+}
