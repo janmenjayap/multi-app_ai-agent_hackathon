@@ -116,7 +116,7 @@ export async function freezePlan(input: unknown) {
         kind: 'note', app: 'hubspot', effectKey: effectKeys.note, payload: {
           companyId: commitment.companyId, commitmentId: commitment.commitmentId,
           taskId: effectRef(effectKeys.task), body: [
-            { type: 'text', text: 'Approved customer update:\n' }, approvedBody,
+            { type: 'text', text: `[PromiseGuard:${effectKeys.note}] Approved customer update:\n` }, approvedBody,
           ],
         } }),
       PlannedEffectSchema.parse({ commitmentId: commitment.commitmentId, requestDigest: EMPTY_DIGEST,

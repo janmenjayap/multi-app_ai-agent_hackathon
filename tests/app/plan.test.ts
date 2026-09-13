@@ -89,6 +89,10 @@ test('freezes an exact immutable plan and provenance receipt from selected ident
   assert.deepEqual(input, before);
   assert.deepEqual(frozen.plan.effects.map(effect => effect.kind), ['task', 'note', 'draft', 'comment', 'thread']);
   const draft = frozen.plan.effects.find(effect => effect.kind === 'draft')!;
+  const note = frozen.plan.effects.find(effect => effect.kind === 'note')!;
+  assert.deepEqual(note.payload.body[0], {
+    type: 'text', text: `[PromiseGuard:${note.effectKey}] Approved customer update:\n`,
+  });
   assert.equal(draft.payload.to, input.selection.selected[0].mailbox);
   assert.deepEqual(draft.payload.cc, []);
   assert.deepEqual(draft.payload.bcc, []);
