@@ -19,7 +19,9 @@ are retained as preliminary evidence in the manifest, not final-source proof.
 Branch: `chore/demo-release`; conventions **1.2**. A separate clean worktree
 preserves the original checkout's unrelated uncommitted work. R02 changes only
 the six documentation paths allowed by its brief; application behavior is
-unchanged. The implementation SHA is recorded in the handoff below after commit.
+unchanged. Implementation-ID register: **R02** is
+`5533d2419a7080067bc6fb103fc41c6f7c391041`. This maps the documentation implementation;
+it does not close the behavioral release gates.
 
 Required implementations are ancestors of this source:
 

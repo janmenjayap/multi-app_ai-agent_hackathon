@@ -1220,6 +1220,8 @@
       "r02_reliability",
       "r02_runbook"
     ],
-    "scope": "Source, evidence arithmetic, commands and honest open-gate documentation; no live product acceptance or human semantic review."
-  }
+    "scope": "Source, evidence arithmetic, commands and honest open-gate documentation; no live product acceptance or human semantic review.",
+    "implementationReceipt": "Documentation implementation accepted; full behavioral release and submission remain open."
+  },
+  "implementationCommitSha": "5533d2419a7080067bc6fb103fc41c6f7c391041"
 }
