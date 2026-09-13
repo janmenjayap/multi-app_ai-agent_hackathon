@@ -2,13 +2,15 @@
 
 **Turn a GitHub incident into approved, assigned customer follow-up across four apps.**
 
+[01 Overview](#01-project-overview) · [02 External apps](#02-external-apps-used) · [03 Setup](#03-setup-instructions) · [04 Reliability testing](#04-reliability-testing) · [05 Demo video](#05-demo-video)
+
+**Demo video:** [Watch the demo — placeholder](https://example.com/promiseguard-demo). Recording pending; the final video must be **no longer than two minutes**.
+
+## 01 Project overview
+
 When an engineering incident puts a customer promise at risk, teams have to connect technical evidence, CRM records, internal approvals, and customer communication. PromiseGuard brings that work into one controlled workflow: identify affected commitments, prepare a recovery plan, get approval, create the follow-up artifacts, and verify the results.
 
-**Demo video:** [Watch the demo](https://example.com/promiseguard-demo) — **dummy link; recording to be added.**
-
-[Apps used](#apps-used) · [What we built](#what-we-built) · [Install and try it](#install-and-try-it) · [Architecture](#architecture) · [Reliability](#how-reliability-is-handled) · [Current status](#current-status-and-limitations)
-
-## What it does
+### What the agent does
 
 Give PromiseGuard a GitHub incident URL. For an affected customer commitment, the workflow:
 
@@ -20,16 +22,7 @@ Give PromiseGuard a GitHub incident URL. For an affected customer commitment, th
 
 **The customer email remains a draft for human review.** The Gmail adapter exposes no send operation. If complete source checks find no affected commitments, the workflow can finish without creating follow-up artifacts.
 
-## Apps used
-
-- **GitHub — engineering context:** reads incident and change evidence; adds the approved impact comment to the incident.
-- **HubSpot — customer context and ownership:** reads customer commitments, companies, contacts, and owners; creates an assigned recovery task and associated note.
-- **Slack — human approval and coordination:** presents the plan, checks the authorized approver's reply, and publishes the final summary.
-- **Gmail — customer communication:** creates and verifies the approved draft, including its recipient and content.
-
-The backend includes typed REST adapters for all four apps. OpenAI powers the model roles through LangChain; LangGraph coordinates the workflow. MCP is an optional future transport, not required for the current implementation.
-
-## What we built
+### What we built
 
 - **A composed workflow:** source selection, three bounded model roles, deterministic validation, plan freezing, Slack approval, guarded execution, and readback verification.
 - **An operator console and API:** React screens and Fastify endpoints for incident intake, run status, plans, timelines, created artifacts, and separate reliability assessments.
@@ -39,7 +32,18 @@ The backend includes typed REST adapters for all four apps. OpenAI powers the mo
 
 These components are implemented on `main`. The [current status](#current-status-and-limitations) distinguishes demonstrated behavior from live integration and evaluation work still outstanding.
 
-## Install and try it
+## 02 External apps used
+
+PromiseGuard integrates **four external apps**, exceeding the minimum of three. The adapters are implemented; the reproducible local demo uses simulated app state, and a live four-app run remains to be verified.
+
+- **GitHub — engineering context:** reads incident and change evidence; adds the approved impact comment to the incident.
+- **HubSpot — customer context and ownership:** reads customer commitments, companies, contacts, and owners; creates an assigned recovery task and associated note.
+- **Slack — human approval and coordination:** presents the plan, checks the authorized approver's reply, and publishes the final summary.
+- **Gmail — customer communication:** creates and verifies the approved draft, including its recipient and content.
+
+The backend includes typed REST adapters for all four apps. OpenAI powers the model roles through LangChain; LangGraph coordinates the workflow. MCP is an optional future transport, not required for the current implementation.
+
+## 03 Setup instructions
 
 ### 1. Install dependencies
 
@@ -99,31 +103,27 @@ npm start
 
 Open **http://127.0.0.1:3000**. Fastify serves the browser and authenticated `/api/runs` routes from the same origin. Missing `PG_WORKFLOW_MODULE` stops startup with a configuration error. See the [app integration guide](ideation/implementation-plan/08-mcp-api-and-external-app-integration.md) for account access and adapter details.
 
-## Architecture
+## 04 Reliability testing
 
-```mermaid
-flowchart TD
-    UI[React operator console] --> API[Fastify API and operator sessions]
-    API --> Workflow[Durable LangGraph workflow]
-    Workflow --> Sources[Read GitHub evidence and HubSpot commitments]
-    Sources --> Analyst[Evidence Analyst]
-    Analyst --> Drafter[Customer Update Drafter]
-    Drafter --> Checks[Deterministic validation]
-    Checks --> Auditor[Blind Semantic Auditor]
-    Auditor --> Plan[Freeze exact plan and request Slack approval]
-    Plan --> Execute[Guarded writes: HubSpot task and note, Gmail draft, GitHub comment]
-    Execute --> Verify[Fresh readback and verified Slack summary]
-    Workflow <--> Store[(SQLite ledger and checkpoints)]
-    Store -. events .-> Monitor[Reliability monitor]
-    Evidence[Independent provider snapshots and review labels] -. evidence .-> Monitor
-    Monitor -. assessments .-> API
+### What we tested and verified
+
+**Local demo verification — September 14, 2026, Node 24.21.0:** the demo compilation and run commands in [Setup](#03-setup-instructions) passed. The report showed `waiting: "awaiting_approval"`, `completed: "completed"`, `modelCalls: 3`, five verified effects, and `replay.excessWrites: 0`. This exercised the real workflow with mock model responses and stateful fake providers.
+
+**Recorded integration tests:** the [integration verification receipt](ideation/implementation-plan/commits/R01.md) reports **3/3 tests passed across seven simulated scenario setups** in [walking-skeleton.test.ts](tests/scenarios/walking-skeleton.test.ts):
+
+- **Approval, restart, and replay:** no protected writes before approval; restart preserves original outputs; replay adds no effects. Tests compare task ownership, associations, the Gmail recipient and exact approved body, and unchanged records for an unaffected customer.
+- **Safe stops:** selection blocks and an auditor rejection create no protected artifacts. A no-affected case finishes without a plan or Slack artifacts.
+- **Injected failures:** wrong email recipients and false Slack success acknowledgements produce partial failure. A write accepted before its response was interrupted is reconciled without creating the draft again. Missing measurement evidence stays unverified during a simulated monitor outage.
+
+Reproduce those focused integration tests after installing dependencies:
+
+```bash
+npm run test:app -- tests/scenarios/walking-skeleton.test.ts
 ```
 
-The three AI roles run as bounded calls within the backend process. They receive scoped evidence and return structured outputs; application code owns tool dispatch and credentials. The auditor receives a separate review context. Approval, retry decisions, persistence, and completion checks are enforced by code.
+The integration counts above come from the recorded implementation receipt; the README update separately reran the CLI demo. They do not establish live-provider reliability or independent human evaluation of AI quality.
 
-**Stack:** TypeScript, React + Vite, Fastify, LangGraph/LangChain, OpenAI, SQLite, and Zod. Tests use Node's test runner, Vitest, and Playwright.
-
-## How reliability is handled
+### How reliability is enforced
 
 Reliability is assessed across **output quality, execution behavior, and actual app state**. A workflow reaching its final step does not, by itself, establish all three.
 
@@ -135,17 +135,7 @@ Reliability is assessed across **output quality, execution behavior, and actual 
 
 The measurement design tracks contract success, tool-call success, verification coverage, recovery, duplicate effects, latency, and first-proposal quality. See the [reliability implementation guide](ideation/implementation-plan/06-agent-reliability-implementation.md) and [scenario plan](ideation/demo-scenarios-and-reliability.md) for definitions and acceptance criteria.
 
-## Current status and limitations
-
-**As of September 14, 2026:** the simulated workflow is runnable, and the four REST adapters and connected application components are implemented. The following evidence gaps remain:
-
-- **Live validation:** the initial live workflow and its replay with OpenAI and all four real apps have not been run. A synthetic demo does not establish live-provider success.
-- **Outcome evaluation:** the frozen expected-outcome manifest and generated plan still differ in effect/content bindings. Independent collection exists, but the demo reports that comparison as unverified.
-- **AI quality:** original-output quality remains unverified without independent human review labels. An auditor pass or Slack approval does not establish quality on its own.
-- **Evaluation coverage:** the full 18-family scenario suite and final measured reliability scorecard are not complete; no production reliability percentage is claimed.
-- **Connected setup:** account-specific workflow bootstrap and operator authentication still need to be supplied as described above.
-
-## Tests and reliability tools
+### Other checks and reliability tools
 
 After installing dependencies, use the existing checks:
 
@@ -174,6 +164,56 @@ node tools/reliability/check-evidence.mjs tools/reliability/examples/happy-path.
 ```
 
 These examples demonstrate the tooling with synthetic evidence. Passing them is not a live product reliability result.
+
+### Current status and limitations
+
+**As of September 14, 2026:** the simulated workflow is runnable, and the four REST adapters and connected application components are implemented. The following evidence gaps remain:
+
+- **Live validation:** the initial live workflow and its replay with OpenAI and all four real apps have not been run. A synthetic demo does not establish live-provider success.
+- **Outcome evaluation:** the frozen expected-outcome manifest and generated plan still differ in effect/content bindings. Independent collection exists, but the demo reports that comparison as unverified.
+- **AI quality:** original-output quality remains unverified without independent human review labels. An auditor pass or Slack approval does not establish quality on its own.
+- **Evaluation coverage:** the full 18-family scenario suite and final measured reliability scorecard are not complete; no production reliability percentage is claimed.
+- **Connected setup:** account-specific workflow bootstrap and operator authentication still need to be supplied as described above.
+
+## 05 Demo video
+
+**Video link:** [Demo video — placeholder](https://example.com/promiseguard-demo)
+
+**Status:** placeholder only; the recording still needs to be added. The submission video must be **no longer than 2:00**.
+
+Suggested recording outline (**1:55 total**):
+
+- **0:00–0:15:** explain the customer-promise problem and introduce PromiseGuard.
+- **0:15–0:35:** show the incident input and explain each of the four apps' roles.
+- **0:35–1:00:** show the proposed plan and approval step.
+- **1:00–1:30:** show the task, note, email draft, GitHub comment, and Slack summary, with their verification results.
+- **1:30–1:55:** show replay adding zero effects and briefly state the remaining validation gaps.
+
+Label simulated footage clearly. The console preview and CLI demo are separate demonstrations; neither is a recording of a live four-app run.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    UI[React operator console] --> API[Fastify API and operator sessions]
+    API --> Workflow[Durable LangGraph workflow]
+    Workflow --> Sources[Read GitHub evidence and HubSpot commitments]
+    Sources --> Analyst[Evidence Analyst]
+    Analyst --> Drafter[Customer Update Drafter]
+    Drafter --> Checks[Deterministic validation]
+    Checks --> Auditor[Blind Semantic Auditor]
+    Auditor --> Plan[Freeze exact plan and request Slack approval]
+    Plan --> Execute[Guarded writes: HubSpot task and note, Gmail draft, GitHub comment]
+    Execute --> Verify[Fresh readback and verified Slack summary]
+    Workflow <--> Store[(SQLite ledger and checkpoints)]
+    Store -. events .-> Monitor[Reliability monitor]
+    Evidence[Independent provider snapshots and review labels] -. evidence .-> Monitor
+    Monitor -. assessments .-> API
+```
+
+The three AI roles run as bounded calls within the backend process. They receive scoped evidence and return structured outputs; application code owns tool dispatch and credentials. The auditor receives a separate review context. Approval, retry decisions, persistence, and completion checks are enforced by code.
+
+**Stack:** TypeScript, React + Vite, Fastify, LangGraph/LangChain, OpenAI, SQLite, and Zod. Tests use Node's test runner, Vitest, and Playwright.
 
 ## Repository and further reading
 
