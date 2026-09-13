@@ -127,6 +127,9 @@ test('mechanical claim validation rejects unknown citations, failed audit and re
   await assert.rejects(freezePlan(wrongRevision), /role_revision_mismatch/);
   const forbidden = planInput(1, 'Recovery is guaranteed for this incident.');
   await assert.rejects(freezePlan(forbidden), /forbidden_claim/);
+  const crossPlatformForbidden = planInput(1, 'Recovery\nis guaranteed for this incident.');
+  crossPlatformForbidden.taskContract.forbiddenClaims = ['Recovery\r\nis guaranteed'];
+  await assert.rejects(freezePlan(crossPlatformForbidden), /forbidden_claim/);
 });
 
 test('plan input cannot add a model-selected recipient or produce multi-recipient mail', async () => {
