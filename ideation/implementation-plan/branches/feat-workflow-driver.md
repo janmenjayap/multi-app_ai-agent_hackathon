@@ -1,6 +1,6 @@
 # Branch plan: feat/workflow-driver
 
-**Owner:** P1. **Status:** proposed branch work; this file creates no branch or commit.
+**Owner:** P1. **Status:** implemented and verified; user-authorized main integration.
 **Canonical source:** [commit backlog](../04-commit-plan.md).
 **Base:** integration `main`, after the prerequisite commits below land.
 
@@ -66,8 +66,8 @@ restart, stale-response, session-expiry, monitor-outage and CSRF/access results.
 
 ## Branch completion receipt
 
-- [ ] Dependency SHAs and actual base SHA: `UNRECORDED`.
-- [ ] Every linked commit receipt completed; actual commit SHAs: `UNRECORDED`.
-- [ ] Combined verification commands/evidence and remaining gaps: `UNRECORDED`.
-- [ ] Reviewer and consumer handoff acceptance: `UNRECORDED`.
-- [ ] Actual merged branch/PR reference: `UNRECORDED`.
+- [x] B01 prerequisite: `472da5f33acca1e416af95c8fde6bad79a413c59`; base: `e27ee70ce85143a58ae73ce604afcf4be76f12a6`.
+- [x] B04 implementation and tests: `7b13aa0b15c558526bfe9a25c15cf1649f101f14`; detailed receipt in [B04](../commits/B04.md).
+- [x] 29 focused tests, typecheck, and build pass on the integrated base; synthetic evidence and remaining R01/live gates recorded in B04.
+- [x] Delegated storage and API reviewers accepted the boundaries; B05/U02/R01 integration remains downstream.
+- [x] Reviewed feature reference: `feat/workflow-driver`; user-authorized merge destination: `main`. Git history records the merge commit.
